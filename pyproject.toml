@@ -1,0 +1,12 @@
+[project]
+name = "f3dmaojoco"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mujoco>=3.3.5",
+    "networkx>=3.5",
+    "pypinyin>=0.55.0",
+    "pyvista>=0.46.3",
+]
