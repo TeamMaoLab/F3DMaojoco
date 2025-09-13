@@ -141,9 +141,6 @@ Fusion 360 API ──────┘
 
 #### 安装过程图示
 
-<details>
-<summary>点击查看详细安装步骤截图</summary>
-
 ##### 步骤 1: 打开脚本和附加模块管理器
 ![打开脚本和附加模块管理器](./images/use_scripts_01.png)
 
@@ -156,7 +153,6 @@ Fusion 360 API ──────┘
 ##### 步骤 4: 添加成功验证
 ![验证添加成功](./images/use_scripts_04.png)
 
-</details>
 
 #### 运行脚本
 
