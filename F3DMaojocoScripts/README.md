@@ -120,9 +120,53 @@ Fusion 360 API ──────┘
 
 ### Fusion 360 插件使用
 
-1. 直接在 Fusion 360 中添加 `F3DMaojocoScripts` 文件夹作为脚本目录
-2. Fusion 360 将自动检测并加载该插件
-3. 从 Fusion 360 的脚本/插件菜单运行 F3DMaojocoScripts
+#### 添加脚本到 Fusion 360
+
+以下是完整的添加步骤：
+
+1. **打开脚本和附加模块管理器**
+   - 在 Fusion 360 中，点击顶部菜单的 "工具" → "脚本和附加模块"
+
+2. **选择脚本来源**
+   - 在脚本和附加模块窗口中，点击 "创建" → "来自设备的脚本"
+   - 选择 "Python" 作为脚本类型
+
+3. **定位到 F3DMaojocoScripts 文件夹**
+   - 在文件夹选择器中，导航到包含 `F3DMaojocoScripts` 的目录
+   - 选择整个文件夹并点击 "选择文件夹"
+
+4. **验证添加成功**
+   - 脚本将出现在 "脚本" 和 "附加模块" 列表中
+   - 建议勾选左侧的 "从设备" 选项，方便快速访问
+
+#### 安装过程图示
+
+<details>
+<summary>点击查看详细安装步骤截图</summary>
+
+##### 步骤 1: 打开脚本和附加模块管理器
+![打开脚本和附加模块管理器](./images/use_scripts_01.png)
+
+##### 步骤 2: 选择"来自设备的脚本"
+![选择脚本来源](./images/use_scripts_02.png)
+
+##### 步骤 3: 定位到 F3DMaojocoScripts 文件夹
+![选择脚本文件夹](./images/use_scripts_03.png)
+
+##### 步骤 4: 添加成功验证
+![验证添加成功](./images/use_scripts_04.png)
+
+</details>
+
+#### 运行脚本
+
+1. 打开您的 Fusion 360 装配体
+2. 从脚本菜单运行 F3DMaojocoScripts
+3. 配置导出选项（网格质量、输出目录）
+4. 执行导出以生成：
+   - `component_positions.json` - 零部件和关节数据
+   - `stl_files/` 目录 - STL 几何文件
+   - 导出描述和日志文件
 
 ### 开发调试
 
