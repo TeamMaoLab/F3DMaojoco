@@ -209,3 +209,4 @@ __marimo__/
 **/.vscode
 .claude
 tmp-output/
+.DS_Store
