@@ -1,50 +1,35 @@
 # F3DMaojoco
 
-## macOS 环境设置
+F3D 到 MuJoCo 的转换工具，支持将 FreeCAD 中的 3D 模型转换为 MuJoCo 仿真环境。
 
-### 解决 MuJoCo Python 动态库链接问题
+## 文档结构
 
-在 macOS 系统中使用 `uv` 虚拟环境时，`mjpython` 可能因为找不到 `libpython3.x.dylib` 而无法启动。以下是完整的解决方案：
+详细的文档请查看 `docs/` 目录：
 
-#### 前提条件
-- 已通过 `uv` 创建虚拟环境（目录名为 `.venv`）
-- 终端当前路径为项目根目录
+- 📖 [环境设置](docs/setup/) - 系统配置和安装指南
+- 📖 [使用指南](docs/guides/) - 详细的使用教程和示例
+- 📖 [API 参考](docs/api/) - 开发接口文档
 
-#### 解决步骤
+## 快速开始
 
-**1. 获取 Python 动态库信息**
-```bash
-# 获取 Python 库目录
-PYTHON_LIB_DIR=$(python3 -c "import sysconfig; print(sysconfig.get_path('stdlib'))" | sed 's|/python3.[0-9]*||')
+1. 环境配置：参考 [macOS 环境设置](docs/setup/macos-setup.md)
+2. 基础使用：查看 [使用指南](docs/guides/)
+3. 开发参考：查阅 [API 文档](docs/api/)
 
-# 获取 Python 动态库名称  
-PYTHON_LIB_NAME=$(python3 -c "import sys; print(f'libpython{sys.version_info.major}.{sys.version_info.minor}.dylib')")
+## 项目结构
 
-echo "库目录: $PYTHON_LIB_DIR"
-echo "库名称: $PYTHON_LIB_NAME"
+```
+F3DMaojoco/
+├── docs/                 # 文档目录
+│   ├── setup/           # 环境设置
+│   ├── guides/          # 使用指南
+│   └── api/             # API 参考
+├── MaojocoConverter/    # 核心转换器
+├── F3DMaojocoScripts/   # 脚本工具
+├── VistaQuickViewer/    # 快速查看器
+└── tmp-output/          # 临时输出文件
 ```
 
-**2. 创建软链接**
-```bash
-# 创建软链接到虚拟环境
-ln -s "$PYTHON_LIB_DIR/$PYTHON_LIB_NAME" ./.venv/lib/$PYTHON_LIB_NAME
-```
+## 许可证
 
-**3. 验证解决**
-```bash
-# 测试 mjpython 是否能正常启动
-mjpython --version
-```
-
-#### 注意事项
-- 如果重新创建 `uv` 虚拟环境，需要重新执行上述步骤
-- 如果升级 Python 版本，动态库名称会发生变化，需要重新创建链接
-- 如果遇到 "File exists" 错误，先删除旧链接：`rm ./.venv/lib/$PYTHON_LIB_NAME`
-
-#### 示例输出
-```
-库目录: /Users/用户名/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib
-库名称: libpython3.12.dylib
-```
-
-执行成功后，`.venv/lib/` 目录下会出现一个指向真实 Python 动态库的软链接。
+参见 [LICENSE](LICENSE) 文件。
