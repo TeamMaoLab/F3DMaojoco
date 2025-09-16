@@ -1,0 +1,932 @@
+{
+  "meta": {
+    "export_time": "2025-09-16 10:54:45",
+    "geometry_unit": "millimeters",
+    "position_unit": "millimeters",
+    "matrix_storage": "4x4_array",
+    "count_components": 9,
+    "count_joints": 8,
+    "format_version": "1.0"
+  },
+  "components": [
+    {
+      "name": "base",
+      "occurrence_name": "base:1",
+      "full_path_name": "esp-hi-test v1/base:1",
+      "component_id": "base",
+      "stl_file": "stl_files/base_base.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            -2.0539125955565396e-15,
+            0.0,
+            0.0
+          ],
+          [
+            2.0539125955565396e-15,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            29.000000000000004
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false
+    },
+    {
+      "name": "lbu",
+      "occurrence_name": "lbu:1",
+      "full_path_name": "esp-hi-test v1/lbu:1",
+      "component_id": "lbu",
+      "stl_file": "stl_files/lbu_lbu.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            -2.0539125955565396e-15,
+            0.0,
+            0.0
+          ],
+          [
+            2.0539125955565396e-15,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            29.000000000000004
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false
+    },
+    {
+      "name": "lbd",
+      "occurrence_name": "lbd:1",
+      "full_path_name": "esp-hi-test v1/lbd:1",
+      "component_id": "lbd",
+      "stl_file": "stl_files/lbd_lbd.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            -2.0539125955565396e-15,
+            0.0,
+            0.0
+          ],
+          [
+            2.0539125955565396e-15,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            29.000000000000004
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false
+    },
+    {
+      "name": "lfd",
+      "occurrence_name": "lfd:1",
+      "full_path_name": "esp-hi-test v1/lfd:1",
+      "component_id": "lfd",
+      "stl_file": "stl_files/lfd_lfd.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            -2.0539125955565396e-15,
+            -2.515317485876749e-31,
+            1.942890293094079e-15
+          ],
+          [
+            2.05391259555654e-15,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            -1.2576587429383742e-31,
+            2.5831211330329313e-46,
+            1.0,
+            28.999999999999986
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false
+    },
+    {
+      "name": "rfu",
+      "occurrence_name": "rfu:1",
+      "full_path_name": "esp-hi-test v1/rfu:1",
+      "component_id": "rfu",
+      "stl_file": "stl_files/rfu_rfu.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            -2.0539125955565396e-15,
+            0.0,
+            0.0
+          ],
+          [
+            2.0539125955565396e-15,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            29.000000000000004
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false
+    },
+    {
+      "name": "rbd",
+      "occurrence_name": "rbd:1",
+      "full_path_name": "esp-hi-test v1/rbd:1",
+      "component_id": "rbd",
+      "stl_file": "stl_files/rbd_rbd.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            -2.0539125955565396e-15,
+            0.0,
+            0.0
+          ],
+          [
+            2.0539125955565396e-15,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            29.000000000000004
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false
+    },
+    {
+      "name": "rfd",
+      "occurrence_name": "rfd:1",
+      "full_path_name": "esp-hi-test v1/rfd:1",
+      "component_id": "rfd",
+      "stl_file": "stl_files/rfd_rfd.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            -2.0539125955565396e-15,
+            0.0,
+            0.0
+          ],
+          [
+            2.0539125955565396e-15,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            29.000000000000004
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false
+    },
+    {
+      "name": "lfu",
+      "occurrence_name": "lfu:1",
+      "full_path_name": "esp-hi-test v1/lfu:1",
+      "component_id": "lfu",
+      "stl_file": "stl_files/lfu_lfu.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            -2.0539125955565396e-15,
+            -1.2576587429383744e-31,
+            1.9428902930940555e-15
+          ],
+          [
+            2.0539125955565396e-15,
+            1.0,
+            0.0,
+            2.220446049250313e-15
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            28.999999999999986
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false
+    },
+    {
+      "name": "rbu",
+      "occurrence_name": "rbu:1",
+      "full_path_name": "esp-hi-test v1/rbu:1",
+      "component_id": "rbu",
+      "stl_file": "stl_files/rbu_rbu.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            -2.0539125955565396e-15,
+            0.0,
+            0.0
+          ],
+          [
+            2.0539125955565396e-15,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            29.000000000000004
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false
+    }
+  ],
+  "joints": [
+    {
+      "name": "旋转 1",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "base:1",
+        "occurrence_one_full_path": "base:1",
+        "occurrence_one_component": "base",
+        "occurrence_two_name": "lfu:1",
+        "occurrence_two_full_path": "lfu:1",
+        "occurrence_two_component": "lfu"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              0.0,
+              1.0,
+              0.0,
+              -15.000000000000044
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              21.99999999999997
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              36.5
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              0.0,
+              1.0,
+              0.0,
+              -15.200000000000042
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              21.999999999999975
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              36.499999999999986
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 2",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "lfu:1",
+        "occurrence_one_full_path": "lfu:1",
+        "occurrence_one_component": "lfu",
+        "occurrence_two_name": "lfd:1",
+        "occurrence_two_full_path": "lfd:1",
+        "occurrence_two_component": "lfd"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              0.0,
+              1.0,
+              0.0,
+              -18.20000000000001
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              5.884799503322827
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              24.655156693653684
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              0.0,
+              -1.0,
+              6.497369754055491e-77,
+              -18.40000000000001
+            ],
+            [
+              0.0,
+              -6.497369754055492e-77,
+              1.0,
+              5.884799503322825
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              24.655156693653684
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 3",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "base:1",
+        "occurrence_one_full_path": "base:1",
+        "occurrence_one_component": "base",
+        "occurrence_two_name": "lbu:1",
+        "occurrence_two_full_path": "lbu:1",
+        "occurrence_two_component": "lbu"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              0.0,
+              1.0,
+              0.0,
+              -14.999999999999956
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              -22.000000000000025
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              36.5
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              0.0,
+              1.0,
+              0.0,
+              -15.199999999999957
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              -22.000000000000032
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              36.5
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 4",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "lbu:1",
+        "occurrence_one_full_path": "lbu:1",
+        "occurrence_one_component": "lbu",
+        "occurrence_two_name": "lbd:1",
+        "occurrence_two_full_path": "lbd:1",
+        "occurrence_two_component": "lbd"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              0.0,
+              1.0,
+              0.0,
+              -18.199999999999925
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              -38.115200496677176
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              24.6551566936537
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              0.0,
+              -1.0,
+              0.0,
+              -18.399999999999924
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              -38.11520049667718
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              24.6551566936537
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 5",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "base:1",
+        "occurrence_one_full_path": "base:1",
+        "occurrence_one_component": "base",
+        "occurrence_two_name": "rbu:1",
+        "occurrence_two_full_path": "rbu:1",
+        "occurrence_two_component": "rbu"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              0.0,
+              -1.0,
+              0.0,
+              15.000000000000044
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              -21.99999999999996
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              36.5
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              0.0,
+              1.0,
+              0.0,
+              15.200000000000045
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              -21.99999999999997
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              36.5
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 6",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "rbu:1",
+        "occurrence_one_full_path": "rbu:1",
+        "occurrence_one_component": "rbu",
+        "occurrence_two_name": "rbd:1",
+        "occurrence_two_full_path": "rbd:1",
+        "occurrence_two_component": "rbd"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              0.0,
+              1.0,
+              0.0,
+              18.200000000000077
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              -38.115200496677105
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              24.6551566936537
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              0.0,
+              -1.0,
+              0.0,
+              18.400000000000077
+            ],
+            [
+              0.0,
+              -0.0,
+              1.0,
+              -38.115200496677105
+            ],
+            [
+              1.0,
+              -0.0,
+              0.0,
+              24.6551566936537
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 7",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "base:1",
+        "occurrence_one_full_path": "base:1",
+        "occurrence_one_component": "base",
+        "occurrence_two_name": "rfu:1",
+        "occurrence_two_full_path": "rfu:1",
+        "occurrence_two_component": "rfu"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              0.0,
+              -1.0,
+              0.0,
+              14.999999999999956
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              22.000000000000032
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              36.5
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              0.0,
+              1.0,
+              0.0,
+              15.199999999999957
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              22.000000000000032
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              36.5
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 8",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "rfu:1",
+        "occurrence_one_full_path": "rfu:1",
+        "occurrence_one_component": "rfu",
+        "occurrence_two_name": "rfd:1",
+        "occurrence_two_full_path": "rfd:1",
+        "occurrence_two_component": "rfd"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              0.0,
+              1.0,
+              0.0,
+              18.19999999999999
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              5.884799503322901
+            ],
+            [
+              1.0,
+              0.0,
+              0.0,
+              24.6551566936537
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              0.0,
+              -1.0,
+              0.0,
+              18.39999999999999
+            ],
+            [
+              0.0,
+              -0.0,
+              1.0,
+              5.884799503322901
+            ],
+            [
+              1.0,
+              -0.0,
+              0.0,
+              24.6551566936537
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    }
+  ]
+}

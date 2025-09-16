@@ -1,0 +1,77 @@
+<?xml version="1.0" ?>
+<mujoco model="converted_model_with_actuators">
+  <option gravity="0 0 -9.81" timestep="0.001"/>
+  <worldbody>
+    <geom name="ground" type="plane" size="10 10 0.1" pos="0 0 0" rgba="0.2 0.3 0.2 1" friction="1.0 0.005 0.0001" condim="3"/>
+    <body name="base" pos="0.000000 0.000000 0.029000" quat="1.000000 0.000000 0.000000 0.000000">
+      <inertial pos="0 0 0" mass="1.0" diaginertia="1.0 1.0 1.0"/>
+      <geom type="mesh" mesh="base_base" pos="0 0 0" rgba="0.7 0.7 0.7 1"/>
+      <freejoint name="base_free"/>
+      <body name="lfu" pos="0.000000 0.000000 0.000000" quat="1.000000 0.000000 0.000000 0.000000">
+        <inertial pos="0 0 0" mass="1.0" diaginertia="1.0 1.0 1.0"/>
+        <geom type="mesh" mesh="lfu_lfu" pos="0 0 0" rgba="0.7 0.7 0.7 1"/>
+        <joint name="xuan_zhuan_1" type="hinge" pos="-0.015000 0.022000 0.007500" axis="1.000000 0.000000 0.000000"/>
+        <body name="lfd" pos="0.000000 0.000000 0.000000" quat="1.000000 0.000000 0.000000 0.000000">
+          <inertial pos="0 0 0" mass="1.0" diaginertia="1.0 1.0 1.0"/>
+          <geom type="mesh" mesh="lfd_lfd" pos="0 0 0" rgba="0.7 0.7 0.7 1"/>
+          <joint name="xuan_zhuan_2" type="hinge" pos="-0.018200 0.005885 -0.004345" axis="1.000000 0.000000 0.000000"/>
+        </body>
+      </body>
+      <body name="lbu" pos="0.000000 0.000000 0.000000" quat="1.000000 0.000000 0.000000 0.000000">
+        <inertial pos="0 0 0" mass="1.0" diaginertia="1.0 1.0 1.0"/>
+        <geom type="mesh" mesh="lbu_lbu" pos="0 0 0" rgba="0.7 0.7 0.7 1"/>
+        <joint name="xuan_zhuan_3" type="hinge" pos="-0.015000 -0.022000 0.007500" axis="1.000000 0.000000 0.000000"/>
+        <body name="lbd" pos="0.000000 0.000000 0.000000" quat="1.000000 0.000000 0.000000 0.000000">
+          <inertial pos="0 0 0" mass="1.0" diaginertia="1.0 1.0 1.0"/>
+          <geom type="mesh" mesh="lbd_lbd" pos="0 0 0" rgba="0.7 0.7 0.7 1"/>
+          <joint name="xuan_zhuan_4" type="hinge" pos="-0.018200 -0.038115 -0.004345" axis="1.000000 0.000000 0.000000"/>
+        </body>
+      </body>
+      <body name="rbu" pos="0.000000 0.000000 0.000000" quat="1.000000 0.000000 0.000000 0.000000">
+        <inertial pos="0 0 0" mass="1.0" diaginertia="1.0 1.0 1.0"/>
+        <geom type="mesh" mesh="rbu_rbu" pos="0 0 0" rgba="0.7 0.7 0.7 1"/>
+        <joint name="xuan_zhuan_5" type="hinge" pos="0.015000 -0.022000 0.007500" axis="-1.000000 0.000000 0.000000"/>
+        <body name="rbd" pos="0.000000 0.000000 0.000000" quat="1.000000 0.000000 0.000000 0.000000">
+          <inertial pos="0 0 0" mass="1.0" diaginertia="1.0 1.0 1.0"/>
+          <geom type="mesh" mesh="rbd_rbd" pos="0 0 0" rgba="0.7 0.7 0.7 1"/>
+          <joint name="xuan_zhuan_6" type="hinge" pos="0.018200 -0.038115 -0.004345" axis="1.000000 0.000000 0.000000"/>
+        </body>
+      </body>
+      <body name="rfu" pos="0.000000 0.000000 0.000000" quat="1.000000 0.000000 0.000000 0.000000">
+        <inertial pos="0 0 0" mass="1.0" diaginertia="1.0 1.0 1.0"/>
+        <geom type="mesh" mesh="rfu_rfu" pos="0 0 0" rgba="0.7 0.7 0.7 1"/>
+        <joint name="xuan_zhuan_7" type="hinge" pos="0.015000 0.022000 0.007500" axis="-1.000000 0.000000 0.000000"/>
+        <body name="rfd" pos="0.000000 0.000000 0.000000" quat="1.000000 0.000000 0.000000 0.000000">
+          <inertial pos="0 0 0" mass="1.0" diaginertia="1.0 1.0 1.0"/>
+          <geom type="mesh" mesh="rfd_rfd" pos="0 0 0" rgba="0.7 0.7 0.7 1"/>
+          <joint name="xuan_zhuan_8" type="hinge" pos="0.018200 0.005885 -0.004345" axis="1.000000 0.000000 0.000000"/>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <asset>
+    <mesh name="rfu_rfu" file="stl_files/rfu_rfu.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="base_base" file="stl_files/base_base.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="lbd_lbd" file="stl_files/lbd_lbd.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="rbu_rbu" file="stl_files/rbu_rbu.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="rbd_rbd" file="stl_files/rbd_rbd.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="lfu_lfu" file="stl_files/lfu_lfu.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="rfd_rfd" file="stl_files/rfd_rfd.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="lbu_lbu" file="stl_files/lbu_lbu.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="lfd_lfd" file="stl_files/lfd_lfd.stl" scale="0.001 0.001 0.001"/>
+  </asset>
+  <visual>
+    <global offwidth="2048" offheight="2048"/>
+    <headlight ambient="0.2 0.2 0.2" diffuse="0.8 0.8 0.8" specular="0.3 0.3 0.3"/>
+  </visual>
+  <actuator>
+    <position name="xuan_zhuan_1_actuator" joint="xuan_zhuan_1" kp="100.0" kv="10.0" forcelimited="true" forcerange="-100.0 100.0" ctrlrange="-3.14 3.14"/>
+    <position name="xuan_zhuan_2_actuator" joint="xuan_zhuan_2" kp="100.0" kv="10.0" forcelimited="true" forcerange="-100.0 100.0" ctrlrange="-3.14 3.14"/>
+    <position name="xuan_zhuan_3_actuator" joint="xuan_zhuan_3" kp="100.0" kv="10.0" forcelimited="true" forcerange="-100.0 100.0" ctrlrange="-3.14 3.14"/>
+    <position name="xuan_zhuan_4_actuator" joint="xuan_zhuan_4" kp="100.0" kv="10.0" forcelimited="true" forcerange="-100.0 100.0" ctrlrange="-3.14 3.14"/>
+    <position name="xuan_zhuan_5_actuator" joint="xuan_zhuan_5" kp="100.0" kv="10.0" forcelimited="true" forcerange="-100.0 100.0" ctrlrange="-3.14 3.14"/>
+    <position name="xuan_zhuan_6_actuator" joint="xuan_zhuan_6" kp="100.0" kv="10.0" forcelimited="true" forcerange="-100.0 100.0" ctrlrange="-3.14 3.14"/>
+    <position name="xuan_zhuan_7_actuator" joint="xuan_zhuan_7" kp="100.0" kv="10.0" forcelimited="true" forcerange="-100.0 100.0" ctrlrange="-3.14 3.14"/>
+    <position name="xuan_zhuan_8_actuator" joint="xuan_zhuan_8" kp="100.0" kv="10.0" forcelimited="true" forcerange="-100.0 100.0" ctrlrange="-3.14 3.14"/>
+  </actuator>
+</mujoco>
