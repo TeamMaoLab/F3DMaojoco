@@ -100,16 +100,31 @@ class RobotModel:
         self.nu = self.model.nu
     
     def _calculate_model_stats(self):
-        """计算模型统计信息"""
+        """计算模型统计信息 - 优先使用手动计算以排除地面"""
         if not self.model or not self.data:
             return
         
         try:
-            # 计算模型边界
+            # 手动计算模型边界，排除地面等大型几何体
             geom_positions = []
+            geom_count = 0
+            large_geom_count = 0
+            
             for i in range(self.model.ngeom):
-                geom_pos = self.model.geom(i).pos.copy()
+                geom = self.model.geom(i)
+                geom_pos = geom.pos.copy()
+                geom_size = geom.size.copy()
+                
+                geom_count += 1
+                
+                # 跳过过大的几何体（可能是地面）
+                if np.any(geom_size > 2.0):  # 大于2米的几何体可能是地面
+                    large_geom_count += 1
+                    continue
+                
                 geom_positions.append(geom_pos)
+            
+            print(f"📊 几何体统计: 总数={geom_count}, 大型几何体={large_geom_count}, 有效几何体={len(geom_positions)}")
             
             if geom_positions:
                 geom_positions = np.array(geom_positions)
@@ -118,22 +133,53 @@ class RobotModel:
                 center = (min_pos + max_pos) / 2
                 extent = np.max(max_pos - min_pos)
                 
-                self.model_stats = {
-                    'center': center,
-                    'extent': extent,
-                    'min_pos': min_pos,
-                    'max_pos': max_pos,
-                    'num_geoms': self.model.ngeom,
-                    'num_bodies': self.model.nbody,
-                    'num_joints': self.model.njnt
-                }
+                print(f"📏 手动计算模型尺寸: {extent:.3f}m")
+                print(f"🎯 手动计算模型中心: [{center[0]:.3f}, {center[1]:.3f}, {center[2]:.3f}]")
+            else:
+                # 如果没有有效几何体，使用body位置
+                body_positions = []
+                for i in range(1, min(self.model.nbody, 10)):  # 跳过worldbody，限制数量
+                    body_pos = self.data.xpos[i].copy()
+                    body_positions.append(body_pos)
                 
-                print(f"📏 模型尺寸: {extent:.3f}m")
-                print(f"🎯 模型中心: [{center[0]:.3f}, {center[1]:.3f}, {center[2]:.3f}]")
+                if body_positions:
+                    body_positions = np.array(body_positions)
+                    center = np.mean(body_positions, axis=0)
+                    # 基于body位置估算范围
+                    distances = [np.linalg.norm(pos - center) for pos in body_positions]
+                    extent = max(distances) * 2 if distances else 0.1
+                    extent = max(extent, 0.1)  # 最小范围
+                    
+                    print(f"📏 基于Body位置计算尺寸: {extent:.3f}m")
+                    print(f"🎯 基于Body位置计算中心: [{center[0]:.3f}, {center[1]:.3f}, {center[2]:.3f}]")
+                else:
+                    # 最后的默认值
+                    center = np.array([0.0, 0.0, 0.05])
+                    extent = 0.2
+                    print(f"📏 使用默认值: 尺寸={extent:.3f}m, 中心=[{center[0]:.3f}, {center[1]:.3f}, {center[2]:.3f}]")
+            
+            # 确保有合理的值
+            extent = max(extent, 0.05)  # 最小5cm
+            extent = min(extent, 1.0)   # 最大1m（适合小型机器人）
+            
+            self.model_stats = {
+                'center': center,
+                'extent': extent,
+                'num_geoms': self.model.ngeom,
+                'num_bodies': self.model.nbody,
+                'num_joints': self.model.njnt
+            }
             
         except Exception as e:
             print(f"⚠️  计算模型统计信息失败: {e}")
-            self.model_stats = {}
+            # 提供安全的默认值 - 适合小型机器人的合理值
+            self.model_stats = {
+                'center': np.array([0.0, 0.0, 0.05]),
+                'extent': 0.2,
+                'num_geoms': self.model.ngeom,
+                'num_bodies': self.model.nbody,
+                'num_joints': self.model.njnt
+            }
     
     def get_joint_names(self) -> list:
         """获取所有关节名称"""

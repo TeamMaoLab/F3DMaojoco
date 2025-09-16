@@ -51,23 +51,24 @@ class OrbitCamera:
         self.last_update_time = 0
         
     def fit(self, model_stats: Dict[str, Any]):
-        """基于模型统计信息自动适配视角"""
+        """基于模型统计信息自动适配视角 - 优化的小型机器人适配"""
         extent = model_stats.get('extent', 0.047)
         center = model_stats.get('center', np.array([0.0, 0.0, 0.0]))
         
         # 设置观察目标
         self.lookat[:] = center
         
-        # 计算最佳观察距离
+        # 使用成功代码的简单计算方式，但增加适合小型机器人的距离
         half_fov_rad = math.radians(self.fovy) / 2.0
         base = extent / (2.0 * math.tan(half_fov_rad) + 1e-9)
-        self.distance = base * 1.2  # 留出边距
+        self.distance = max(base * 3.0, 0.2)  # 增加距离倍数，设置最小距离
         
-        # 动态调整范围限制
-        self.min_distance = max(extent * 0.01, 0.0005)
-        self.max_distance = extent * 20.0
+        # 保持合理的范围限制
+        self.min_distance = 0.01
+        self.max_distance = 10.0
         
         print(f"📷 相机适配: 距离={self.distance:.3f}m, 目标=[{center[0]:.3f}, {center[1]:.3f}, {center[2]:.3f}]")
+        print(f"📏 模型尺寸: {extent:.3f}m")
     
     def apply_to_mjcam(self, mjcam):
         """应用到MuJoCo相机"""
@@ -247,17 +248,23 @@ class MuJoCoViewerWidget(QOpenGLWidget):
         self.timer.timeout.connect(self.update)
         self.timer.start(16)  # ~60 FPS
         
+        print(f"🔧 MuJoCoViewerWidget 初始化完成，robot: {self.robot is not None}")
+        
         # 如果有机器人模型，适配相机
         if self.robot and self.robot.is_loaded():
+            print("🤖 在 __init__ 中适配相机")
             self.camera.fit(self.robot.get_model_stats())
     
     def initializeGL(self):
         """初始化OpenGL和MuJoCo资源"""
+        print("🔧 initializeGL 被调用")
+        
         if self.robot and self.robot.model:
+            print("🎮 初始化MuJoCo渲染资源...")
             # 预分配渲染资源，避免每帧重新分配
             self.scene = mujoco.MjvScene(self.robot.model, maxgeom=20000)
             self.mjr_context = mujoco.MjrContext(self.robot.model, mujoco.mjtFontScale.mjFONTSCALE_150)
-            self.mjcam = mujoco.MjCamera()
+            self.mjcam = mujoco.MjvCamera()
             self.opt = mujoco.MjvOption()
             
             # 初始化默认值
@@ -278,8 +285,10 @@ class MuJoCoViewerWidget(QOpenGLWidget):
             
             print("🎮 MuJoCo渲染器初始化完成")
             print(f"📷 初始相机: 距离={self.camera.distance:.3f}m, 方位={self.camera.azimuth:.1f}°, 仰角={self.camera.elevation:.1f}°")
+            print(f"🔍 mjcam 状态: {self.mjcam is not None}")
         else:
             # 没有模型时的默认设置
+            print("⚠️  没有机器人模型，使用默认设置")
             glClearColor(0.15, 0.0, 0.0, 1.0)
     
     def resizeGL(self, w, h):
@@ -293,9 +302,6 @@ class MuJoCoViewerWidget(QOpenGLWidget):
             # 运行仿真
             if self.is_running:
                 self.step_simulation()
-            
-            # 设置FOV - 暂时跳过，避免global关键字问题
-            # TODO: 找到正确的MuJoCo FOV设置方式
             
             # 同步相机参数
             self.camera.apply_to_mjcam(self.mjcam)
@@ -313,9 +319,19 @@ class MuJoCoViewerWidget(QOpenGLWidget):
             
             # 更新FPS计数
             self.update_fps()
+            
+            # 调试信息：每60帧打印一次
+            if self.frame_count % 60 == 0:
+                cam_params = self.camera.get_parameters()
+                print(f"🎮 渲染状态: 相机位置=[{cam_params['position'][0]:.3f}, {cam_params['position'][1]:.3f}, {cam_params['position'][2]:.3f}], 距离={self.camera.distance:.3f}m")
         else:
             # 没有模型时的默认渲染
+            glClearColor(0.2, 0.0, 0.0, 1.0)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+            
+            # 调试信息
+            if self.frame_count % 60 == 0:
+                print(f"⚠️  渲染状态异常: robot={self.robot is not None}, model={self.robot.model if self.robot else None}, mjcam={self.mjcam}")
     
     def step_simulation(self, dt_target=1/60.0):
         """多步仿真保证时间同步"""
@@ -453,12 +469,26 @@ class MuJoCoViewerWidget(QOpenGLWidget):
             self.camera.fit(self.robot.get_model_stats())
             
             # 如果已经初始化，更新渲染资源
-            if self.scene is not None:
+            if self.mjcam is not None:
+                print("🔄 更新现有渲染资源...")
                 self.scene = mujoco.MjvScene(self.robot.model, maxgeom=20000)
                 self.mjr_context = mujoco.MjrContext(self.robot.model, mujoco.mjtFontScale.mjFONTSCALE_150)
                 
                 self.camera.apply_to_mjcam(self.mjcam)
                 self.camera.update_clip_planes(self.robot.model)
+            else:
+                print("⚠️  mjcam 未初始化，等待 initializeGL")
+    
+    def showEvent(self, event):
+        """窗口显示事件 - 确保OpenGL资源正确初始化"""
+        super().showEvent(event)
+        
+        # 强制重新初始化OpenGL资源
+        if self.robot and self.robot.model and self.mjcam is None:
+            print("🔄 在 showEvent 中重新初始化OpenGL资源")
+            self.makeCurrent()
+            self.initializeGL()
+            self.doneCurrent()
     
     def print_controls(self):
         """打印控制说明"""
