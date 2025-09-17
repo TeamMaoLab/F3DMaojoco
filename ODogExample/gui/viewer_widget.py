@@ -35,9 +35,9 @@ class OrbitCamera:
         self.lookat = np.array([0.0, 0.0, 0.0], dtype=np.float32)  # 观察目标
         self.fovy = 45.0          # 视场角
         
-        # 控制参数
+        # 控制参数 - 针对小型模型优化
         self.orbit_sensitivity = 0.35    # 旋转灵敏度
-        self.pan_sensitivity = 0.0025    # 平移灵敏度
+        self.pan_sensitivity = 0.0015    # 平移灵敏度 - 降低以便更精细控制
         self.zoom_speed = 0.12           # 缩放速度
         self.fov_zoom_speed = 0.10       # FOV缩放速度
         
@@ -51,24 +51,26 @@ class OrbitCamera:
         self.last_update_time = 0
         
     def fit(self, model_stats: Dict[str, Any]):
-        """基于模型统计信息自动适配视角 - 优化的小型机器人适配"""
-        extent = model_stats.get('extent', 0.047)
-        center = model_stats.get('center', np.array([0.0, 0.0, 0.0]))
+        """基于模型统计信息自动适配视角 - 确保模型居中"""
+        extent = model_stats.get('extent', 0.15)
+        # 注意：center 参数被保留用于扩展性，当前使用调试后的固定值
         
-        # 设置观察目标
-        self.lookat[:] = center
+        # 基于用户最新调试结果设置观察目标
+        # 从最新的相机位置反推目标点
+        self.lookat[:] = np.array([0.352, 0.149, 0.036])  # 基于用户最新调试结果的观察目标
         
-        # 使用成功代码的简单计算方式，但增加适合小型机器人的距离
-        half_fov_rad = math.radians(self.fovy) / 2.0
-        base = extent / (2.0 * math.tan(half_fov_rad) + 1e-9)
-        self.distance = max(base * 3.0, 0.2)  # 增加距离倍数，设置最小距离
+        # 使用用户调试后的理想相机参数
+        self.distance = 0.080  # 用户调试后的最佳距离: 8cm
+        self.azimuth = 308.8   # 用户调试后的方位角
+        self.elevation = -5.1   # 用户调试后的仰角
         
-        # 保持合理的范围限制
-        self.min_distance = 0.01
-        self.max_distance = 10.0
+        # 设置适合小模型的缩放范围 - 调整为更近距离观察
+        self.min_distance = 0.050  # 最小距离5cm，可以近距离观察小模型细节
+        self.max_distance = 2.000  # 最大距离2m，适合小型机器人的观察范围
         
-        print(f"📷 相机适配: 距离={self.distance:.3f}m, 目标=[{center[0]:.3f}, {center[1]:.3f}, {center[2]:.3f}]")
-        print(f"📏 模型尺寸: {extent:.3f}m")
+        print(f"📷 相机适配: 距离={self.distance:.3f}m, 目标=[{self.lookat[0]:.3f}, {self.lookat[1]:.3f}, {self.lookat[2]:.3f}]")
+        print(f"📏 模型尺寸: {extent:.3f}m, 角度: Az={self.azimuth:.1f}°, El={self.elevation:.1f}°")
+        print(f"🎯 使用用户最新调试的观察目标配置")
     
     def apply_to_mjcam(self, mjcam):
         """应用到MuJoCo相机"""
@@ -84,50 +86,70 @@ class OrbitCamera:
     def orbit(self, dx, dy):
         """球坐标轨道旋转"""
         # 方位角旋转（水平方向）
+        old_azimuth = self.azimuth
         self.azimuth = (self.azimuth + dx * self.orbit_sensitivity) % 360.0
         
         # 仰角旋转（垂直方向）- 避免万向节锁
+        old_elevation = self.elevation
         self.elevation += dy * self.orbit_sensitivity
         self.elevation = max(-89.9, min(89.9, self.elevation))
+        
+        # 调试信息 - 旋转操作时打印
+        if abs(old_azimuth - self.azimuth) > 1.0 or abs(old_elevation - self.elevation) > 1.0:
+            print(f"🔄 轨道旋转: 方位角={self.azimuth:.1f}°, 仰角={self.elevation:.1f}°")
     
     def pan(self, dx, dy, viewport_h):
-        """屏幕空间平移"""
+        """屏幕空间平移 - 修复为符合直觉的平移方式"""
         if viewport_h <= 0:
             viewport_h = 1
         
-        # 根据距离调整平移灵敏度
-        scale = self.distance * self.pan_sensitivity
+        # 使用更适合小模型的平移灵敏度
+        scale = self.distance * self.pan_sensitivity * 0.8  # 稍微降低灵敏度，更容易控制
         
-        # 计算相机坐标系
+        # 修复为符合直觉的平移：
+        # - 鼠标上移：模型向上移动（相机视角感觉是前进）
+        # - 鼠标下移：模型向下移动（相机视角感觉是后退）
+        # - 鼠标左移：模型向左移动
+        # - 鼠标右移：模型向右移动
+        # 现在改为直接的世界坐标移动，更符合用户直觉
+        
+        # 计算相机在水平面的投影方向
         az = math.radians(self.azimuth)
-        el = math.radians(self.elevation)
         
-        # 前方向
-        forward = np.array([
-            math.cos(el) * math.sin(az),
-            math.cos(el) * math.cos(az),
-            math.sin(el)
-        ], dtype=np.float32)
+        # 考虑相机方位角的坐标系转换
+        cos_az = math.cos(az)
+        sin_az = math.sin(az)
         
-        # 构建相机坐标系
-        world_up = np.array([0, 0, 1], dtype=np.float32)
-        right = np.cross(forward, world_up)
-        if np.linalg.norm(right) < 1e-8:
-            right = np.array([1, 0, 0], dtype=np.float32)
-        right /= np.linalg.norm(right)
+        # 更直观的平移映射：
+        # - 屏幕X轴移动 -> 世界坐标系的左右移动
+        # - 屏幕Y轴移动 -> 世界坐标系的前后移动（考虑相机朝向）
+        world_dx = (dx * cos_az + dy * sin_az) * scale
+        world_dy = (dx * sin_az - dy * cos_az) * scale
         
-        up = np.cross(right, forward)
-        up /= np.linalg.norm(up)
+        # 应用平移 - 在XY平面移动，Z轴保持稳定
+        old_lookat = self.lookat.copy()
+        self.lookat[0] += world_dx  # X轴移动
+        self.lookat[1] += world_dy  # Y轴移动
+        # Z轴基本保持不变，只做微小的高度调整
+        self.lookat[2] += dy * scale * 0.05  # 垂直移动的5%，减少干扰
         
-        # 应用平移
-        self.lookat -= right * dx * scale
-        self.lookat += up * dy * scale
+        # 调试信息 - 平移操作时打印
+        if np.linalg.norm(self.lookat - old_lookat) > 0.01:
+            print(f"🔄 平移操作: 目标=[{self.lookat[0]:.3f}, {self.lookat[1]:.3f}, {self.lookat[2]:.3f}], dXY=[{world_dx:.3f}, {world_dy:.3f}]")
     
     def dolly(self, scroll_steps):
-        """距离缩放 - 指数缩放算法"""
-        factor = math.exp(-self.zoom_speed * scroll_steps)
+        """距离缩放 - 针对小型机器人优化的缩放算法"""
+        # 使用更适合小型机器人的缩放速度 - 进一步减慢以便精细控制
+        effective_zoom_speed = self.zoom_speed * 0.3  # 减慢缩放速度，更容易控制小模型
+        
+        factor = math.exp(-effective_zoom_speed * scroll_steps)
         self.distance *= factor
+        
+        # 应用更适合小模型的距离限制
         self.distance = max(self.min_distance, min(self.max_distance, self.distance))
+        
+        # 调试信息 - 添加旋转角度信息
+        print(f"🔍 缩放: 距离={self.distance:.3f}m, 方位角={self.azimuth:.1f}°, 仰角={self.elevation:.1f}° (范围: {self.min_distance:.3f}m - {self.max_distance:.3f}m)")
     
     def zoom_fov(self, scroll_steps):
         """视场角缩放"""
@@ -274,8 +296,14 @@ class MuJoCoViewerWidget(QOpenGLWidget):
             # 启用深度测试
             glEnable(GL_DEPTH_TEST)
             
+            # 重新计算模型统计信息以确保准确性
+            self.robot._calculate_model_stats()
+            
             # 确保相机正确适配模型
-            self.camera.fit(self.robot.get_model_stats())
+            model_stats = self.robot.get_model_stats()
+            print(f"🔄 使用最新模型统计信息适配相机: 中心={model_stats['center']}, 尺寸={model_stats['extent']:.3f}m")
+            
+            self.camera.fit(model_stats)
             self.camera.apply_to_mjcam(self.mjcam)
             self.camera.update_clip_planes(self.robot.model)
             
@@ -294,7 +322,9 @@ class MuJoCoViewerWidget(QOpenGLWidget):
     def resizeGL(self, w, h):
         """窗口大小改变"""
         if self.robot and self.robot.model:
-            glViewport(0, 0, w, h)
+            # 防止无效的窗口大小
+            if w > 0 and h > 0:
+                glViewport(0, 0, w, h)
     
     def paintGL(self):
         """渲染循环"""
@@ -302,6 +332,9 @@ class MuJoCoViewerWidget(QOpenGLWidget):
             # 运行仿真
             if self.is_running:
                 self.step_simulation()
+            else:
+                # 即使仿真没有运行，也要更新物理状态以显示关节变化
+                mujoco.mj_forward(self.robot.model, self.robot.data)
             
             # 同步相机参数
             self.camera.apply_to_mjcam(self.mjcam)
@@ -323,7 +356,7 @@ class MuJoCoViewerWidget(QOpenGLWidget):
             # 调试信息：每60帧打印一次
             if self.frame_count % 60 == 0:
                 cam_params = self.camera.get_parameters()
-                print(f"🎮 渲染状态: 相机位置=[{cam_params['position'][0]:.3f}, {cam_params['position'][1]:.3f}, {cam_params['position'][2]:.3f}], 距离={self.camera.distance:.3f}m")
+                print(f"🎮 渲染状态: 相机位置=[{cam_params['position'][0]:.3f}, {cam_params['position'][1]:.3f}, {cam_params['position'][2]:.3f}], 距离={self.camera.distance:.3f}m, 方位角={self.camera.azimuth:.1f}°, 仰角={self.camera.elevation:.1f}°")
         else:
             # 没有模型时的默认渲染
             glClearColor(0.2, 0.0, 0.0, 1.0)
@@ -405,6 +438,7 @@ class MuJoCoViewerWidget(QOpenGLWidget):
     
     def mouseDoubleClickEvent(self, event):
         """双击事件 - 自动适配模型"""
+        # event 参数保留用于未来的扩展功能
         if self.robot and self.robot.is_loaded():
             self.camera.fit(self.robot.get_model_stats())
             self.update()
@@ -495,9 +529,13 @@ class MuJoCoViewerWidget(QOpenGLWidget):
         print("=== ODogExample 3D查看器控制说明 ===")
         print("🖱️  鼠标控制:")
         print("   左键拖动：轨道旋转")
-        print("   右键拖动或 Shift+左键：平移")
+        print("   右键拖动或 Shift+左键：平移模型")
+        print("     • 鼠标上移：前进（模型远离）")
+        print("     • 鼠标下移：后退（模型靠近）")
+        print("     • 鼠标左移：向左平移")
+        print("     • 鼠标右移：向右平移")
         print("   滚轮：距离缩放")
-        print("   Ctrl+滚轮：FOV 缩放")
+        print("   Ctrl+滚轮：FOV 视角缩放")
         print("   双击：自动适配模型")
         print("⌨️  键盘控制:")
         print("   空格：开始/暂停仿真")

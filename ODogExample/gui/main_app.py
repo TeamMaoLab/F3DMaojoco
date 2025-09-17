@@ -30,6 +30,7 @@ class MainApplication(QMainWindow):
         # 窗口设置
         self.setWindowTitle("ODogExample - 8自由度四足机器狗开发平台")
         self.resize(1200, 800)
+        self.setMinimumSize(800, 600)  # 设置最小窗口尺寸
         
         # 创建中央窗口
         central_widget = QWidget()
@@ -42,11 +43,11 @@ class MainApplication(QMainWindow):
         # 创建3D查看器
         self.viewer = self._create_viewer()
         if self.viewer:
-            main_layout.addWidget(self.viewer, stretch=3)
+            main_layout.addWidget(self.viewer, stretch=2)
             
-            # 创建信息面板
-            info_panel = self._create_info_panel()
-            main_layout.addWidget(info_panel, stretch=1)
+            # 创建控制面板
+            control_panel = self._create_control_panel()
+            main_layout.addWidget(control_panel, stretch=1)
         else:
             # 如果查看器创建失败，显示错误信息
             error_label = QLabel("❌ 无法初始化3D查看器")
@@ -74,6 +75,64 @@ class MainApplication(QMainWindow):
         except Exception as e:
             print(f"❌ 创建3D查看器失败: {e}")
             return None
+    
+    def _create_control_panel(self) -> Optional[QWidget]:
+        """创建控制面板"""
+        try:
+            # 尝试相对导入，如果失败则使用绝对导入
+            try:
+                from .control_panels import create_control_panel
+            except ImportError:
+                import sys
+                import os
+                sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                from gui.control_panels import create_control_panel
+            
+            # 获取机器人模型
+            robot = None
+            if self.viewer and self.viewer.robot:
+                robot = self.viewer.robot
+            
+            # 创建控制面板
+            panel = create_control_panel(robot)
+            
+            # 连接信号
+            if panel:
+                panel.jointAngleChanged.connect(self._on_joint_angle_changed)
+                panel.allJointsZero.connect(self._on_all_joints_zero)
+                panel.allJointsReset.connect(self._on_all_joints_reset)
+                panel.poseSaved.connect(self._on_pose_saved)
+            
+            print("🎛️  控制面板创建成功")
+            return panel
+            
+        except Exception as e:
+            print(f"❌ 创建控制面板失败: {e}")
+            # 返回简单的错误显示
+            error_label = QLabel("❌ 控制面板加载失败")
+            error_label.setAlignment(Qt.AlignCenter)
+            error_label.setStyleSheet("color: red; padding: 20px;")
+            return error_label
+    
+    def _on_joint_angle_changed(self, joint_name: str, angle: float):
+        """关节角度改变处理"""
+        # 触发3D视图重新渲染以显示关节变化
+        if self.viewer:
+            self.viewer.update()
+    
+    def _on_all_joints_zero(self):
+        """所有关节归零处理"""
+        print("🔄 应用层响应：所有关节已归零")
+    
+    def _on_all_joints_reset(self):
+        """所有关节重置处理"""
+        print("🔙 应用层响应：所有关节已重置")
+    
+    def _on_pose_saved(self, pose_name: str, pose_data: dict):
+        """姿态保存处理"""
+        print(f"💾 应用层响应：姿态 {pose_name} 已保存")
+        # 更新状态栏
+        self.statusBar().showMessage(f"姿态已保存: {pose_name}", 3000)
     
     def _create_info_panel(self) -> QWidget:
         """创建信息面板"""
@@ -150,11 +209,14 @@ class MainApplication(QMainWindow):
         
         controls = [
             "🖱️ 左键拖动：轨道旋转",
-            "🖱️ 右键拖动：平移",
-            "🖱️ 滚轮：缩放",
-            "⌨️ 空格：开始/暂停",
+            "🖱️ 右键拖动：平移模型",
+            "   • 上移：前进    下移：后退",
+            "   • 左移：左平移  右移：右平移",
+            "🖱️ 滚轮：缩放距离",
+            "🖱️ Ctrl+滚轮：调整视野",
+            "⌨️ 空格：开始/暂停仿真",
             "⌨️ R/F：重置视角",
-            "⌨️ 双击：自动适配"
+            "⌨️ 双击：自动适配模型"
         ]
         
         for control in controls:

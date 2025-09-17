@@ -100,71 +100,86 @@ class RobotModel:
         self.nu = self.model.nu
     
     def _calculate_model_stats(self):
-        """计算模型统计信息 - 优先使用手动计算以排除地面"""
+        """计算模型统计信息 - 综合使用几何体和body位置"""
         if not self.model or not self.data:
             return
         
         try:
-            # 手动计算模型边界，排除地面等大型几何体
-            geom_positions = []
+            # 收集几何体和body位置信息
+            all_positions = []
             geom_count = 0
             large_geom_count = 0
             
+            # 收集有效的几何体信息
             for i in range(self.model.ngeom):
                 geom = self.model.geom(i)
                 geom_pos = geom.pos.copy()
                 geom_size = geom.size.copy()
-                
                 geom_count += 1
                 
-                # 跳过过大的几何体（可能是地面）
-                if np.any(geom_size > 2.0):  # 大于2米的几何体可能是地面
+                # 跳过过大的几何体（地面）
+                if geom_size is not None and np.any(geom_size > 5.0):
                     large_geom_count += 1
                     continue
                 
-                geom_positions.append(geom_pos)
+                # 添加几何体的边界点
+                all_positions.extend([
+                    geom_pos - geom_size,
+                    geom_pos + geom_size
+                ])
             
-            print(f"📊 几何体统计: 总数={geom_count}, 大型几何体={large_geom_count}, 有效几何体={len(geom_positions)}")
+            # 收集body位置信息
+            for i in range(1, self.model.nbody):
+                body_pos = self.data.xpos[i].copy()
+                all_positions.append(body_pos)
             
-            if geom_positions:
-                geom_positions = np.array(geom_positions)
-                min_pos = np.min(geom_positions, axis=0)
-                max_pos = np.max(geom_positions, axis=0)
+            print(f"📊 统计信息: 几何体总数={geom_count}, 大型几何体={large_geom_count}, 总采样点={len(all_positions)}")
+            
+            if all_positions:
+                all_positions = np.array(all_positions)
+                
+                # 计算边界和中心
+                min_pos = np.min(all_positions, axis=0)
+                max_pos = np.max(all_positions, axis=0)
                 center = (min_pos + max_pos) / 2
                 extent = np.max(max_pos - min_pos)
                 
-                print(f"📏 手动计算模型尺寸: {extent:.3f}m")
-                print(f"🎯 手动计算模型中心: [{center[0]:.3f}, {center[1]:.3f}, {center[2]:.3f}]")
-            else:
-                # 如果没有有效几何体，使用body位置
-                body_positions = []
-                for i in range(1, min(self.model.nbody, 10)):  # 跳过worldbody，限制数量
-                    body_pos = self.data.xpos[i].copy()
-                    body_positions.append(body_pos)
-                
-                if body_positions:
-                    body_positions = np.array(body_positions)
-                    center = np.mean(body_positions, axis=0)
-                    # 基于body位置估算范围
-                    distances = [np.linalg.norm(pos - center) for pos in body_positions]
-                    extent = max(distances) * 2 if distances else 0.1
-                    extent = max(extent, 0.1)  # 最小范围
+                # 如果范围太小，使用基于关节位置的估算
+                if extent < 0.05:  # 小于5cm
+                    # 使用关节位置进行估算
+                    joint_positions = []
+                    for i in range(self.model.njnt):
+                        joint_pos = self.data.xpos[self.model.jnt_bodyid[i]].copy()
+                        joint_positions.append(joint_pos)
                     
-                    print(f"📏 基于Body位置计算尺寸: {extent:.3f}m")
-                    print(f"🎯 基于Body位置计算中心: [{center[0]:.3f}, {center[1]:.3f}, {center[2]:.3f}]")
-                else:
-                    # 最后的默认值
-                    center = np.array([0.0, 0.0, 0.05])
-                    extent = 0.2
-                    print(f"📏 使用默认值: 尺寸={extent:.3f}m, 中心=[{center[0]:.3f}, {center[1]:.3f}, {center[2]:.3f}]")
+                    if joint_positions:
+                        joint_positions = np.array(joint_positions)
+                        joint_center = np.mean(joint_positions, axis=0)
+                        joint_distances = [np.linalg.norm(pos - joint_center) for pos in joint_positions]
+                        joint_extent = max(joint_distances) * 2.5 if joint_distances else 0.1
+                        
+                        # 混合使用两种计算结果
+                        center = (center + joint_center) / 2
+                        extent = max(extent, joint_extent)
+                
+                print(f"📏 综合计算模型尺寸: {extent:.3f}m")
+                print(f"🎯 综合计算模型中心: [{center[0]:.3f}, {center[1]:.3f}, {center[2]:.3f}]")
+                print(f"📦 模型边界: [{min_pos[0]:.3f}, {min_pos[1]:.3f}, {min_pos[2]:.3f}] 到 [{max_pos[0]:.3f}, {max_pos[1]:.3f}, {max_pos[2]:.3f}]")
+            else:
+                # 如果没有数据，使用默认值
+                center = np.array([0.0, 0.0, 0.05])
+                extent = 0.15
+                print(f"📏 使用默认值: 尺寸={extent:.3f}m, 中心=[{center[0]:.3f}, {center[1]:.3f}, {center[2]:.3f}]")
             
-            # 确保有合理的值
-            extent = max(extent, 0.05)  # 最小5cm
-            extent = min(extent, 1.0)   # 最大1m（适合小型机器人）
+            # 确保合理的尺寸范围
+            extent = max(extent, 0.08)  # 最小8cm
+            extent = min(extent, 0.6)   # 最大60cm
             
             self.model_stats = {
                 'center': center,
                 'extent': extent,
+                'min_pos': min_pos if all_positions else center - extent/2,
+                'max_pos': max_pos if all_positions else center + extent/2,
                 'num_geoms': self.model.ngeom,
                 'num_bodies': self.model.nbody,
                 'num_joints': self.model.njnt
@@ -172,10 +187,11 @@ class RobotModel:
             
         except Exception as e:
             print(f"⚠️  计算模型统计信息失败: {e}")
-            # 提供安全的默认值 - 适合小型机器人的合理值
             self.model_stats = {
                 'center': np.array([0.0, 0.0, 0.05]),
-                'extent': 0.2,
+                'extent': 0.15,
+                'min_pos': np.array([-0.075, -0.075, 0.0]),
+                'max_pos': np.array([0.075, 0.075, 0.1]),
                 'num_geoms': self.model.ngeom,
                 'num_bodies': self.model.nbody,
                 'num_joints': self.model.njnt
