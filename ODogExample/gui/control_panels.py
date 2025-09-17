@@ -1,7 +1,7 @@
 """
 ODogExample GUI模块 - 执行器控制面板
 
-提供8自由度关节的实时控制界面，包括滑块控制、对称编辑、快速操作等功能。
+提供8自由度关节的实时控制界面，包括滑块控制、快速操作等功能。
 """
 
 import sys
@@ -394,6 +394,11 @@ class ControlPanel(QWidget):
         # 当前姿态数据
         self.current_pose = self.joint_mapping.get_default_pose()
         
+        # 相机控制组件
+        self.camera_status_label = None
+        self.tracking_btn_ref = None
+        self.refocus_btn_ref = None
+        
         # 设置尺寸策略，防止过度扩展
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
         self.setMaximumWidth(400)  # 限制最大宽度
@@ -449,10 +454,11 @@ class ControlPanel(QWidget):
         precision_group = self.create_precision_control_group()
         main_layout.addWidget(precision_group)
         
-        # 对称控制选项
-        symmetry_group = self.create_symmetry_control_group()
-        main_layout.addWidget(symmetry_group)
-        
+          
+        # 相机控制区域
+        camera_group = self.create_camera_control_group()
+        main_layout.addWidget(camera_group)
+          
         # 姿态操作区域
         pose_group = self.create_pose_control_group()
         main_layout.addWidget(pose_group)
@@ -523,22 +529,63 @@ class ControlPanel(QWidget):
         group.setLayout(layout)
         return group
     
-    def create_symmetry_control_group(self) -> QGroupBox:
-        """创建对称控制组"""
-        group = QGroupBox("🔄 对称控制")
+    def create_camera_control_group(self) -> QGroupBox:
+        """创建相机控制组"""
+        group = QGroupBox("📷 相机控制")
         layout = QVBoxLayout()
         
-        # 对称编辑开关
-        self.symmetry_checkbox = QCheckBox("启用对称编辑")
-        self.symmetry_checkbox.setToolTip("编辑一个关节时，自动同步编辑对称关节")
-        layout.addWidget(self.symmetry_checkbox)
+        # 相机跟踪状态
+        self.camera_status_label = QLabel("🎯 相机跟踪: 开启")
+        self.camera_status_label.setStyleSheet("background-color: #e8f5e8; padding: 5px; border: 1px solid #4caf50; color: #2e7d32;")
+        layout.addWidget(self.camera_status_label)
         
-        # 对称模式说明
-        info_label = QLabel("• 左前腿 ↔ 右前腿\n• 左后腿 ↔ 右后腿\n• 髋关节 ↔ 髋关节\n• 膝关节 ↔ 膝关节")
-        info_label.setStyleSheet("color: #666; font-size: 10px;")
+        # 相机控制按钮
+        button_layout = QHBoxLayout()
+        
+        self.tracking_btn = QPushButton("🔄 切换跟踪")
+        self.tracking_btn.setCheckable(True)
+        self.tracking_btn.setChecked(True)
+        self.tracking_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4caf50;
+                color: white;
+                font-weight: bold;
+                padding: 8px;
+                border: none;
+                border-radius: 4px;
+            }
+            QPushButton:checked {
+                background-color: #2196f3;
+            }
+        """)
+        
+        self.refocus_btn = QPushButton("🎯 重新聚焦")
+        self.refocus_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #ff9800;
+                color: white;
+                font-weight: bold;
+                padding: 8px;
+                border: none;
+                border-radius: 4px;
+            }
+        """)
+        
+        button_layout.addWidget(self.tracking_btn)
+        button_layout.addWidget(self.refocus_btn)
+        layout.addLayout(button_layout)
+        
+        # 说明文字
+        info_label = QLabel("• T键: 切换跟踪模式\n• L键: 重新聚焦机器人\n• 跟踪关闭时相机固定")
+        info_label.setStyleSheet("color: #666; font-size: 10px; background-color: #f9f9f9; padding: 5px; border: 1px solid #eee;")
         layout.addWidget(info_label)
         
         group.setLayout(layout)
+        
+        # 存储按钮引用以便外部访问
+        self.tracking_btn_ref = self.tracking_btn
+        self.refocus_btn_ref = self.refocus_btn
+        
         return group
     
     def create_pose_control_group(self) -> QGroupBox:
@@ -573,6 +620,12 @@ class ControlPanel(QWidget):
         for leg_group in self.leg_groups.values():
             for joint_widget in leg_group.joint_widgets.values():
                 joint_widget.valueChanged.connect(self.on_joint_angle_changed)
+        
+        # 连接相机控制按钮信号
+        if self.tracking_btn_ref:
+            self.tracking_btn_ref.toggled.connect(self.on_camera_tracking_toggled)
+        if self.refocus_btn_ref:
+            self.refocus_btn_ref.clicked.connect(self.on_camera_refocus)
     
     def on_joint_angle_changed(self, joint_name: str, angle: float):
         """关节角度改变处理"""
@@ -583,16 +636,7 @@ class ControlPanel(QWidget):
         if self.robot_model:
             self.robot_model.set_joint_angle(joint_name, angle)
         
-        # 对称编辑（避免递归调用）
-        if self.symmetry_checkbox.isChecked():
-            symmetric_joint = self.joint_mapping.get_symmetric_joint(joint_name)
-            if symmetric_joint and symmetric_joint in self.current_pose:
-                # 设置对称关节角度（不发送信号，避免重复触发）
-                for leg_group in self.leg_groups.values():
-                    if symmetric_joint in leg_group.joint_widgets:
-                        leg_group.joint_widgets[symmetric_joint].set_angle(angle, emit_signal=False)
-                        break
-        
+          
         # 更新姿态信息
         self.update_pose_info()
         
@@ -681,6 +725,25 @@ class ControlPanel(QWidget):
         for leg_group in self.leg_groups.values():
             leg_group.set_joint_angles(pose_data)
         print(f"🎯 姿态已设置: {len(pose_data)} 个关节")
+    
+    def on_camera_tracking_toggled(self, checked: bool):
+        """相机跟踪开关切换"""
+        status = "🎯 开启" if checked else "🔒 关闭"
+        
+        # 更新状态标签
+        if self.camera_status_label:
+            if checked:
+                self.camera_status_label.setText(f"相机跟踪: {status}")
+                self.camera_status_label.setStyleSheet("background-color: #e8f5e8; padding: 5px; border: 1px solid #4caf50; color: #2e7d32;")
+            else:
+                self.camera_status_label.setText(f"相机跟踪: {status}")
+                self.camera_status_label.setStyleSheet("background-color: #ffebee; padding: 5px; border: 1px solid #f44336; color: #c62828;")
+        
+        print(f"{status} 相机跟踪")
+    
+    def on_camera_refocus(self):
+        """重新聚焦相机到机器人"""
+        print("🎯 重新聚焦到机器人位置")
 
 
 def create_control_panel(robot_model: Optional[RobotModel] = None) -> ControlPanel:

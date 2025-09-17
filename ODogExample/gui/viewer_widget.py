@@ -35,10 +35,7 @@ class OrbitCamera:
         self.lookat = np.array([0.0, 0.0, 0.0], dtype=np.float32)  # 观察目标
         self.fovy = 45.0          # 视场角
         
-        # 跟踪参数
-        self.track_robot = True  # 是否跟踪机器人
-        self.robot_offset = np.array([0.0, 0.0, 0.02], dtype=np.float32)  # 相对于机器人的偏移
-        
+                
         # 控制参数 - 针对小型模型优化
         self.orbit_sensitivity = 0.35    # 旋转灵敏度
         self.pan_sensitivity = 0.0015    # 平移灵敏度 - 降低以便更精细控制
@@ -59,11 +56,8 @@ class OrbitCamera:
         extent = model_stats.get('extent', 0.15)
         center = model_stats.get('center', np.array([0.0, 0.0, 0.029]))
         
-        # 启用机器人跟踪
-        self.track_robot = True
-        
-        # 设置观察目标为机器人中心 + 偏移
-        self.lookat[:] = center + self.robot_offset
+        # 设置观察目标为模型中心（机器人位置）
+        self.lookat[:] = center
         
         # 使用更适合观察机器人的相机参数
         self.distance = 0.150  # 15cm观察距离
@@ -76,7 +70,6 @@ class OrbitCamera:
         
         print(f"📷 相机适配: 距离={self.distance:.3f}m, 目标=[{self.lookat[0]:.3f}, {self.lookat[1]:.3f}, {self.lookat[2]:.3f}]")
         print(f"📏 模型尺寸: {extent:.3f}m, 角度: Az={self.azimuth:.1f}°, El={self.elevation:.1f}°")
-        print(f"🎯 启用机器人跟踪模式")
     
     def apply_to_mjcam(self, mjcam):
         """应用到MuJoCo相机"""
@@ -89,15 +82,9 @@ class OrbitCamera:
         # FOV 需要通过 model.vis.global.fovy 设置
         # 这里不设置，将在渲染循环中处理
     
-    def update_robot_position(self, robot_position):
-        """更新机器人位置 - 实现跟踪效果"""
-        if self.track_robot:
-            # 更新观察目标为机器人位置 + 偏移
-            self.lookat[:] = robot_position + self.robot_offset
-            print(f"🔄 更新相机跟踪目标: [{self.lookat[0]:.3f}, {self.lookat[1]:.3f}, {self.lookat[2]:.3f}]")
-    
+        
     def orbit(self, dx, dy):
-        """球坐标轨道旋转"""
+        """球坐标轨道旋转 - 围绕机器人位置旋转"""
         # 方位角旋转（水平方向）
         old_azimuth = self.azimuth
         self.azimuth = (self.azimuth + dx * self.orbit_sensitivity) % 360.0
@@ -260,6 +247,11 @@ class MuJoCoViewerWidget(QOpenGLWidget):
         self.last_pos = None
         self.interaction_mode = None
         
+        # 机器人位置跟踪优化
+        self.initial_robot_position = None
+        self.last_camera_update_time = 0
+        self.camera_tracking_enabled = True  # 默认开启相机跟踪
+        
         # 仿真控制
         self.is_running = False
         self.simulation_time = 0.0
@@ -370,44 +362,56 @@ class MuJoCoViewerWidget(QOpenGLWidget):
             if self.is_running:
                 self.step_simulation()
             else:
-                # 优化：使用更稳定的物理计算策略
-                needs_physics = False
-                
-                # 检查是否需要进行物理计算
+                # 优化：直接进行物理计算以提高响应速度
+                # 设置执行器控制信号并立即进行物理计算
                 if self.robot.model.nu > 0:
                     for i in range(self.robot.model.nu):
-                        # 设置执行器控制信号
                         actuator = self.robot.model.actuator(i)
                         joint_id = actuator.trnid[0]
                         joint_addr = self.robot.model.jnt_qposadr[joint_id]
                         current_angle = self.robot.data.qpos[joint_addr]
                         self.robot.data.ctrl[i] = current_angle
-                        
-                        # 检查是否需要物理计算
-                        if abs(current_angle) > 0.001:
-                            needs_physics = True
                 
-                # 根据需要选择计算方式
-                if needs_physics:
-                    # 需要物理计算时，进行少量步数以确保稳定性
-                    for _ in range(1):  # 只进行1步，避免过度计算
-                        mujoco.mj_step(self.robot.model, self.robot.data)
-                else:
-                    # 静态状态下，只需要前向动力学
-                    mujoco.mj_forward(self.robot.model, self.robot.data)
+                # 直接进行多步物理计算以提高响应速度
+                for _ in range(2):  # 减少到2步物理计算，避免震荡
+                    mujoco.mj_step(self.robot.model, self.robot.data)
             
-            # 更新机器人位置跟踪（每10帧更新一次以提高性能）
-            if self.frame_count % 10 == 0:
-                # 获取机器人基座位置
-                robot_pos = self.robot.data.xpos[1].copy()  # body 1 是基座
-                self.camera.update_robot_position(robot_pos)
-            
+                        
             # 同步相机参数
             self.camera.apply_to_mjcam(self.mjcam)
             self.camera.update_clip_planes(self.robot.model)
             
             # 设置视口
             viewport = mujoco.MjrRect(0, 0, self.width(), self.height())
+            
+            # 智能相机跟踪 - 根据开关状态决定是否跟踪
+            if self.camera_tracking_enabled:
+                robot_center = self.robot.data.xpos[1].copy()  # 获取base body的位置
+                
+                # 记录初始位置
+                if self.initial_robot_position is None:
+                    self.initial_robot_position = robot_center.copy()
+                    self.mjcam.lookat[:] = self.initial_robot_position
+                    self.camera.lookat[:] = self.initial_robot_position
+                    print(f"📍 设置初始相机中心: [{self.initial_robot_position[0]:.3f}, {self.initial_robot_position[1]:.3f}, {self.initial_robot_position[2]:.3f}]")
+                
+                # 只有在机器人显著移动时才更新相机中心
+                xy_distance = np.sqrt((robot_center[0] - self.mjcam.lookat[0])**2 + 
+                                     (robot_center[1] - self.mjcam.lookat[1])**2)
+                z_distance = abs(robot_center[2] - self.mjcam.lookat[2])
+                
+                # 更保守的阈值：XY平面10cm，Z轴5cm
+                import time
+                current_time = time.time()
+                # 至少间隔1秒才允许再次更新
+                time_since_last_update = current_time - self.last_camera_update_time
+                
+                if (xy_distance > 0.1 or z_distance > 0.05) and time_since_last_update > 1.0:
+                    self.mjcam.lookat[:] = robot_center
+                    self.camera.lookat[:] = robot_center
+                    self.last_camera_update_time = current_time
+                    print(f"🔄 更新相机中心: XY={xy_distance:.3f}m, Z={z_distance:.3f}m")
+            # 如果相机跟踪关闭，不进行任何自动更新，保持当前视角
             
             # 更新和渲染场景
             mujoco.mjv_updateScene(
@@ -433,22 +437,23 @@ class MuJoCoViewerWidget(QOpenGLWidget):
                 print(f"⚠️  渲染状态异常: robot={self.robot is not None}, model={self.robot.model if self.robot else None}, mjcam={self.mjcam}")
     
     def step_simulation(self, dt_target=1/60.0):
-        """优化：使用更小的timestep进行高精度仿真"""
+        """优化：提高物理仿真响应速度"""
         if not self.robot or not self.robot.model:
             return
         
         start = self.robot.data.time
         steps = 0
-        max_steps = 200  # 由于timestep变小，需要更多步数
+        max_steps = 60  # 减少最大步数以提高响应速度
         
         while (self.robot.data.time - start) < dt_target and steps < max_steps:
-            self.robot.step_simulation()
+            # 直接调用mj_step以提高性能
+            mujoco.mj_step(self.robot.model, self.robot.data)
             steps += 1
         
         self.simulation_time = self.robot.data.time
         
         # 调试信息：减少输出频率
-        if steps > 50 and self.frame_count % 120 == 0:
+        if steps > 10 and self.frame_count % 120 == 0:
             print(f"⚡ 仿真步数: {steps}, 时间: {self.simulation_time:.3f}s")
     
     def update_fps(self):
@@ -535,14 +540,12 @@ class MuJoCoViewerWidget(QOpenGLWidget):
             # 打印性能信息
             print(f"⚡ FPS: {self.current_fps:.1f}")
         elif key == Qt.Key_T:
-            # 切换机器人跟踪模式
-            self.camera.track_robot = not self.camera.track_robot
-            status = "启用" if self.camera.track_robot else "禁用"
-            print(f"🎯 机器人跟踪模式: {status}")
-            if self.camera.track_robot and self.robot:
-                # 重新适配相机
-                self.camera.fit(self.robot.get_model_stats())
-    
+            # 切换相机跟踪模式
+            self.toggle_camera_tracking()
+        elif key == Qt.Key_L:
+            # 重新聚焦到机器人
+            self.refocus_camera()
+            
     def keyReleaseEvent(self, event):
         """键盘释放"""
         self.input_handler.keyboard_modifiers[event.modifiers()] = False
@@ -572,11 +575,42 @@ class MuJoCoViewerWidget(QOpenGLWidget):
         status = "🚀 运行" if self.is_running else "⏸️ 暂停"
         print(f"{status} 仿真")
     
+    def toggle_camera_tracking(self):
+        """切换相机跟踪模式"""
+        self.camera_tracking_enabled = not self.camera_tracking_enabled
+        status = "🎯 开启" if self.camera_tracking_enabled else "🔒 关闭"
+        print(f"{status} 相机跟踪")
+        
+        if self.camera_tracking_enabled:
+            # 重新开启跟踪时，立即更新到机器人位置
+            self.refocus_camera()
+    
+    def refocus_camera(self):
+        """重新聚焦到机器人当前位置"""
+        if self.robot and self.robot.model:
+            # 获取当前机器人位置
+            robot_center = self.robot.data.xpos[1].copy()
+            
+            # 更新相机中心
+            self.mjcam.lookat[:] = robot_center
+            self.camera.lookat[:] = robot_center
+            self.initial_robot_position = robot_center.copy()
+            self.last_camera_update_time = 0
+            
+            print(f"🎯 重新聚焦到机器人位置: [{robot_center[0]:.3f}, {robot_center[1]:.3f}, {robot_center[2]:.3f}]")
+            
+            # 触发重新渲染
+            self.update()
+    
     def set_robot_model(self, robot_model: RobotModel):
         """设置机器人模型"""
         self.robot = robot_model
         
         if self.robot and self.robot.is_loaded():
+            # 重置相机跟踪状态
+            self.initial_robot_position = None
+            self.last_camera_update_time = 0
+            
             # 适配相机
             self.camera.fit(self.robot.get_model_stats())
             
@@ -606,7 +640,7 @@ class MuJoCoViewerWidget(QOpenGLWidget):
         """打印控制说明"""
         print("=== ODogExample 3D查看器控制说明 ===")
         print("🖱️  鼠标控制:")
-        print("   左键拖动：轨道旋转（绕机器人）")
+        print("   左键拖动：轨道旋转（围绕机器人中心）")
         print("   右键拖动或 Shift+左键：平移模型")
         print("     • 鼠标上移：前进（模型远离）")
         print("     • 鼠标下移：后退（模型靠近）")
@@ -618,13 +652,15 @@ class MuJoCoViewerWidget(QOpenGLWidget):
         print("⌨️  键盘控制:")
         print("   空格：开始/暂停仿真")
         print("   R/F：重置相机视角")
-        print("   T：切换机器人跟踪模式")
         print("   C：打印相机参数")
         print("   P：打印性能信息")
-        print("🎯 相机特性:")
-        print("   • 默认启用机器人跟踪模式")
-        print("   • 相机会自动跟随机器人移动")
-        print("   • 旋转时围绕机器人中心进行")
+        print("   T：切换相机跟踪模式")
+        print("   L：重新聚焦到机器人位置")
+        print("🎯 相机跟踪:")
+        print("   默认开启：自动跟踪机器人位置")
+        print("   按T键：关闭/开启跟踪模式")
+        print("   按L键：手动重新聚焦到机器人")
+        print("   跟踪关闭时：相机保持固定视角")
         print("=" * 40)
 
 

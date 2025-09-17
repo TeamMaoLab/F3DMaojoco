@@ -102,6 +102,12 @@ class MainApplication(QMainWindow):
                 panel.allJointsZero.connect(self._on_all_joints_zero)
                 panel.allJointsReset.connect(self._on_all_joints_reset)
                 panel.poseSaved.connect(self._on_pose_saved)
+                
+                # 连接相机控制信号到查看器
+                if panel.tracking_btn_ref:
+                    panel.tracking_btn_ref.toggled.connect(self.viewer.toggle_camera_tracking)
+                if panel.refocus_btn_ref:
+                    panel.refocus_btn_ref.clicked.connect(self.viewer.refocus_camera)
             
             print("🎛️  控制面板创建成功")
             return panel
@@ -208,7 +214,7 @@ class MainApplication(QMainWindow):
         layout.addWidget(controls_title)
         
         controls = [
-            "🖱️ 左键拖动：轨道旋转",
+            "🖱️ 左键拖动：轨道旋转（围绕机器人）",
             "🖱️ 右键拖动：平移模型",
             "   • 上移：前进    下移：后退",
             "   • 左移：左平移  右移：右平移",
@@ -216,6 +222,8 @@ class MainApplication(QMainWindow):
             "🖱️ Ctrl+滚轮：调整视野",
             "⌨️ 空格：开始/暂停仿真",
             "⌨️ R/F：重置视角",
+            "⌨️ T：切换相机跟踪",
+            "⌨️ L：重新聚焦机器人",
             "⌨️ 双击：自动适配模型"
         ]
         

@@ -312,7 +312,7 @@ class RobotModel:
     
     def step_simulation(self, dt: float = 1/60.0) -> bool:
         """
-        执行一步仿真
+        执行一步仿真 - 优化版本
         
         Args:
             dt: 时间步长
