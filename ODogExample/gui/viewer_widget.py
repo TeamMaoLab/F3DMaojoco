@@ -265,10 +265,10 @@ class MuJoCoViewerWidget(QOpenGLWidget):
         self.last_fps_time = 0
         self.current_fps = 0.0
         
-        # 初始化定时器
+        # 初始化定时器 - 优化：降低到30FPS以提高性能
         self.timer = QTimer()
         self.timer.timeout.connect(self.update)
-        self.timer.start(16)  # ~60 FPS
+        self.timer.start(33)  # ~30 FPS，更好的性能
         
         print(f"🔧 MuJoCoViewerWidget 初始化完成，robot: {self.robot is not None}")
         
@@ -283,15 +283,19 @@ class MuJoCoViewerWidget(QOpenGLWidget):
         
         if self.robot and self.robot.model:
             print("🎮 初始化MuJoCo渲染资源...")
-            # 预分配渲染资源，避免每帧重新分配
-            self.scene = mujoco.MjvScene(self.robot.model, maxgeom=20000)
-            self.mjr_context = mujoco.MjrContext(self.robot.model, mujoco.mjtFontScale.mjFONTSCALE_150)
+            # 优化：减少几何体数量以提高性能
+            self.scene = mujoco.MjvScene(self.robot.model, maxgeom=5000)
+            self.mjr_context = mujoco.MjrContext(self.robot.model, mujoco.mjtFontScale.mjFONTSCALE_100)
             self.mjcam = mujoco.MjvCamera()
             self.opt = mujoco.MjvOption()
             
             # 初始化默认值
             mujoco.mjv_defaultCamera(self.mjcam)
             mujoco.mjv_defaultOption(self.opt)
+            
+            # 优化：设置渲染选项以提高性能
+            self.opt.flags[mujoco.mjtVisFlag.mjVIS_CONVEXHULL] = 0  # 关闭凸包渲染
+            self.opt.flags[mujoco.mjtVisFlag.mjVIS_INERTIA] = 0    # 关闭惯性椭球渲染
             
             # 启用深度测试
             glEnable(GL_DEPTH_TEST)
@@ -324,7 +328,27 @@ class MuJoCoViewerWidget(QOpenGLWidget):
         if self.robot and self.robot.model:
             # 防止无效的窗口大小
             if w > 0 and h > 0:
+                # 确保OpenGL上下文当前
+                self.makeCurrent()
+                # 设置视口为整个widget区域
                 glViewport(0, 0, w, h)
+                # 设置投影矩阵为正交投影以确保全屏渲染
+                glMatrixMode(GL_PROJECTION)
+                glLoadIdentity()
+                # 使用正交投影确保渲染填满整个视口
+                aspect = w / h if h > 0 else 1.0
+                glOrtho(-aspect, aspect, -1, 1, -1, 1)
+                glMatrixMode(GL_MODELVIEW)
+                glLoadIdentity()
+                self.doneCurrent()
+                
+                print(f"📐 视口更新: {w}x{h}, 比例: {aspect:.2f}")
+        else:
+            # 默认视口设置
+            if w > 0 and h > 0:
+                self.makeCurrent()
+                glViewport(0, 0, w, h)
+                self.doneCurrent()
     
     def paintGL(self):
         """渲染循环"""
@@ -333,8 +357,31 @@ class MuJoCoViewerWidget(QOpenGLWidget):
             if self.is_running:
                 self.step_simulation()
             else:
-                # 即使仿真没有运行，也要更新物理状态以显示关节变化
-                mujoco.mj_forward(self.robot.model, self.robot.data)
+                # 优化：使用更稳定的物理计算策略
+                needs_physics = False
+                
+                # 检查是否需要进行物理计算
+                if self.robot.model.nu > 0:
+                    for i in range(self.robot.model.nu):
+                        # 设置执行器控制信号
+                        actuator = self.robot.model.actuator(i)
+                        joint_id = actuator.trnid[0]
+                        joint_addr = self.robot.model.jnt_qposadr[joint_id]
+                        current_angle = self.robot.data.qpos[joint_addr]
+                        self.robot.data.ctrl[i] = current_angle
+                        
+                        # 检查是否需要物理计算
+                        if abs(current_angle) > 0.001:
+                            needs_physics = True
+                
+                # 根据需要选择计算方式
+                if needs_physics:
+                    # 需要物理计算时，进行少量步数以确保稳定性
+                    for _ in range(1):  # 只进行1步，避免过度计算
+                        mujoco.mj_step(self.robot.model, self.robot.data)
+                else:
+                    # 静态状态下，只需要前向动力学
+                    mujoco.mj_forward(self.robot.model, self.robot.data)
             
             # 同步相机参数
             self.camera.apply_to_mjcam(self.mjcam)
@@ -367,19 +414,23 @@ class MuJoCoViewerWidget(QOpenGLWidget):
                 print(f"⚠️  渲染状态异常: robot={self.robot is not None}, model={self.robot.model if self.robot else None}, mjcam={self.mjcam}")
     
     def step_simulation(self, dt_target=1/60.0):
-        """多步仿真保证时间同步"""
+        """优化：使用更小的timestep进行高精度仿真"""
         if not self.robot or not self.robot.model:
             return
         
         start = self.robot.data.time
         steps = 0
-        max_steps = 400  # 防止无限循环
+        max_steps = 200  # 由于timestep变小，需要更多步数
         
         while (self.robot.data.time - start) < dt_target and steps < max_steps:
             self.robot.step_simulation()
             steps += 1
         
         self.simulation_time = self.robot.data.time
+        
+        # 调试信息：减少输出频率
+        if steps > 50 and self.frame_count % 120 == 0:
+            print(f"⚡ 仿真步数: {steps}, 时间: {self.simulation_time:.3f}s")
     
     def update_fps(self):
         """更新FPS计数"""

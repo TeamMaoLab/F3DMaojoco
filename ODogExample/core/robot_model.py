@@ -231,6 +231,21 @@ class RobotModel:
             # 设置关节角度
             self.data.qpos[joint_addr] = angle
             
+            # 重要：同时设置执行器控制信号，确保位置维持
+            # 找到对应的执行器ID
+            actuator_id = None
+            for i in range(self.model.nu):
+                if self.model.actuator(i).trnid[0] == joint_id:  # 执行器控制的关节ID
+                    actuator_id = i
+                    break
+            
+            if actuator_id is not None:
+                # 设置执行器控制信号为目标角度
+                self.data.ctrl[actuator_id] = angle
+                print(f"🎯 设置执行器控制信号: {joint_name} -> {angle:.3f} rad (actuator_id={actuator_id})")
+            else:
+                print(f"⚠️  未找到关节 {joint_name} 对应的执行器")
+            
             # 前向动力学计算
             mujoco.mj_forward(self.model, self.data)
             
@@ -309,13 +324,18 @@ class RobotModel:
             return False
         
         try:
-            # 设置控制输入（如果需要）
+            # 重要：持续设置控制输入以维持位置控制
             if self.model.nu > 0:
-                # 将当前关节位置作为控制目标（位置控制）
-                for i, joint_name in enumerate(self.joint_names):
-                    if i < self.model.nu:
-                        joint_addr = self.model.jnt_qposadr[self.joint_ids[joint_name]]
-                        self.data.ctrl[i] = self.data.qpos[joint_addr]
+                # 为每个执行器设置控制信号
+                for i in range(self.model.nu):
+                    actuator = self.model.actuator(i)
+                    # 获取执行器控制的关节ID
+                    joint_id = actuator.trnid[0]
+                    # 获取关节当前角度作为控制目标
+                    joint_addr = self.model.jnt_qposadr[joint_id]
+                    current_angle = self.data.qpos[joint_addr]
+                    # 设置执行器控制信号
+                    self.data.ctrl[i] = current_angle
             
             # 执行仿真步骤
             mujoco.mj_step(self.model, self.data)

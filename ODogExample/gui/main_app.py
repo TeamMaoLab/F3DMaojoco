@@ -29,7 +29,7 @@ class MainApplication(QMainWindow):
         
         # 窗口设置
         self.setWindowTitle("ODogExample - 8自由度四足机器狗开发平台")
-        self.resize(1200, 800)
+        self.resize(1200, 1000)  # 调整窗口大小以避免挤压
         self.setMinimumSize(800, 600)  # 设置最小窗口尺寸
         
         # 创建中央窗口
