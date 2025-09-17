@@ -363,6 +363,38 @@ class RobotModel:
         except Exception as e:
             print(f"❌ 重置模型失败: {e}")
     
+    def reload_model(self):
+        """重新加载模型（完全重新开始模拟）"""
+        if not self.model_path:
+            print("❌ 没有模型文件路径，无法重新加载")
+            return False
+        
+        try:
+            print(f"🔄 重新加载模型: {self.model_path}")
+            
+            # 重新加载模型
+            self.model = mujoco.MjModel.from_xml_path(self.model_path)
+            self.data = mujoco.MjData(self.model)
+            
+            # 重新初始化模型状态
+            mujoco.mj_forward(self.model, self.data)
+            
+            # 重新提取模型信息
+            self._extract_model_info()
+            self._calculate_model_stats()
+            
+            print("✅ 模型重新加载成功")
+            print(f"   关节数量: {len(self.joint_names)}")
+            print(f"   广义坐标: {self.nq}")
+            print(f"   广义速度: {self.nv}")
+            print(f"   控制输入: {self.nu}")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ 重新加载模型失败: {e}")
+            return False
+    
     def get_model_stats(self) -> Dict[str, Any]:
         """获取模型统计信息"""
         return self.model_stats.copy()
