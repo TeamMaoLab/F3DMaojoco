@@ -43,7 +43,7 @@ def main():
         print("\n🎮 启动 MuJoCo 查看器...")
         print("💡 使用鼠标控制视角，按 ESC 退出")
         
-        with mujoco.viewer.launch(model, data) as viewer:
+        with mujoco.viewer.launch_passive(model, data) as viewer:
             while viewer.is_running():
                 # 步进仿真
                 mujoco.mj_step(model, data)
