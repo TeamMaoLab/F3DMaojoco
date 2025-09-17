@@ -395,7 +395,14 @@ class RobotModel:
 def create_test_model():
     """创建测试用的机器人模型实例"""
     # 使用带有执行器的完整模型文件
-    model_path = "model-actuator-position.xml"
+    import os
+    # 获取当前文件的目录，然后找到模型文件
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(current_dir, "..", "model-actuator-position.xml")
+    
+    # 如果文件不存在，尝试使用相对路径
+    if not os.path.exists(model_path):
+        model_path = "model-actuator-position.xml"
     
     robot = RobotModel(model_path)
     
