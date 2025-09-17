@@ -35,6 +35,10 @@ class OrbitCamera:
         self.lookat = np.array([0.0, 0.0, 0.0], dtype=np.float32)  # 观察目标
         self.fovy = 45.0          # 视场角
         
+        # 跟踪参数
+        self.track_robot = True  # 是否跟踪机器人
+        self.robot_offset = np.array([0.0, 0.0, 0.02], dtype=np.float32)  # 相对于机器人的偏移
+        
         # 控制参数 - 针对小型模型优化
         self.orbit_sensitivity = 0.35    # 旋转灵敏度
         self.pan_sensitivity = 0.0015    # 平移灵敏度 - 降低以便更精细控制
@@ -53,24 +57,26 @@ class OrbitCamera:
     def fit(self, model_stats: Dict[str, Any]):
         """基于模型统计信息自动适配视角 - 确保模型居中"""
         extent = model_stats.get('extent', 0.15)
-        # 注意：center 参数被保留用于扩展性，当前使用调试后的固定值
+        center = model_stats.get('center', np.array([0.0, 0.0, 0.029]))
         
-        # 基于用户最新调试结果设置观察目标
-        # 从最新的相机位置反推目标点
-        self.lookat[:] = np.array([0.352, 0.149, 0.036])  # 基于用户最新调试结果的观察目标
+        # 启用机器人跟踪
+        self.track_robot = True
         
-        # 使用用户调试后的理想相机参数
-        self.distance = 0.080  # 用户调试后的最佳距离: 8cm
-        self.azimuth = 308.8   # 用户调试后的方位角
-        self.elevation = -5.1   # 用户调试后的仰角
+        # 设置观察目标为机器人中心 + 偏移
+        self.lookat[:] = center + self.robot_offset
         
-        # 设置适合小模型的缩放范围 - 调整为更近距离观察
-        self.min_distance = 0.050  # 最小距离5cm，可以近距离观察小模型细节
-        self.max_distance = 2.000  # 最大距离2m，适合小型机器人的观察范围
+        # 使用更适合观察机器人的相机参数
+        self.distance = 0.150  # 15cm观察距离
+        self.azimuth = 45.0    # 45度方位角
+        self.elevation = -20.0  # -20度仰角，稍微俯视
+        
+        # 设置适合小模型的缩放范围
+        self.min_distance = 0.080  # 最小距离8cm
+        self.max_distance = 1.000  # 最大距离1m
         
         print(f"📷 相机适配: 距离={self.distance:.3f}m, 目标=[{self.lookat[0]:.3f}, {self.lookat[1]:.3f}, {self.lookat[2]:.3f}]")
         print(f"📏 模型尺寸: {extent:.3f}m, 角度: Az={self.azimuth:.1f}°, El={self.elevation:.1f}°")
-        print(f"🎯 使用用户最新调试的观察目标配置")
+        print(f"🎯 启用机器人跟踪模式")
     
     def apply_to_mjcam(self, mjcam):
         """应用到MuJoCo相机"""
@@ -82,6 +88,13 @@ class OrbitCamera:
         
         # FOV 需要通过 model.vis.global.fovy 设置
         # 这里不设置，将在渲染循环中处理
+    
+    def update_robot_position(self, robot_position):
+        """更新机器人位置 - 实现跟踪效果"""
+        if self.track_robot:
+            # 更新观察目标为机器人位置 + 偏移
+            self.lookat[:] = robot_position + self.robot_offset
+            print(f"🔄 更新相机跟踪目标: [{self.lookat[0]:.3f}, {self.lookat[1]:.3f}, {self.lookat[2]:.3f}]")
     
     def orbit(self, dx, dy):
         """球坐标轨道旋转"""
@@ -383,6 +396,12 @@ class MuJoCoViewerWidget(QOpenGLWidget):
                     # 静态状态下，只需要前向动力学
                     mujoco.mj_forward(self.robot.model, self.robot.data)
             
+            # 更新机器人位置跟踪（每10帧更新一次以提高性能）
+            if self.frame_count % 10 == 0:
+                # 获取机器人基座位置
+                robot_pos = self.robot.data.xpos[1].copy()  # body 1 是基座
+                self.camera.update_robot_position(robot_pos)
+            
             # 同步相机参数
             self.camera.apply_to_mjcam(self.mjcam)
             self.camera.update_clip_planes(self.robot.model)
@@ -515,6 +534,14 @@ class MuJoCoViewerWidget(QOpenGLWidget):
         elif key == Qt.Key_P:
             # 打印性能信息
             print(f"⚡ FPS: {self.current_fps:.1f}")
+        elif key == Qt.Key_T:
+            # 切换机器人跟踪模式
+            self.camera.track_robot = not self.camera.track_robot
+            status = "启用" if self.camera.track_robot else "禁用"
+            print(f"🎯 机器人跟踪模式: {status}")
+            if self.camera.track_robot and self.robot:
+                # 重新适配相机
+                self.camera.fit(self.robot.get_model_stats())
     
     def keyReleaseEvent(self, event):
         """键盘释放"""
@@ -579,7 +606,7 @@ class MuJoCoViewerWidget(QOpenGLWidget):
         """打印控制说明"""
         print("=== ODogExample 3D查看器控制说明 ===")
         print("🖱️  鼠标控制:")
-        print("   左键拖动：轨道旋转")
+        print("   左键拖动：轨道旋转（绕机器人）")
         print("   右键拖动或 Shift+左键：平移模型")
         print("     • 鼠标上移：前进（模型远离）")
         print("     • 鼠标下移：后退（模型靠近）")
@@ -591,8 +618,13 @@ class MuJoCoViewerWidget(QOpenGLWidget):
         print("⌨️  键盘控制:")
         print("   空格：开始/暂停仿真")
         print("   R/F：重置相机视角")
+        print("   T：切换机器人跟踪模式")
         print("   C：打印相机参数")
         print("   P：打印性能信息")
+        print("🎯 相机特性:")
+        print("   • 默认启用机器人跟踪模式")
+        print("   • 相机会自动跟随机器人移动")
+        print("   • 旋转时围绕机器人中心进行")
         print("=" * 40)
 
 
