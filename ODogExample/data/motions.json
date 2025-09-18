@@ -2,89 +2,25 @@
   "version": "1.0",
   "sequences": [
     {
-      "name": "站立-趴下-站立",
+      "name": "俯卧撑",
       "keyframes": [
-        {
-          "pose_name": "站立姿态",
-          "transition_duration": 0.5,
-          "hold_duration": 1.0,
-          "interpolation_type": "linear"
-        },
-        {
-          "pose_name": "趴下姿态",
-          "transition_duration": 1.0,
-          "hold_duration": 2.0,
-          "interpolation_type": "smooth"
-        },
-        {
-          "pose_name": "站立姿态",
-          "transition_duration": 1.0,
-          "hold_duration": 1.0,
-          "interpolation_type": "smooth"
-        }
-      ],
-      "loop": false,
-      "created_at": "2025-09-18T16:51:25.410035",
-      "updated_at": "2025-09-18T16:51:25.410037"
-    },
-    {
-      "name": "简单打招呼",
-      "keyframes": [
-        {
-          "pose_name": "站立姿态",
-          "transition_duration": 0.3,
-          "hold_duration": 0.5,
-          "interpolation_type": "linear"
-        },
         {
           "pose_name": "趴下-抬头",
           "transition_duration": 0.5,
           "hold_duration": 1.0,
-          "interpolation_type": "smooth"
+          "interpolation_type": "linear"
         },
         {
-          "pose_name": "站立姿态",
-          "transition_duration": 0.5,
-          "hold_duration": 0.5,
-          "interpolation_type": "smooth"
-        }
-      ],
-      "loop": true,
-      "created_at": "2025-09-18T16:51:25.410042",
-      "updated_at": "2025-09-18T16:51:25.410043"
-    },
-    {
-      "name": "demo_sequence",
-      "keyframes": [
-        {
-          "pose_name": "坐下姿态",
+          "pose_name": "趴下-低头",
           "transition_duration": 0.5,
           "hold_duration": 1.0,
-          "interpolation_type": "linear"
-        },
-        {
-          "pose_name": "站立姿态",
-          "transition_duration": 0.8,
-          "hold_duration": 1.5,
-          "interpolation_type": "linear"
-        },
-        {
-          "pose_name": "行走姿态1",
-          "transition_duration": 0.3,
-          "hold_duration": 0.5,
-          "interpolation_type": "linear"
-        },
-        {
-          "pose_name": "行走姿态2",
-          "transition_duration": 0.3,
-          "hold_duration": 0.5,
           "interpolation_type": "linear"
         }
       ],
       "loop": false,
-      "created_at": "2025-09-18T16:53:56.308593",
-      "updated_at": "2025-09-18T16:53:56.308594"
+      "created_at": "2025-09-18T21:04:22.334292",
+      "updated_at": "2025-09-18T21:04:22.334293"
     }
   ],
-  "last_updated": "2025-09-18T16:53:56.308611"
+  "last_updated": "2025-09-18T21:28:20.390542"
 }
