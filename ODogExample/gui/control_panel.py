@@ -221,9 +221,8 @@ class ControlPanel(QWidget):
         self.precision_control.hide()
         main_layout.addWidget(self.precision_control)
           
-        # 相机控制区域（隐藏，因为功能已经移到顶部）
+        # 相机控制区域
         self.camera_control = CameraControlGroup()
-        self.camera_control.hide()
         main_layout.addWidget(self.camera_control)
           
         # 姿态操作区域 - 从global_controls导入
@@ -419,16 +418,14 @@ class ControlPanel(QWidget):
         """切换相机追踪"""
         if self.camera_control:
             # 找到相机追踪按钮并切换状态
-            if hasattr(self.camera_control, 'tracking_btn_ref'):
-                self.camera_control.tracking_btn_ref.setChecked(checked)
+            self.camera_control.tracking_btn_ref.setChecked(checked)
         print(f"📷 相机追踪: {'开启' if checked else '关闭'}")
     
     def refocus_camera(self):
         """重新聚焦相机"""
         if self.camera_control:
             # 触发重新聚焦
-            if hasattr(self.camera_control, 'refocus_btn_ref'):
-                self.camera_control.refocus_btn_ref.click()
+            self.camera_control.refocus_btn_ref.click()
         print("🎯 重新聚焦相机")
 
 

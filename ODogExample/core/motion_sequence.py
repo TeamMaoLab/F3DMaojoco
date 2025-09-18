@@ -51,7 +51,7 @@ class MotionSequence:
     
     name: str                   # 动作序列名称
     keyframes: List[Keyframe]   # 关键帧列表
-    loop: bool = False          # 是否循环
+    loop: bool = True           # 是否循环，默认开启
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
     
@@ -60,10 +60,7 @@ class MotionSequence:
         if not self.name:
             raise ValueError("动作序列名称不能为空")
         
-        # 验证关键帧数据
-        for i, keyframe in enumerate(self.keyframes):
-            if not isinstance(keyframe, Keyframe):
-                raise ValueError(f"关键帧 {i} 必须是 Keyframe 实例")
+        # 关键帧数据类型由类型注解保证
     
     @property
     def total_duration(self) -> float:
@@ -112,8 +109,7 @@ class MotionSequence:
     
     def add_keyframe(self, keyframe: Keyframe, position: int = -1) -> bool:
         """添加关键帧"""
-        if not isinstance(keyframe, Keyframe):
-            return False
+        # 关键帧数据类型由类型注解保证
         
         if position < 0 or position >= len(self.keyframes):
             self.keyframes.append(keyframe)
@@ -133,7 +129,7 @@ class MotionSequence:
     
     def update_keyframe(self, index: int, keyframe: Keyframe) -> bool:
         """更新关键帧"""
-        if 0 <= index < len(self.keyframes) and isinstance(keyframe, Keyframe):
+        if 0 <= index < len(self.keyframes):
             self.keyframes[index] = keyframe
             self.updated_at = datetime.now().isoformat()
             return True

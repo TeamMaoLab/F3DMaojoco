@@ -33,6 +33,10 @@ class TabbedControlPanel(QWidget):
     allJointsReset = Signal()               # 所有关节重置
     poseSaved = Signal(str, dict)           # 姿态保存
     
+    # 信号定义 - 从相机控制继承
+    cameraTrackingToggled = Signal(bool)    # 相机跟踪开关
+    cameraRefocus = Signal()               # 重新聚焦
+    
     # 信号定义 - 从动作编辑器继承
     sequenceSelected = Signal(str)      # 选中动作序列
     sequenceCreated = Signal(str)       # 创建动作序列
@@ -127,6 +131,11 @@ class TabbedControlPanel(QWidget):
         self.motion_editor.playbackPaused.connect(self.on_playback_paused)
         self.motion_editor.playbackStopped.connect(self.on_playback_stopped)
         self.motion_editor.playbackProgress.connect(self.on_playback_progress)
+        
+        # 连接相机控制信号
+        camera_control = self.control_panel.camera_control
+        camera_control.cameraTrackingToggled.connect(self.cameraTrackingToggled)
+        camera_control.cameraRefocus.connect(self.cameraRefocus)
     
     # 原有控制面板信号处理
     def on_joint_angle_changed(self, joint_name: str, angle: float):
@@ -211,8 +220,7 @@ class TabbedControlPanel(QWidget):
     
     def update_current_pose(self, pose_data):
         """更新当前姿态数据"""
-        if hasattr(self.control_panel, 'update_current_pose'):
-            self.control_panel.update_current_pose(pose_data)
+        self.control_panel.update_current_pose(pose_data)
 
 
 def create_tabbed_control_panel(robot_model: Optional[RobotModel] = None) -> TabbedControlPanel:

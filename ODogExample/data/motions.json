@@ -17,10 +17,10 @@
           "interpolation_type": "linear"
         }
       ],
-      "loop": false,
+      "loop": true,
       "created_at": "2025-09-18T21:04:22.334292",
       "updated_at": "2025-09-18T21:04:22.334293"
     }
   ],
-  "last_updated": "2025-09-18T21:28:20.390542"
+  "last_updated": "2025-09-18T22:38:34.086107"
 }

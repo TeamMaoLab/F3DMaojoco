@@ -245,7 +245,7 @@ class PoseControlGroup(QGroupBox):
         self.current_pose = self._get_default_pose()
         
         # Validate initialization
-        if not self.current_pose or not isinstance(self.current_pose, dict) or len(self.current_pose) == 0:
+        if not self.current_pose or len(self.current_pose) == 0:
             print("❌ 姿态控制组初始化失败：current_pose 为空")
             # Emergency fallback
             self.current_pose = {"xuan_zhuan_1": 0.0}
@@ -267,7 +267,7 @@ class PoseControlGroup(QGroupBox):
             print(f"🔍 尝试从姿态管理器加载默认姿态")
             default_pose = self.pose_manager.load_pose("默认姿态")
             print(f"🔍 从姿态管理器获取到的默认姿态: {default_pose}")
-            if default_pose and isinstance(default_pose, dict) and len(default_pose) > 0:
+            if default_pose and len(default_pose) > 0:
                 print(f"✅ 使用姿态管理器的默认姿态: {len(default_pose)} 个关节")
                 return default_pose
         except Exception as e:
@@ -415,14 +415,14 @@ class PoseControlGroup(QGroupBox):
         
         # 创建当前姿态的副本以防止在对话框显示过程中被修改
         pose_to_save = None
-        if self.current_pose and isinstance(self.current_pose, dict) and len(self.current_pose) > 0:
+        if self.current_pose and len(self.current_pose) > 0:
             pose_to_save = self.current_pose.copy()
             print(f"✅ 创建姿态副本成功: {len(pose_to_save)} 个关节")
         else:
             print(f"❌ current_pose 无效，尝试获取后备姿态")
             pose_to_save = self._get_default_pose()
             
-        if not pose_to_save or not isinstance(pose_to_save, dict) or len(pose_to_save) == 0:
+        if not pose_to_save or len(pose_to_save) == 0:
             QMessageBox.warning(self, "警告", "没有当前姿态数据可保存！")
             return
         
@@ -529,7 +529,7 @@ class PoseControlGroup(QGroupBox):
     
     def update_current_pose(self, pose_data: Dict[str, float]):
         """更新当前姿态数据"""
-        if pose_data and isinstance(pose_data, dict) and len(pose_data) > 0:
+        if pose_data and len(pose_data) > 0:
             self.current_pose = pose_data.copy()
         else:
             print(f"⚠️ 接收到无效的姿态数据: {pose_data}")

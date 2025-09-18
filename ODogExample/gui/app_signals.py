@@ -45,40 +45,36 @@ class SignalManager:
     def connect_joint_control_signals(self, control_panel, viewer_widget):
         """连接关节控制信号"""
         # 控制面板到查看器的信号连接
-        if hasattr(control_panel, 'jointAngleChanged'):
-            control_panel.jointAngleChanged.connect(
-                lambda name, angle: viewer_widget.update() if viewer_widget else None
-            )
+        control_panel.jointAngleChanged.connect(
+            lambda name, angle: viewer_widget.update() if viewer_widget else None
+        )
         
         # 应用层信号处理
-        if hasattr(control_panel, 'allJointsZero'):
-            control_panel.allJointsZero.connect(
-                lambda: print("🔄 应用层响应：所有关节已归零")
-            )
+        control_panel.allJointsZero.connect(
+            lambda: print("🔄 应用层响应：所有关节已归零")
+        )
         
-        if hasattr(control_panel, 'allJointsReset'):
-            control_panel.allJointsReset.connect(
-                lambda: print("🔙 应用层响应：所有关节已重置")
-            )
+        control_panel.allJointsReset.connect(
+            lambda: print("🔙 应用层响应：所有关节已重置")
+        )
     
     def connect_camera_control_signals(self, control_panel, viewer_widget):
         """连接相机控制信号"""
-        if hasattr(control_panel, 'tracking_btn_ref') and control_panel.tracking_btn_ref:
-            control_panel.tracking_btn_ref.toggled.connect(
-                viewer_widget.toggle_camera_tracking if viewer_widget else lambda x: None
-            )
+        # 访问嵌套在控制面板中的相机控制按钮
+        camera_control = control_panel.camera_control
+        camera_control.tracking_btn_ref.toggled.connect(
+            viewer_widget.toggle_camera_tracking if viewer_widget else lambda x: None
+        )
         
-        if hasattr(control_panel, 'refocus_btn_ref') and control_panel.refocus_btn_ref:
-            control_panel.refocus_btn_ref.clicked.connect(
-                viewer_widget.refocus_camera if viewer_widget else lambda: None
-            )
+        camera_control.refocus_btn_ref.clicked.connect(
+            viewer_widget.refocus_camera if viewer_widget else lambda: None
+        )
     
     def connect_pose_signals(self, control_panel):
         """连接姿态管理信号"""
-        if hasattr(control_panel, 'poseSaved'):
-            control_panel.poseSaved.connect(
-                lambda name, data: print(f"💾 应用层响应：姿态 {name} 已保存")
-            )
+        control_panel.poseSaved.connect(
+            lambda name, data: print(f"💾 应用层响应：姿态 {name} 已保存")
+        )
     
     def connect_viewer_signals(self, viewer_widget):
         """连接查看器信号"""

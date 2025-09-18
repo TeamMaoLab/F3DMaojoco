@@ -403,12 +403,15 @@ class MotionSequenceTabWidget(QGroupBox):
             sequence = self.motion_manager.get_sequence(seq_name)
             if sequence:
                 self.current_sequence = sequence
+                # 强制开启循环播放
+                self.current_sequence.loop = True
                 self.update_pose_list()
                 self.update_sequence_info()
                 self.progress_bar.setValue(0)
                 self.progress_label.setText(f"时间: 0.0s / {sequence.total_duration:.1f}s")
                 self.sequenceSelected.emit(seq_name)
                 print(f"📁 加载动作序列: {seq_name}")
+                print(f"🔁 循环播放: 开启")
             else:
                 print(f"❌ 无法加载动作序列: {seq_name}")
         except Exception as e:
@@ -442,7 +445,7 @@ class MotionSequenceTabWidget(QGroupBox):
         # 获取当前可用的姿态列表
         try:
             # 检查姿态管理器是否可用
-            if not hasattr(self, 'pose_manager') or self.pose_manager is None:
+            if not self.pose_manager:
                 QMessageBox.critical(self, "错误", "姿态管理器未初始化！\n请重新启动应用。")
                 return
             
@@ -879,6 +882,7 @@ class MotionSequenceTabWidget(QGroupBox):
         else:
             self.info_label.setText("未选择序列")
     
+        
     def update_keyframe_info(self, keyframe_index: int):
         """更新关键帧信息显示（已弃用，保留兼容性）"""
         # 这个方法已不再使用，保留以避免潜在的引用错误

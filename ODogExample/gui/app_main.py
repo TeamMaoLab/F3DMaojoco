@@ -151,7 +151,8 @@ class MainApplication(QMainWindow):
             self.signal_manager.connect_joint_control_signals(self.control_panel, self.viewer)
             
             # 连接相机控制信号
-            self.signal_manager.connect_camera_control_signals(self.control_panel, self.viewer)
+            self.control_panel.cameraTrackingToggled.connect(self.viewer.toggle_camera_tracking)
+            self.control_panel.cameraRefocus.connect(self.viewer.refocus_camera)
             
             # 连接姿态信号
             self.signal_manager.connect_pose_signals(self.control_panel)
@@ -173,10 +174,9 @@ class MainApplication(QMainWindow):
         """连接动作编辑器的播放信号"""
         try:
             # 检查是否有动作编辑器
-            if hasattr(self.control_panel, 'motion_editor'):
-                motion_editor = self.control_panel.motion_editor
+            motion_editor = self.control_panel.motion_editor
+            if motion_editor:
                 print(f"🔍 找到动作编辑器: {motion_editor}")
-                print(f"🔍 动作编辑器有applyPoseRequest信号: {hasattr(motion_editor, 'applyPoseRequest')}")
                 
                 # 连接姿态应用信号
                 motion_editor.applyPoseRequest.connect(self._on_apply_pose_request)
@@ -195,7 +195,7 @@ class MainApplication(QMainWindow):
         try:
             print(f"🎯 应用姿态请求: {pose_name}")
             
-            if not (self.viewer and hasattr(self.viewer, 'robot')):
+            if not (self.viewer and self.viewer.robot):
                 print("⚠️  机器人模型不可用")
                 return
             
@@ -239,26 +239,9 @@ class MainApplication(QMainWindow):
                     print(f"  - {joint_name}: {angle:.3f} rad ({angle*180/3.14159:.1f}°)")
                 
                 # 使用控制面板的姿态应用功能
-                if hasattr(self.control_panel, 'set_pose'):
-                    print("🔧 使用控制面板的set_pose方法")
-                    self.control_panel.set_pose(joint_angles)
-                    print("✅ 控制面板set_pose调用完成")
-                else:
-                    print("🔧 直接应用到机器人模型")
-                    # 直接应用到机器人模型
-                    robot = self.viewer.robot
-                    if hasattr(robot, 'set_joint_angles'):
-                        robot.set_joint_angles(joint_angles, smooth=True)
-                        print("✅ 机器人set_joint_angles调用完成")
-                    else:
-                        print("🔧 逐个设置关节角度")
-                        # 逐个设置关节角度
-                        for joint_name, angle in joint_angles.items():
-                            if hasattr(robot, 'set_joint_angle'):
-                                robot.set_joint_angle(joint_name, angle)
-                                print(f"  ✅ 设置 {joint_name}: {angle:.3f}")
-                            else:
-                                print(f"  ❌ 无法设置 {joint_name}: 没有set_joint_angle方法")
+                print("🔧 使用控制面板的set_pose方法")
+                self.control_panel.set_pose(joint_angles)
+                print("✅ 控制面板set_pose调用完成")
                 
                 # 更新状态栏
                 self.statusBar().showMessage(f"已应用姿态: {pose_name}", 2000)

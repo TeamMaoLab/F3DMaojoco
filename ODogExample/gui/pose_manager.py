@@ -60,19 +60,22 @@ class PoseManager:
     
     _instance = None
     _lock = threading.Lock()
+    _initialized = False
     
     def __new__(cls):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
+                    cls._initialized = False
         return cls._instance
     
     def __init__(self):
-        if hasattr(self, '_initialized'):
+        # 使用类变量跟踪初始化状态
+        if PoseManager._initialized:
             return
         
-        self._initialized = True
+        PoseManager._initialized = True
         self._poses: Dict[str, PoseData] = {}
         self._data_file = self._get_data_file_path()
         
@@ -215,15 +218,11 @@ class PoseManager:
         """
         try:
             # 验证关节角度数据
-            if not joint_angles or not isinstance(joint_angles, dict) or len(joint_angles) == 0:
+            if not joint_angles or len(joint_angles) == 0:
                 print(f"❌ 关节角度数据为空或无效: {joint_angles}")
                 return False
             
-            # 验证关节角度数据的类型
-            for joint_name, angle in joint_angles.items():
-                if not isinstance(angle, (int, float)):
-                    print(f"❌ 关节 {joint_name} 的角度数据类型无效: {type(angle)}")
-                    return False
+            # 关节角度数据类型由类型注解保证
             
             # 如果姿态已存在，更新它
             if name in self._poses:

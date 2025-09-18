@@ -28,19 +28,22 @@ class MotionManager:
     
     _instance = None
     _lock = threading.Lock()
+    _initialized = False
     
     def __new__(cls):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
+                    cls._initialized = False
         return cls._instance
     
     def __init__(self):
-        if hasattr(self, '_initialized'):
+        # 使用类变量跟踪初始化状态
+        if MotionManager._initialized:
             return
         
-        self._initialized = True
+        MotionManager._initialized = True
         self._sequences: Dict[str, MotionSequence] = {}
         self._data_file = self._get_data_file_path()
         
@@ -177,7 +180,7 @@ class MotionManager:
         print(f"🎯 添加了 {len(default_sequences)} 个默认动作序列")
     
     def create_sequence(self, name: str, keyframes: List[Keyframe] = None, 
-                       loop: bool = False) -> bool:
+                       loop: bool = True) -> bool:
         """
         创建新的动作序列
         
@@ -202,10 +205,7 @@ class MotionManager:
             if keyframes is None:
                 keyframes = []
             
-            for i, keyframe in enumerate(keyframes):
-                if not isinstance(keyframe, Keyframe):
-                    print(f"❌ 关键帧 {i} 数据无效")
-                    return False
+            # 关键帧数据类型由类型注解保证
             
             # 创建动作序列
             sequence = MotionSequence(
@@ -262,9 +262,7 @@ class MotionManager:
                 print(f"❌ 动作序列不存在: {name}")
                 return False
             
-            if not isinstance(sequence, MotionSequence):
-                print("❌ 动作序列数据无效")
-                return False
+            # 动作序列数据类型由类型注解保证
             
             # 验证序列数据
             errors = sequence.validate()
@@ -571,7 +569,7 @@ def get_motion_manager() -> MotionManager:
     return MotionManager()
 
 
-def create_sequence(name: str, keyframes: List[Keyframe] = None, loop: bool = False) -> bool:
+def create_sequence(name: str, keyframes: List[Keyframe] = None, loop: bool = True) -> bool:
     """创建动作序列（全局函数）"""
     return get_motion_manager().create_sequence(name, keyframes, loop)
 

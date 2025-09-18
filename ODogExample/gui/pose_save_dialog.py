@@ -169,7 +169,7 @@ class PoseSaveDialog(QDialog):
         print(f"💾 数据长度: {len(pose_data['joint_angles']) if pose_data['joint_angles'] else 0}")
         
         # 验证数据不为空
-        if not pose_data['joint_angles'] or not isinstance(pose_data['joint_angles'], dict) or len(pose_data['joint_angles']) == 0:
+        if not pose_data['joint_angles'] or len(pose_data['joint_angles']) == 0:
             QMessageBox.critical(self, "数据错误", 
                                f"关节角度数据为空或无效！\n数据类型: {type(pose_data['joint_angles'])}\n数据内容: {pose_data['joint_angles']}")
             return
