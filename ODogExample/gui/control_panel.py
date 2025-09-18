@@ -381,8 +381,18 @@ class ControlPanel(QWidget):
     
     def set_pose(self, pose_data: Dict[str, float]):
         """设置姿态"""
+        # 更新当前姿态数据
+        self.current_pose.update(pose_data)
+        
+        # 使用平滑过渡应用到机器人模型
+        if self.robot_model:
+            print(f"🎯 开始平滑过渡到姿态: {len(pose_data)} 个关节")
+            self.robot_model.set_joint_angles(pose_data, smooth=True)
+        
+        # 更新UI控件显示
         for leg_group in self.leg_groups.values():
             leg_group.set_joint_angles(pose_data)
+        
         print(f"🎯 姿态已设置: {len(pose_data)} 个关节")
     
     @property

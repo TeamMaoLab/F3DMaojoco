@@ -126,18 +126,9 @@ class MuJoCoRenderer:
         if self.is_running:
             self.step_simulation()
         else:
-            # 优化：直接进行物理计算以提高响应速度
-            # 设置执行器控制信号并立即进行物理计算
-            if self.robot.model.nu > 0:
-                for i in range(self.robot.model.nu):
-                    actuator = self.robot.model.actuator(i)
-                    joint_id = actuator.trnid[0]
-                    joint_addr = self.robot.model.jnt_qposadr[joint_id]
-                    current_angle = self.robot.data.qpos[joint_addr]
-                    self.robot.data.ctrl[i] = current_angle
-            
-            # 直接进行多步物理计算以提高响应速度
-            for _ in range(2):  # 减少到2步物理计算，避免震荡
+            # 进行物理计算以实现平滑过渡
+            # 保持用户设置的actuator控制信号不变
+            for _ in range(2):  # 适中的物理计算步数，平衡响应速度和稳定性
                 mujoco.mj_step(self.robot.model, self.robot.data)
         
         # 同步相机参数
