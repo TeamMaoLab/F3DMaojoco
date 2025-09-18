@@ -60,26 +60,29 @@
 ```python
 class Keyframe:
     - pose_name: str              # 引用的姿态名称
-    - timestamp: float            # 时间戳 (秒)
     - transition_duration: float  # 过渡时长 (秒)
     - hold_duration: float        # 保持时长 (秒)
     - interpolation_type: str     # 插值类型 (linear/smooth)
-    - description: str            # 描述信息
+    
+    @property
+    - timestamp: float            # 计算属性：时间戳 (秒)
     
 class MotionSequence:
     - name: str                   # 动作序列名称
-    - description: str            # 描述信息
     - keyframes: List[Keyframe]   # 关键帧列表
-    - total_duration: float       # 总时长
     - loop: bool                  # 是否循环
     - created_at: str            # 创建时间
     - updated_at: str            # 更新时间
+    
+    @property
+    - total_duration: float       # 计算属性：总时长
 ```
 
 **技术要点**:
 - 数据验证和类型检查
 - JSON序列化/反序列化支持
-- 时间戳自动计算和验证
+- 时间戳动态计算（基于前面的关键帧时长）
+- 总时长动态计算（累加所有关键帧时长）
 - 与现有姿态系统的集成
 
 **依赖**: 无 (可以独立开发)
