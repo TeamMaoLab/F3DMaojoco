@@ -9,8 +9,8 @@ import os
 import math
 from typing import Dict, Optional, Any
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QGridLayout, 
-    QLabel, QSizePolicy
+    QWidget, QVBoxLayout, QGridLayout, QHBoxLayout,
+    QLabel, QSizePolicy, QPushButton, QFrame
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
@@ -74,16 +74,121 @@ class ControlPanel(QWidget):
         main_layout.setContentsMargins(10, 10, 10, 10)
         main_layout.setSpacing(8)
         
-        # 标题
-        title_label = QLabel("🎛️  8自由度关节控制")
-        title_font = QFont("Arial", 14, QFont.Bold)
-        title_label.setFont(title_font)
-        title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet("color: #333; padding: 10px;")
-        main_layout.addWidget(title_label)
+        # 顶部控制按钮区域（两排）
+        top_controls_layout = QVBoxLayout()
+        top_controls_layout.setSpacing(5)
         
-        # 全局控制区域
+        # 第一排按钮：归零 重置 同步 重新聚焦
+        row1_layout = QHBoxLayout()
+        row1_layout.setSpacing(10)
+        
+        zero_all_btn = QPushButton("🔄 归零")
+        zero_all_btn.setMinimumHeight(35)
+        zero_all_btn.clicked.connect(self.zero_all_joints)
+        
+        reset_all_btn = QPushButton("🔙 重置")
+        reset_all_btn.setMinimumHeight(35)
+        reset_all_btn.clicked.connect(self.reset_all_joints)
+        
+        sync_btn = QPushButton("🤖 同步")
+        sync_btn.setMinimumHeight(35)
+        sync_btn.clicked.connect(self.sync_to_robot)
+        
+        refocus_btn = QPushButton("🎯 追焦")
+        refocus_btn.setMinimumHeight(35)
+        refocus_btn.clicked.connect(self.refocus_camera)
+        
+        row1_layout.addWidget(zero_all_btn)
+        row1_layout.addWidget(reset_all_btn)
+        row1_layout.addWidget(sync_btn)
+        row1_layout.addWidget(refocus_btn)
+        row1_layout.addStretch()
+        
+        # 第二排按钮：精细控制Switch 相机追踪Switch
+        row2_layout = QHBoxLayout()
+        row2_layout.setSpacing(10)
+        
+        # 精细控制开关
+        precision_btn = QPushButton("📏 精细控制")
+        precision_btn.setMinimumHeight(30)
+        precision_btn.setMaximumHeight(30)
+        precision_btn.setCheckable(True)
+        precision_btn.setChecked(False)
+        precision_btn.clicked.connect(self.toggle_global_precision)
+        # 设置开关样式
+        precision_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #f0f0f0;
+                border: 2px solid #ccc;
+                border-radius: 15px;
+                padding: 4px 12px;
+                font-weight: bold;
+                min-width: 100px;
+                font-size: 12px;
+            }
+            QPushButton:checked {
+                background-color: #4CAF50;
+                color: white;
+                border-color: #45a049;
+            }
+            QPushButton:hover {
+                border-color: #888;
+            }
+            QPushButton:checked:hover {
+                border-color: #45a049;
+            }
+        """)
+        
+        # 相机追踪开关
+        tracking_btn = QPushButton("📷 相机追踪")
+        tracking_btn.setMinimumHeight(30)
+        tracking_btn.setMaximumHeight(30)
+        tracking_btn.setCheckable(True)
+        tracking_btn.setChecked(False)
+        tracking_btn.clicked.connect(self.toggle_camera_tracking)
+        # 设置开关样式
+        tracking_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #f0f0f0;
+                border: 2px solid #ccc;
+                border-radius: 15px;
+                padding: 4px 12px;
+                font-weight: bold;
+                min-width: 100px;
+                font-size: 12px;
+            }
+            QPushButton:checked {
+                background-color: #2196F3;
+                color: white;
+                border-color: #1976D2;
+            }
+            QPushButton:hover {
+                border-color: #888;
+            }
+            QPushButton:checked:hover {
+                border-color: #1976D2;
+            }
+        """)
+        
+        row2_layout.addWidget(precision_btn)
+        row2_layout.addWidget(tracking_btn)
+        row2_layout.addStretch()
+        
+        top_controls_layout.addLayout(row1_layout)
+        top_controls_layout.addLayout(row2_layout)
+        
+        # 添加分隔线
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        line.setStyleSheet("background-color: #ccc; margin: 5px 0;")
+        
+        main_layout.addLayout(top_controls_layout)
+        main_layout.addWidget(line)
+        
+        # 全局控制区域（隐藏，因为功能已经移到顶部）
         self.global_control = GlobalControlGroup()
+        self.global_control.hide()
         main_layout.addWidget(self.global_control)
         
         # 腿部控制网格
@@ -110,12 +215,14 @@ class ControlPanel(QWidget):
         
         main_layout.addLayout(legs_layout)
         
-        # 精细控制选项
+        # 精细控制选项（隐藏，因为功能已经移到顶部）
         self.precision_control = PrecisionControlGroup()
+        self.precision_control.hide()
         main_layout.addWidget(self.precision_control)
           
-        # 相机控制区域
+        # 相机控制区域（隐藏，因为功能已经移到顶部）
         self.camera_control = CameraControlGroup()
+        self.camera_control.hide()
         main_layout.addWidget(self.camera_control)
           
         # 姿态操作区域
@@ -151,6 +258,7 @@ class ControlPanel(QWidget):
         if self.pose_control:
             self.pose_control.poseSaved.connect(self.on_pose_saved)
             self.pose_control.poseLoaded.connect(self.on_pose_loaded)
+            self.pose_control.poseDeleted.connect(self.on_pose_deleted)
     
     def on_joint_angle_changed(self, joint_name: str, angle: float):
         """关节角度改变处理"""
@@ -163,7 +271,7 @@ class ControlPanel(QWidget):
         
         # 更新姿态信息
         if self.pose_control:
-            self.pose_control.update_pose_info(self.current_pose)
+            self.pose_control.update_current_pose(self.current_pose)
         
         # 发送信号
         self.jointAngleChanged.emit(joint_name, angle)
@@ -186,12 +294,42 @@ class ControlPanel(QWidget):
         self.allJointsZero.emit()
     
     def reset_all_joints(self):
-        """所有关节重置"""
-        print("🔙 所有关节重置")
-        # 直接遍历所有关节控制组件
-        for leg_group in self.leg_groups.values():
-            for joint_widget in leg_group.joint_widgets.values():
-                joint_widget.reset_to_default()
+        """所有关节重置 - 重新加载模型并重新开始模拟"""
+        print("🔙 重置模拟 - 重新加载模型")
+        
+        # 重新加载模型
+        if self.robot_model:
+            success = self.robot_model.reload_model()
+            if success:
+                # 重置所有关节控制器到默认值
+                for leg_group in self.leg_groups.values():
+                    for joint_widget in leg_group.joint_widgets.values():
+                        joint_widget.reset_to_default()
+                
+                # 重置当前姿态数据
+                self.current_pose = self.joint_mapping.get_default_pose()
+                
+                # 更新姿态信息显示
+                if self.pose_control:
+                    self.pose_control.update_pose_info(self.current_pose)
+                
+                print("✅ 模拟重置完成")
+            else:
+                print("❌ 模拟重置失败")
+        else:
+            print("⚠️  没有机器人模型，只重置关节控制器")
+            # 如果没有模型，只重置关节控制器
+            for leg_group in self.leg_groups.values():
+                for joint_widget in leg_group.joint_widgets.values():
+                    joint_widget.reset_to_default()
+            
+            # 重置当前姿态数据
+            self.current_pose = self.joint_mapping.get_default_pose()
+            
+            # 更新姿态信息显示
+            if self.pose_control:
+                self.pose_control.update_pose_info(self.current_pose)
+        
         self.allJointsReset.emit()
     
     def sync_to_robot(self):
@@ -214,9 +352,23 @@ class ControlPanel(QWidget):
         # 转发信号
         self.poseSaved.emit(pose_name, pose_data)
     
-    def on_pose_loaded(self):
+    def on_pose_loaded(self, pose_info: dict):
         """姿态加载处理"""
-        print("📁 姿态加载功能待实现")
+        pose_name = pose_info.get('name', '未知姿态')
+        joint_angles = pose_info.get('joint_angles', {})
+        
+        print(f"📁 加载姿态: {pose_name}")
+        
+        # 应用姿态到关节控制器
+        self.set_pose(joint_angles)
+        
+        # 更新姿态信息显示
+        if self.pose_control:
+            self.pose_control.update_current_pose(joint_angles)
+    
+    def on_pose_deleted(self, pose_name: str):
+        """姿态删除处理"""
+        print(f"🗑️ 姿态已删除: {pose_name}")
     
     def set_robot_model(self, robot_model: RobotModel):
         """设置机器人模型"""
@@ -229,8 +381,18 @@ class ControlPanel(QWidget):
     
     def set_pose(self, pose_data: Dict[str, float]):
         """设置姿态"""
+        # 更新当前姿态数据
+        self.current_pose.update(pose_data)
+        
+        # 使用平滑过渡应用到机器人模型
+        if self.robot_model:
+            print(f"🎯 开始平滑过渡到姿态: {len(pose_data)} 个关节")
+            self.robot_model.set_joint_angles(pose_data, smooth=True)
+        
+        # 更新UI控件显示
         for leg_group in self.leg_groups.values():
             leg_group.set_joint_angles(pose_data)
+        
         print(f"🎯 姿态已设置: {len(pose_data)} 个关节")
     
     @property
@@ -242,6 +404,30 @@ class ControlPanel(QWidget):
     def refocus_btn_ref(self):
         """获取重新聚焦按钮引用"""
         return self.camera_control.refocus_btn_ref if self.camera_control else None
+    
+    def toggle_global_precision(self, checked: bool):
+        """切换全局精细控制"""
+        print(f"🎛️ 全局精细控制: {'开启' if checked else '关闭'}")
+        
+        for leg_group in self.leg_groups.values():
+            for joint_widget in leg_group.joint_widgets.values():
+                joint_widget.precision_btn.setChecked(checked)
+    
+    def toggle_camera_tracking(self, checked: bool):
+        """切换相机追踪"""
+        if self.camera_control:
+            # 找到相机追踪按钮并切换状态
+            if hasattr(self.camera_control, 'tracking_btn_ref'):
+                self.camera_control.tracking_btn_ref.setChecked(checked)
+        print(f"📷 相机追踪: {'开启' if checked else '关闭'}")
+    
+    def refocus_camera(self):
+        """重新聚焦相机"""
+        if self.camera_control:
+            # 触发重新聚焦
+            if hasattr(self.camera_control, 'refocus_btn_ref'):
+                self.camera_control.refocus_btn_ref.click()
+        print("🎯 重新聚焦相机")
 
 
 def create_control_panel(robot_model: Optional[RobotModel] = None) -> ControlPanel:

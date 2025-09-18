@@ -6,6 +6,7 @@ ODogExample核心模块 - 机器人模型封装
 
 import mujoco
 import numpy as np
+import math
 from typing import Optional, Dict, Any
 import os
 
@@ -205,13 +206,14 @@ class RobotModel:
         """根据名称获取关节ID"""
         return self.joint_ids.get(joint_name)
     
-    def set_joint_angle(self, joint_name: str, angle: float) -> bool:
+    def set_joint_angle(self, joint_name: str, angle: float, smooth: bool = True) -> bool:
         """
         设置关节角度
         
         Args:
             joint_name: 关节名称
             angle: 角度（弧度）
+            smooth: 是否使用平滑过渡
             
         Returns:
             bool: 设置是否成功
@@ -228,23 +230,39 @@ class RobotModel:
             # 获取关节地址
             joint_addr = self.model.jnt_qposadr[joint_id]
             
-            # 设置关节角度
-            self.data.qpos[joint_addr] = angle
-            
-            # 重要：同时设置执行器控制信号，确保位置维持
-            # 找到对应的执行器ID
-            actuator_id = None
-            for i in range(self.model.nu):
-                if self.model.actuator(i).trnid[0] == joint_id:  # 执行器控制的关节ID
-                    actuator_id = i
-                    break
-            
-            if actuator_id is not None:
-                # 设置执行器控制信号为目标角度
-                self.data.ctrl[actuator_id] = angle
-                print(f"🎯 设置执行器控制信号: {joint_name} -> {angle:.3f} rad (actuator_id={actuator_id})")
+            if smooth:
+                # 使用执行器控制信号实现平滑过渡
+                # 找到对应的执行器ID
+                actuator_id = None
+                for i in range(self.model.nu):
+                    if self.model.actuator(i).trnid[0] == joint_id:  # 执行器控制的关节ID
+                        actuator_id = i
+                        break
+                
+                if actuator_id is not None:
+                    # 只设置执行器控制信号，让物理引擎平滑过渡到目标角度
+                    self.data.ctrl[actuator_id] = angle
+                    print(f"🎯 设置目标角度: {joint_name} -> {math.degrees(angle):.1f}° (平滑过渡)")
+                else:
+                    print(f"⚠️  未找到关节 {joint_name} 对应的执行器")
+                    return False
             else:
-                print(f"⚠️  未找到关节 {joint_name} 对应的执行器")
+                # 直接设置关节角度（瞬时切换）
+                self.data.qpos[joint_addr] = angle
+                
+                # 设置执行器控制信号以维持位置
+                actuator_id = None
+                for i in range(self.model.nu):
+                    if self.model.actuator(i).trnid[0] == joint_id:
+                        actuator_id = i
+                        break
+                
+                if actuator_id is not None:
+                    self.data.ctrl[actuator_id] = angle
+                    print(f"⚡ 瞬时设置: {joint_name} -> {math.degrees(angle):.1f}°")
+                else:
+                    print(f"⚠️  未找到关节 {joint_name} 对应的执行器")
+                    return False
             
             # 前向动力学计算
             mujoco.mj_forward(self.model, self.data)
@@ -253,6 +271,82 @@ class RobotModel:
             
         except Exception as e:
             print(f"❌ 设置关节角度失败: {e}")
+            return False
+    
+    def set_joint_angles(self, joint_angles: Dict[str, float], smooth: bool = True) -> bool:
+        """
+        批量设置关节角度
+        
+        Args:
+            joint_angles: 关节名称到角度的映射
+            smooth: 是否使用平滑过渡
+            
+        Returns:
+            bool: 设置是否成功
+        """
+        if not self.model or not self.data:
+            return False
+        
+        success_count = 0
+        total_count = len(joint_angles)
+        
+        try:
+            if smooth:
+                # 平滑过渡：只设置执行器控制信号，让物理引擎处理过渡
+                for joint_name, target_angle in joint_angles.items():
+                    joint_id = self.get_joint_id(joint_name)
+                    if joint_id is not None:
+                        # 找到对应的执行器ID
+                        actuator_id = None
+                        for i in range(self.model.nu):
+                            if self.model.actuator(i).trnid[0] == joint_id:
+                                actuator_id = i
+                                break
+                        
+                        if actuator_id is not None:
+                            self.data.ctrl[actuator_id] = target_angle
+                            success_count += 1
+                        else:
+                            print(f"⚠️  未找到关节 {joint_name} 对应的执行器")
+                    else:
+                        print(f"⚠️  关节不存在: {joint_name}")
+                
+                if success_count > 0:
+                    print(f"🎯 开始平滑过渡: {success_count}/{total_count} 个关节")
+                
+            else:
+                # 瞬时切换：直接设置关节角度
+                for joint_name, target_angle in joint_angles.items():
+                    joint_id = self.get_joint_id(joint_name)
+                    if joint_id is not None:
+                        joint_addr = self.model.jnt_qposadr[joint_id]
+                        self.data.qpos[joint_addr] = target_angle
+                        
+                        # 设置执行器控制信号以维持位置
+                        actuator_id = None
+                        for i in range(self.model.nu):
+                            if self.model.actuator(i).trnid[0] == joint_id:
+                                actuator_id = i
+                                break
+                        
+                        if actuator_id is not None:
+                            self.data.ctrl[actuator_id] = target_angle
+                            success_count += 1
+                        else:
+                            print(f"⚠️  未找到关节 {joint_name} 对应的执行器")
+                    else:
+                        print(f"⚠️  关节不存在: {joint_name}")
+                
+                if success_count > 0:
+                    print(f"⚡ 瞬时设置完成: {success_count}/{total_count} 个关节")
+            
+            # 前向动力学计算
+            mujoco.mj_forward(self.model, self.data)
+            
+            return success_count > 0
+            
+        except Exception as e:
+            print(f"❌ 批量设置关节角度失败: {e}")
             return False
     
     def get_joint_angle(self, joint_name: str) -> Optional[float]:
@@ -363,6 +457,38 @@ class RobotModel:
         except Exception as e:
             print(f"❌ 重置模型失败: {e}")
     
+    def reload_model(self):
+        """重新加载模型（完全重新开始模拟）"""
+        if not self.model_path:
+            print("❌ 没有模型文件路径，无法重新加载")
+            return False
+        
+        try:
+            print(f"🔄 重新加载模型: {self.model_path}")
+            
+            # 重新加载模型
+            self.model = mujoco.MjModel.from_xml_path(self.model_path)
+            self.data = mujoco.MjData(self.model)
+            
+            # 重新初始化模型状态
+            mujoco.mj_forward(self.model, self.data)
+            
+            # 重新提取模型信息
+            self._extract_model_info()
+            self._calculate_model_stats()
+            
+            print("✅ 模型重新加载成功")
+            print(f"   关节数量: {len(self.joint_names)}")
+            print(f"   广义坐标: {self.nq}")
+            print(f"   广义速度: {self.nv}")
+            print(f"   控制输入: {self.nu}")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ 重新加载模型失败: {e}")
+            return False
+    
     def get_model_stats(self) -> Dict[str, Any]:
         """获取模型统计信息"""
         return self.model_stats.copy()
@@ -395,7 +521,14 @@ class RobotModel:
 def create_test_model():
     """创建测试用的机器人模型实例"""
     # 使用带有执行器的完整模型文件
-    model_path = "model-actuator-position.xml"
+    import os
+    # 获取当前文件的目录，然后找到模型文件
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(current_dir, "..", "model-actuator-position.xml")
+    
+    # 如果文件不存在，尝试使用相对路径
+    if not os.path.exists(model_path):
+        model_path = "model-actuator-position.xml"
     
     robot = RobotModel(model_path)
     

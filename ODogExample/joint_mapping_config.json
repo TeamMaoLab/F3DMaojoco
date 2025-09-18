@@ -1,0 +1,166 @@
+{
+  "joint_definitions": {
+    "xuan_zhuan_1": {
+      "joint_id": 0,
+      "joint_name": "xuan_zhuan_1",
+      "actuator_id": 0,
+      "body_name": "lfu",
+      "leg_position": "left_front",
+      "joint_type": "hip",
+      "description": "左前腿髋关节",
+      "movement_range": [
+        -1.57,
+        1.57
+      ],
+      "default_angle": 0.0,
+      "control_gain": 1.0
+    },
+    "xuan_zhuan_2": {
+      "joint_id": 1,
+      "joint_name": "xuan_zhuan_2",
+      "actuator_id": 1,
+      "body_name": "lfd",
+      "leg_position": "left_front",
+      "joint_type": "knee",
+      "description": "左前腿膝关节",
+      "movement_range": [
+        -1.57,
+        1.57
+      ],
+      "default_angle": 0.0,
+      "control_gain": 1.0
+    },
+    "xuan_zhuan_3": {
+      "joint_id": 2,
+      "joint_name": "xuan_zhuan_3",
+      "actuator_id": 2,
+      "body_name": "lbu",
+      "leg_position": "left_back",
+      "joint_type": "hip",
+      "description": "左后腿髋关节",
+      "movement_range": [
+        -1.57,
+        1.57
+      ],
+      "default_angle": 0.0,
+      "control_gain": 1.0
+    },
+    "xuan_zhuan_4": {
+      "joint_id": 3,
+      "joint_name": "xuan_zhuan_4",
+      "actuator_id": 3,
+      "body_name": "lbd",
+      "leg_position": "left_back",
+      "joint_type": "knee",
+      "description": "左后腿膝关节",
+      "movement_range": [
+        -1.57,
+        1.57
+      ],
+      "default_angle": 0.0,
+      "control_gain": 1.0
+    },
+    "xuan_zhuan_5": {
+      "joint_id": 4,
+      "joint_name": "xuan_zhuan_5",
+      "actuator_id": 4,
+      "body_name": "rbu",
+      "leg_position": "right_back",
+      "joint_type": "hip",
+      "description": "右后腿髋关节",
+      "movement_range": [
+        -1.57,
+        1.57
+      ],
+      "default_angle": 0.0,
+      "control_gain": 1.0
+    },
+    "xuan_zhuan_6": {
+      "joint_id": 5,
+      "joint_name": "xuan_zhuan_6",
+      "actuator_id": 5,
+      "body_name": "rbd",
+      "leg_position": "right_back",
+      "joint_type": "knee",
+      "description": "右后腿膝关节",
+      "movement_range": [
+        -1.57,
+        1.57
+      ],
+      "default_angle": 0.0,
+      "control_gain": 1.0
+    },
+    "xuan_zhuan_7": {
+      "joint_id": 6,
+      "joint_name": "xuan_zhuan_7",
+      "actuator_id": 6,
+      "body_name": "rfu",
+      "leg_position": "right_front",
+      "joint_type": "hip",
+      "description": "右前腿髋关节",
+      "movement_range": [
+        -1.57,
+        1.57
+      ],
+      "default_angle": 0.0,
+      "control_gain": 1.0
+    },
+    "xuan_zhuan_8": {
+      "joint_id": 7,
+      "joint_name": "xuan_zhuan_8",
+      "actuator_id": 7,
+      "body_name": "rfd",
+      "leg_position": "right_front",
+      "joint_type": "knee",
+      "description": "右前腿膝关节",
+      "movement_range": [
+        -1.57,
+        1.57
+      ],
+      "default_angle": 0.0,
+      "control_gain": 1.0
+    }
+  },
+  "leg_groups": {
+    "left_front": [
+      "xuan_zhuan_1",
+      "xuan_zhuan_2"
+    ],
+    "left_back": [
+      "xuan_zhuan_3",
+      "xuan_zhuan_4"
+    ],
+    "right_back": [
+      "xuan_zhuan_5",
+      "xuan_zhuan_6"
+    ],
+    "right_front": [
+      "xuan_zhuan_7",
+      "xuan_zhuan_8"
+    ]
+  },
+  "joint_types": {
+    "hip": [
+      "xuan_zhuan_1",
+      "xuan_zhuan_3",
+      "xuan_zhuan_5",
+      "xuan_zhuan_7"
+    ],
+    "knee": [
+      "xuan_zhuan_2",
+      "xuan_zhuan_4",
+      "xuan_zhuan_6",
+      "xuan_zhuan_8"
+    ]
+  },
+  "display_names": {
+    "xuan_zhuan_1": "左前腿髋关节",
+    "xuan_zhuan_2": "左前腿膝关节",
+    "xuan_zhuan_3": "左后腿髋关节",
+    "xuan_zhuan_4": "左后腿膝关节",
+    "xuan_zhuan_5": "右后腿髋关节",
+    "xuan_zhuan_6": "右后腿膝关节",
+    "xuan_zhuan_7": "右前腿髋关节",
+    "xuan_zhuan_8": "右前腿膝关节"
+  }
+}
