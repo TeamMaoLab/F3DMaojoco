@@ -128,7 +128,7 @@ class MuJoCoRenderer:
         else:
             # 进行物理计算以实现平滑过渡
             # 保持用户设置的actuator控制信号不变
-            for _ in range(2):  # 适中的物理计算步数，平衡响应速度和稳定性
+            for _ in range(15):  # 适中的物理计算步数，平衡响应速度和稳定性
                 mujoco.mj_step(self.robot.model, self.robot.data)
         
         # 同步相机参数
