@@ -239,13 +239,46 @@ class PoseControlGroup(QGroupBox):
     
     def __init__(self, parent=None):
         super().__init__("🎯 姿态操作", parent)
-        self.current_pose = {}
         self.pose_manager = get_pose_manager()
         self.pose_list_widget = None
+        # Initialize current_pose with default joint angles
+        self.current_pose = self._get_default_pose()
+        
+        # Validate initialization
+        if not self.current_pose or not isinstance(self.current_pose, dict) or len(self.current_pose) == 0:
+            print("❌ 姿态控制组初始化失败：current_pose 为空")
+            # Emergency fallback
+            self.current_pose = {"xuan_zhuan_1": 0.0}
+        else:
+            print(f"✅ 姿态控制组初始化成功：{len(self.current_pose)} 个关节")
+        
         self.init_ui()
         self.load_pose_list()
         
         print("🎯 姿态控制组初始化完成")
+    
+    def _get_default_pose(self):
+        """获取默认姿态"""
+        try:
+            # Try to load the default pose from pose manager
+            default_pose = self.pose_manager.load_pose("默认姿态")
+            if default_pose and isinstance(default_pose, dict) and len(default_pose) > 0:
+                return default_pose
+        except Exception as e:
+            print(f"⚠️ 无法加载默认姿态: {e}")
+        
+        # Fallback to hardcoded default pose with all 8 joints
+        default_pose = {
+            "xuan_zhuan_1": 0.0, "xuan_zhuan_2": 0.0, "xuan_zhuan_3": 0.0, "xuan_zhuan_4": 0.0,
+            "xuan_zhuan_5": 0.0, "xuan_zhuan_6": 0.0, "xuan_zhuan_7": 0.0, "xuan_zhuan_8": 0.0
+        }
+        
+        # Validate that we have a proper default pose
+        if not default_pose or len(default_pose) == 0:
+            print("❌ 默认姿态初始化失败，使用紧急 fallback")
+            return {"xuan_zhuan_1": 0.0}  # At least one joint to prevent empty data
+        
+        return default_pose
     
     def init_ui(self):
         """初始化UI"""
@@ -366,9 +399,20 @@ class PoseControlGroup(QGroupBox):
     
     def save_current_pose(self):
         """保存当前姿态"""
-        if not self.current_pose:
+        if not self.current_pose or not isinstance(self.current_pose, dict) or len(self.current_pose) == 0:
             QMessageBox.warning(self, "警告", "没有当前姿态数据可保存！")
             return
+        
+        # Check if current pose contains valid joint angles
+        if not any(abs(angle) > 0.001 for angle in self.current_pose.values()):
+            reply = QMessageBox.question(
+                self, "确认保存", 
+                "当前所有关节角度都为0，确定要保存这个姿态吗？",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
         
         # 获取已存在的姿态名称
         existing_names = list(self.pose_manager.get_pose_names())
@@ -457,10 +501,14 @@ class PoseControlGroup(QGroupBox):
     
     def update_current_pose(self, pose_data: Dict[str, float]):
         """更新当前姿态数据"""
-        self.current_pose = pose_data.copy()
+        if pose_data and isinstance(pose_data, dict) and len(pose_data) > 0:
+            self.current_pose = pose_data.copy()
+        else:
+            print(f"⚠️ 接收到无效的姿态数据: {pose_data}")
+            # Keep the current pose unchanged if invalid data is received
         
         # 更新状态显示
-        non_zero_count = sum(1 for angle in pose_data.values() if abs(angle) > 0.01)
+        non_zero_count = sum(1 for angle in self.current_pose.values() if abs(angle) > 0.01)
         self.update_status(f"当前姿态: {non_zero_count} 个非零关节")
     
     def update_status(self, message: str):

@@ -215,9 +215,15 @@ class PoseManager:
         """
         try:
             # 验证关节角度数据
-            if not joint_angles:
-                print("❌ 关节角度数据为空")
+            if not joint_angles or not isinstance(joint_angles, dict) or len(joint_angles) == 0:
+                print(f"❌ 关节角度数据为空或无效: {joint_angles}")
                 return False
+            
+            # 验证关节角度数据的类型
+            for joint_name, angle in joint_angles.items():
+                if not isinstance(angle, (int, float)):
+                    print(f"❌ 关节 {joint_name} 的角度数据类型无效: {type(angle)}")
+                    return False
             
             # 如果姿态已存在，更新它
             if name in self._poses:

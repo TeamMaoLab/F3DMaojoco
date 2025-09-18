@@ -57,15 +57,17 @@ class MotionSequenceTabWidget(QGroupBox):
         
     def init_ui(self):
         """初始化UI"""
-        layout = QVBoxLayout()
-        layout.setSpacing(8)
+        main_layout = QVBoxLayout()
+        main_layout.setSpacing(8)
         
-        # 左侧区域：序列和关键帧
-        left_layout = QVBoxLayout()
+        # 上方区域：动作序列和关键帧（两列）
+        top_layout = QHBoxLayout()
+        top_layout.setSpacing(10)
         
-        # 动作序列区域
+        # 左上：动作序列
         sequence_group = QGroupBox("🎬 动作序列")
         sequence_layout = QVBoxLayout()
+        sequence_layout.setSpacing(8)
         
         # 序列操作按钮
         seq_btn_layout = QHBoxLayout()
@@ -83,8 +85,7 @@ class MotionSequenceTabWidget(QGroupBox):
         
         # 序列列表
         self.sequence_list = QListWidget()
-        self.sequence_list.setMinimumHeight(100)
-        self.sequence_list.setMaximumHeight(150)
+        self.sequence_list.setMinimumHeight(120)
         self.sequence_list.setStyleSheet("""
             QListWidget {
                 border: 1px solid #ddd;
@@ -103,11 +104,12 @@ class MotionSequenceTabWidget(QGroupBox):
         """)
         sequence_layout.addWidget(self.sequence_list)
         sequence_group.setLayout(sequence_layout)
-        left_layout.addWidget(sequence_group)
+        top_layout.addWidget(sequence_group, stretch=1)
         
-        # 关键帧区域
+        # 右上：关键帧
         keyframe_group = QGroupBox("🎯 关键帧")
         keyframe_layout = QVBoxLayout()
+        keyframe_layout.setSpacing(8)
         
         # 关键帧操作按钮
         key_btn_layout = QHBoxLayout()
@@ -125,8 +127,7 @@ class MotionSequenceTabWidget(QGroupBox):
         
         # 关键帧列表
         self.keyframe_list = QListWidget()
-        self.keyframe_list.setMinimumHeight(100)
-        self.keyframe_list.setMaximumHeight(150)
+        self.keyframe_list.setMinimumHeight(120)
         self.keyframe_list.setStyleSheet("""
             QListWidget {
                 border: 1px solid #ddd;
@@ -145,14 +146,18 @@ class MotionSequenceTabWidget(QGroupBox):
         """)
         keyframe_layout.addWidget(self.keyframe_list)
         keyframe_group.setLayout(keyframe_layout)
-        left_layout.addWidget(keyframe_group)
+        top_layout.addWidget(keyframe_group, stretch=1)
         
-        # 右侧区域：播放控制
-        right_layout = QVBoxLayout()
+        main_layout.addLayout(top_layout)
         
-        # 播放控制区域
+        # 下方区域：播放控制（两列）
+        bottom_layout = QHBoxLayout()
+        bottom_layout.setSpacing(10)
+        
+        # 左下：播放控制
         playback_group = QGroupBox("🎮 播放控制")
         playback_layout = QVBoxLayout()
+        playback_layout.setSpacing(8)
         
         # 播放按钮
         play_btn_layout = QHBoxLayout()
@@ -189,17 +194,30 @@ class MotionSequenceTabWidget(QGroupBox):
         
         playback_layout.addLayout(speed_layout)
         playback_group.setLayout(playback_layout)
-        right_layout.addWidget(playback_group)
+        bottom_layout.addWidget(playback_group, stretch=1)
         
-        right_layout.addStretch()
+        # 右下：信息显示
+        info_group = QGroupBox("📊 序列信息")
+        info_layout = QVBoxLayout()
+        info_layout.setSpacing(8)
         
-        # 组合左右布局
-        content_layout = QHBoxLayout()
-        content_layout.addWidget(QWidget(layout=left_layout), stretch=3)
-        content_layout.addWidget(QWidget(layout=right_layout), stretch=2)
+        # 序列信息显示
+        self.info_label = QLabel("未选择序列")
+        self.info_label.setWordWrap(True)
+        self.info_label.setStyleSheet("color: #666; font-size: 12px;")
+        info_layout.addWidget(self.info_label)
         
-        layout.addLayout(content_layout)
-        self.setLayout(layout)
+        # 当前关键帧信息
+        self.keyframe_info_label = QLabel("未选择关键帧")
+        self.keyframe_info_label.setWordWrap(True)
+        self.keyframe_info_label.setStyleSheet("color: #666; font-size: 12px;")
+        info_layout.addWidget(self.keyframe_info_label)
+        
+        info_group.setLayout(info_layout)
+        bottom_layout.addWidget(info_group, stretch=1)
+        
+        main_layout.addLayout(bottom_layout)
+        self.setLayout(main_layout)
     
     def setup_connections(self):
         """设置信号连接"""
@@ -294,6 +312,7 @@ class MotionSequenceTabWidget(QGroupBox):
             if sequence:
                 self.current_sequence = sequence
                 self.update_keyframe_list()
+                self.update_sequence_info()
                 self.progress_bar.setValue(0)
                 self.progress_label.setText(f"时间: 0.0s / {sequence.total_duration:.1f}s")
                 self.sequenceSelected.emit(seq_name)
@@ -388,7 +407,10 @@ class MotionSequenceTabWidget(QGroupBox):
         current_item = self.keyframe_list.currentItem()
         if current_item:
             keyframe_index = current_item.data(Qt.UserRole)
+            self.update_keyframe_info(keyframe_index)
             self.keyframeSelected.emit(keyframe_index)
+        else:
+            self.keyframe_info_label.setText("未选择关键帧")
     
     def toggle_playback(self):
         """切换播放状态"""
@@ -446,6 +468,33 @@ class MotionSequenceTabWidget(QGroupBox):
             progress = (self.current_time / self.current_sequence.total_duration * 100) if self.current_sequence.total_duration > 0 else 0
             self.progress_bar.setValue(int(progress))
             self.progress_label.setText(f"时间: {self.current_time:.1f}s / {self.current_sequence.total_duration:.1f}s")
+    
+    def update_sequence_info(self):
+        """更新序列信息显示"""
+        if self.current_sequence:
+            info_text = f"序列名称: {self.current_sequence.name}\\n"
+            info_text += f"关键帧数: {len(self.current_sequence.keyframes)}\\n"
+            info_text += f"总时长: {self.current_sequence.total_duration:.1f}秒\\n"
+            info_text += f"循环播放: {'是' if self.current_sequence.loop else '否'}"
+            self.info_label.setText(info_text)
+        else:
+            self.info_label.setText("未选择序列")
+    
+    def update_keyframe_info(self, keyframe_index: int):
+        """更新关键帧信息显示"""
+        if self.current_sequence and 0 <= keyframe_index < len(self.current_sequence.keyframes):
+            keyframe = self.current_sequence.keyframes[keyframe_index]
+            timestamp = sum(kf.total_duration for kf in self.current_sequence.keyframes[:keyframe_index])
+            
+            info_text = f"关键帧: 第{keyframe_index+1}帧\\n"
+            info_text += f"时间戳: {timestamp:.1f}秒\\n"
+            info_text += f"姿态: {keyframe.pose_name}\\n"
+            info_text += f"过渡时长: {keyframe.transition_duration:.1f}秒\\n"
+            info_text += f"保持时长: {keyframe.hold_duration:.1f}秒\\n"
+            info_text += f"插值类型: {keyframe.interpolation_type}"
+            self.keyframe_info_label.setText(info_text)
+        else:
+            self.keyframe_info_label.setText("未选择关键帧")
 
 
 if __name__ == "__main__":
