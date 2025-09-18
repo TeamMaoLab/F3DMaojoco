@@ -7,21 +7,27 @@ ODogExample GUI模块 - 全局控制组件
 import math
 import sys
 import os
-from typing import Dict
+from typing import Dict, List, Optional
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, 
-    QPushButton, QLabel
+    QPushButton, QLabel, QListWidget, QListWidgetItem,
+    QMessageBox, QFrame
 )
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, Qt
+from PySide6.QtGui import QFont
 
 try:
     from ..core.robot_model import RobotModel
     from ..core.joint_mapping import JointMapping
+    from .pose_save_dialog import show_save_pose_dialog
+    from ..pose_manager import get_pose_manager
 except ImportError:
     # 如果相对导入失败，尝试绝对导入
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from core.robot_model import RobotModel
     from core.joint_mapping import JointMapping
+    from gui.pose_save_dialog import show_save_pose_dialog
+    from gui.pose_manager import get_pose_manager
 
 
 class GlobalControlGroup(QGroupBox):
@@ -228,65 +234,250 @@ class PoseControlGroup(QGroupBox):
     
     # 信号定义
     poseSaved = Signal(str, dict)  # 姿态保存
-    poseLoaded = Signal()          # 姿态加载
+    poseLoaded = Signal(dict)      # 姿态加载
+    poseDeleted = Signal(str)      # 姿态删除
     
     def __init__(self, parent=None):
         super().__init__("🎯 姿态操作", parent)
-        self.pose_info_label = None
         self.current_pose = {}
+        self.pose_manager = get_pose_manager()
+        self.pose_list_widget = None
         self.init_ui()
+        self.load_pose_list()
+        
+        print("🎯 姿态控制组初始化完成")
     
     def init_ui(self):
         """初始化UI"""
         layout = QVBoxLayout()
+        layout.setSpacing(8)
+        
+        # 操作按钮
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(8)
+        
+        self.save_btn = QPushButton("💾 保存当前")
+        self.save_btn.setMinimumHeight(30)
+        self.save_btn.clicked.connect(self.save_current_pose)
+        
+        self.load_btn = QPushButton("📁 加载选中")
+        self.load_btn.setMinimumHeight(30)
+        self.load_btn.clicked.connect(self.load_selected_pose)
+        
+        self.delete_btn = QPushButton("🗑️ 删除选中")
+        self.delete_btn.setMinimumHeight(30)
+        self.delete_btn.clicked.connect(self.delete_selected_pose)
+        
+        self.refresh_btn = QPushButton("🔄 刷新")
+        self.refresh_btn.setMinimumHeight(30)
+        self.refresh_btn.clicked.connect(self.refresh_pose_list)
+        
+        button_layout.addWidget(self.save_btn)
+        button_layout.addWidget(self.load_btn)
+        button_layout.addWidget(self.delete_btn)
+        button_layout.addWidget(self.refresh_btn)
+        
+        layout.addLayout(button_layout)
+        
+        # 分隔线
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        line.setStyleSheet("background-color: #ccc; margin: 5px 0;")
+        layout.addWidget(line)
+        
+        # 姿态列表
+        list_label = QLabel("已保存的姿态:")
+        list_label.setStyleSheet("font-weight: bold; color: #333;")
+        layout.addWidget(list_label)
+        
+        self.pose_list_widget = QListWidget()
+        self.pose_list_widget.setMinimumHeight(150)
+        self.pose_list_widget.setMaximumHeight(200)
+        
+        # 设置列表样式
+        self.pose_list_widget.setStyleSheet("""
+            QListWidget {
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background-color: #f9f9f9;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 8px;
+                border-bottom: 1px solid #eee;
+            }
+            QListWidget::item:selected {
+                background-color: #e3f2fd;
+                color: #1976d2;
+            }
+            QListWidget::item:hover {
+                background-color: #f5f5f5;
+            }
+        """)
+        
+        # 双击加载
+        self.pose_list_widget.itemDoubleClicked.connect(self.on_item_double_clicked)
+        
+        layout.addWidget(self.pose_list_widget)
         
         # 当前姿态信息
-        self.pose_info_label = QLabel("当前姿态: 默认姿态")
-        self.pose_info_label.setStyleSheet("background-color: #f5f5f5; padding: 5px; border: 1px solid #ddd;")
-        layout.addWidget(self.pose_info_label)
+        info_layout = QHBoxLayout()
+        info_label = QLabel("当前状态:")
+        info_label.setStyleSheet("font-weight: bold; color: #333;")
         
-        # 姿态操作按钮
-        button_layout = QHBoxLayout()
+        self.status_label = QLabel("就绪")
+        self.status_label.setStyleSheet("color: #666; font-size: 12px;")
         
-        save_pose_btn = QPushButton("💾 保存姿态")
-        save_pose_btn.clicked.connect(self.save_current_pose)
+        info_layout.addWidget(info_label)
+        info_layout.addWidget(self.status_label)
+        info_layout.addStretch()
         
-        load_pose_btn = QPushButton("📁 加载姿态")
-        load_pose_btn.clicked.connect(self.load_pose_dialog)
-        
-        button_layout.addWidget(save_pose_btn)
-        button_layout.addWidget(load_pose_btn)
-        layout.addLayout(button_layout)
+        layout.addLayout(info_layout)
         
         self.setLayout(layout)
     
-    def update_pose_info(self, pose_data: Dict[str, float]):
-        """更新姿态信息显示"""
-        self.current_pose = pose_data
-        
-        non_zero_angles = {name: math.degrees(angle) 
-                          for name, angle in pose_data.items() 
-                          if abs(angle) > 0.01}
-        
-        if non_zero_angles:
-            angle_info = ", ".join([f"{name}: {angle:.1f}°" 
-                                  for name, angle in non_zero_angles.items()])
-            self.pose_info_label.setText(f"当前姿态: {angle_info}")
-        else:
-            self.pose_info_label.setText("当前姿态: 默认姿态")
+    def load_pose_list(self):
+        """加载姿态列表"""
+        try:
+            poses = self.pose_manager.get_all_poses()
+            self.pose_list_widget.clear()
+            
+            for pose_name, pose_data in poses.items():
+                item_text = f"{pose_name}"
+                if pose_data.description:
+                    item_text += f" - {pose_data.description}"
+                
+                item = QListWidgetItem(item_text)
+                item.setData(Qt.UserRole, pose_name)
+                
+                # 添加标签信息
+                if pose_data.tags:
+                    tag_text = f"[{', '.join(pose_data.tags)}]"
+                    item.setToolTip(f"{pose_name}\n描述: {pose_data.description}\n标签: {tag_text}")
+                
+                self.pose_list_widget.addItem(item)
+            
+            self.update_status(f"加载了 {len(poses)} 个姿态")
+            
+        except Exception as e:
+            self.update_status(f"加载姿态列表失败: {e}")
+            print(f"❌ 加载姿态列表失败: {e}")
     
     def save_current_pose(self):
         """保存当前姿态"""
-        pose_name = f"pose_{len(self.current_pose)}"
-        pose_data = {
-            'name': pose_name,
-            'joint_angles': self.current_pose.copy(),
-            'timestamp': 'current'
-        }
-        self.poseSaved.emit(pose_name, pose_data)
-        print(f"💾 姿态已保存: {pose_name}")
+        if not self.current_pose:
+            QMessageBox.warning(self, "警告", "没有当前姿态数据可保存！")
+            return
+        
+        # 获取已存在的姿态名称
+        existing_names = list(self.pose_manager.get_pose_names())
+        
+        # 显示保存对话框
+        result = show_save_pose_dialog(self.current_pose, existing_names, self)
+        
+        if result:
+            # 保存成功，刷新列表
+            self.load_pose_list()
+            self.update_status(f"已保存姿态: {result['name']}")
+            
+            # 发送信号
+            self.poseSaved.emit(result['name'], result)
     
-    def load_pose_dialog(self):
-        """加载姿态对话框（占位）"""
-        print("📁 姿态加载功能待实现")
-        self.poseLoaded.emit()
+    def load_selected_pose(self):
+        """加载选中的姿态"""
+        current_item = self.pose_list_widget.currentItem()
+        if not current_item:
+            QMessageBox.information(self, "提示", "请先选择要加载的姿态！")
+            return
+        
+        pose_name = current_item.data(Qt.UserRole)
+        self.load_pose_by_name(pose_name)
+    
+    def load_pose_by_name(self, pose_name: str):
+        """根据名称加载姿态"""
+        try:
+            joint_angles = self.pose_manager.load_pose(pose_name)
+            if joint_angles:
+                self.update_status(f"已加载姿态: {pose_name}")
+                
+                # 发送信号
+                pose_info = {
+                    'name': pose_name,
+                    'joint_angles': joint_angles
+                }
+                self.poseLoaded.emit(pose_info)
+            else:
+                QMessageBox.warning(self, "加载失败", f"无法加载姿态: {pose_name}")
+                
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"加载姿态时发生错误: {e}")
+    
+    def delete_selected_pose(self):
+        """删除选中的姿态"""
+        current_item = self.pose_list_widget.currentItem()
+        if not current_item:
+            QMessageBox.information(self, "提示", "请先选择要删除的姿态！")
+            return
+        
+        pose_name = current_item.data(Qt.UserRole)
+        
+        # 确认删除
+        reply = QMessageBox.question(
+            self, "确认删除", 
+            f"确定要删除姿态 '{pose_name}' 吗？\n此操作不可恢复！",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            try:
+                success = self.pose_manager.delete_pose(pose_name)
+                if success:
+                    self.load_pose_list()
+                    self.update_status(f"已删除姿态: {pose_name}")
+                    
+                    # 发送信号
+                    self.poseDeleted.emit(pose_name)
+                else:
+                    QMessageBox.warning(self, "删除失败", f"无法删除姿态: {pose_name}")
+                    
+            except Exception as e:
+                QMessageBox.critical(self, "错误", f"删除姿态时发生错误: {e}")
+    
+    def on_item_double_clicked(self, item):
+        """双击列表项处理"""
+        pose_name = item.data(Qt.UserRole)
+        self.load_pose_by_name(pose_name)
+    
+    def refresh_pose_list(self):
+        """刷新姿态列表"""
+        self.load_pose_list()
+        self.update_status("姿态列表已刷新")
+    
+    def update_current_pose(self, pose_data: Dict[str, float]):
+        """更新当前姿态数据"""
+        self.current_pose = pose_data.copy()
+        
+        # 更新状态显示
+        non_zero_count = sum(1 for angle in pose_data.values() if abs(angle) > 0.01)
+        self.update_status(f"当前姿态: {non_zero_count} 个非零关节")
+    
+    def update_status(self, message: str):
+        """更新状态显示"""
+        if self.status_label:
+            self.status_label.setText(message)
+    
+    def get_selected_pose_name(self) -> Optional[str]:
+        """获取当前选中的姿态名称"""
+        current_item = self.pose_list_widget.currentItem()
+        if current_item:
+            return current_item.data(Qt.UserRole)
+        return None
+    
+    def set_buttons_enabled(self, enabled: bool):
+        """设置按钮启用状态"""
+        self.save_btn.setEnabled(enabled)
+        self.load_btn.setEnabled(enabled)
+        self.delete_btn.setEnabled(enabled)
+        self.refresh_btn.setEnabled(enabled)

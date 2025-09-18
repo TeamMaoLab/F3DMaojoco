@@ -258,6 +258,7 @@ class ControlPanel(QWidget):
         if self.pose_control:
             self.pose_control.poseSaved.connect(self.on_pose_saved)
             self.pose_control.poseLoaded.connect(self.on_pose_loaded)
+            self.pose_control.poseDeleted.connect(self.on_pose_deleted)
     
     def on_joint_angle_changed(self, joint_name: str, angle: float):
         """关节角度改变处理"""
@@ -270,7 +271,7 @@ class ControlPanel(QWidget):
         
         # 更新姿态信息
         if self.pose_control:
-            self.pose_control.update_pose_info(self.current_pose)
+            self.pose_control.update_current_pose(self.current_pose)
         
         # 发送信号
         self.jointAngleChanged.emit(joint_name, angle)
@@ -351,9 +352,23 @@ class ControlPanel(QWidget):
         # 转发信号
         self.poseSaved.emit(pose_name, pose_data)
     
-    def on_pose_loaded(self):
+    def on_pose_loaded(self, pose_info: dict):
         """姿态加载处理"""
-        print("📁 姿态加载功能待实现")
+        pose_name = pose_info.get('name', '未知姿态')
+        joint_angles = pose_info.get('joint_angles', {})
+        
+        print(f"📁 加载姿态: {pose_name}")
+        
+        # 应用姿态到关节控制器
+        self.set_pose(joint_angles)
+        
+        # 更新姿态信息显示
+        if self.pose_control:
+            self.pose_control.update_current_pose(joint_angles)
+    
+    def on_pose_deleted(self, pose_name: str):
+        """姿态删除处理"""
+        print(f"🗑️ 姿态已删除: {pose_name}")
     
     def set_robot_model(self, robot_model: RobotModel):
         """设置机器人模型"""

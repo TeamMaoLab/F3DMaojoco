@@ -152,10 +152,10 @@ class PoseManager:
                     'xuan_zhuan_2': 0.0,
                     'xuan_zhuan_3': 0.0,
                     'xuan_zhuan_4': 0.0,
-                    'tui_1': 0.0,
-                    'tui_2': 0.0,
-                    'tui_3': 0.0,
-                    'tui_4': 0.0
+                    'xuan_zhuan_5': 0.0,
+                    'xuan_zhuan_6': 0.0,
+                    'xuan_zhuan_7': 0.0,
+                    'xuan_zhuan_8': 0.0
                 },
                 'description': '所有关节归零的默认姿态',
                 'tags': ['default', 'home']
@@ -164,13 +164,13 @@ class PoseManager:
                 'name': '站立姿态',
                 'joint_angles': {
                     'xuan_zhuan_1': 0.0,
-                    'xuan_zhuan_2': 0.0,
+                    'xuan_zhuan_2': -0.5,
                     'xuan_zhuan_3': 0.0,
-                    'xuan_zhuan_4': 0.0,
-                    'tui_1': -0.5,
-                    'tui_2': -0.5,
-                    'tui_3': -0.5,
-                    'tui_4': -0.5
+                    'xuan_zhuan_4': -0.5,
+                    'xuan_zhuan_5': 0.0,
+                    'xuan_zhuan_6': -0.5,
+                    'xuan_zhuan_7': 0.0,
+                    'xuan_zhuan_8': -0.5
                 },
                 'description': '四足站立的基础姿态',
                 'tags': ['standing', 'basic']
@@ -179,13 +179,13 @@ class PoseManager:
                 'name': '趴下姿态',
                 'joint_angles': {
                     'xuan_zhuan_1': 0.0,
-                    'xuan_zhuan_2': 0.0,
+                    'xuan_zhuan_2': 0.8,
                     'xuan_zhuan_3': 0.0,
-                    'xuan_zhuan_4': 0.0,
-                    'tui_1': 0.8,
-                    'tui_2': 0.8,
-                    'tui_3': 0.8,
-                    'tui_4': 0.8
+                    'xuan_zhuan_4': 0.8,
+                    'xuan_zhuan_5': 0.0,
+                    'xuan_zhuan_6': 0.8,
+                    'xuan_zhuan_7': 0.0,
+                    'xuan_zhuan_8': 0.8
                 },
                 'description': '四足趴下的休息姿态',
                 'tags': ['resting', 'lying']
