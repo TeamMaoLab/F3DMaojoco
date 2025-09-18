@@ -46,7 +46,7 @@ class MuJoCoRenderer:
         # 机器人位置跟踪
         self.initial_robot_position = None
         self.last_camera_update_time = 0
-        self.camera_tracking_enabled = True
+        self.camera_tracking_enabled = False
         
         print(f"🔧 MuJoCoRenderer 初始化完成，robot: {self.robot is not None}")
     

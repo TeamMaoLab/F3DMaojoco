@@ -144,7 +144,7 @@ class ControlPanel(QWidget):
         tracking_btn.setMinimumHeight(30)
         tracking_btn.setMaximumHeight(30)
         tracking_btn.setCheckable(True)
-        tracking_btn.setChecked(True)
+        tracking_btn.setChecked(False)
         tracking_btn.clicked.connect(self.toggle_camera_tracking)
         # 设置开关样式
         tracking_btn.setStyleSheet("""
