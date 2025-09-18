@@ -17,14 +17,14 @@ from PySide6.QtGui import QFont
 try:
     from ..core.robot_model import create_test_model, RobotModel
     from .viewer_widget import MuJoCoViewerWidget
-    from .control_panel import create_control_panel
+    from .tabbed_control_panel import create_tabbed_control_panel
     from .app_signals import SignalManager
 except ImportError:
     # 如果相对导入失败，尝试绝对导入
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from core.robot_model import create_test_model, RobotModel
     from gui.viewer_widget import MuJoCoViewerWidget
-    from gui.control_panel import create_control_panel
+    from gui.tabbed_control_panel import create_tabbed_control_panel
     from gui.app_signals import SignalManager
 
 
@@ -111,8 +111,8 @@ class MainApplication(QMainWindow):
             if self.viewer and self.viewer.robot:
                 robot = self.viewer.robot
             
-            # 创建控制面板
-            panel = create_control_panel(robot)
+            # 创建Tab页控制面板
+            panel = create_tabbed_control_panel(robot)
             
             if panel:
                 # 设置机器人模型到控制面板

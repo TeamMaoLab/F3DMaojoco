@@ -23,6 +23,7 @@ try:
         GlobalControlGroup, PrecisionControlGroup, 
         CameraControlGroup, PoseControlGroup
     )
+    from .pose_and_motion_control import PoseAndMotionControlGroup
 except ImportError:
     # 如果相对导入失败，尝试绝对导入
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -33,6 +34,7 @@ except ImportError:
         GlobalControlGroup, PrecisionControlGroup, 
         CameraControlGroup, PoseControlGroup
     )
+    from gui.pose_and_motion_control import PoseAndMotionControlGroup
 
 
 class ControlPanel(QWidget):
@@ -57,7 +59,7 @@ class ControlPanel(QWidget):
         self.global_control = None
         self.precision_control = None
         self.camera_control = None
-        self.pose_control = None
+        self.pose_and_motion_control = None
         
         # 设置尺寸策略，防止过度扩展
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
@@ -225,9 +227,9 @@ class ControlPanel(QWidget):
         self.camera_control.hide()
         main_layout.addWidget(self.camera_control)
           
-        # 姿态操作区域
-        self.pose_control = PoseControlGroup()
-        main_layout.addWidget(self.pose_control)
+        # 姿态和动作操作区域
+        self.pose_and_motion_control = PoseAndMotionControlGroup()
+        main_layout.addWidget(self.pose_and_motion_control)
         
         main_layout.addStretch()
         self.setLayout(main_layout)
@@ -254,11 +256,19 @@ class ControlPanel(QWidget):
             # 这些信号会由外部连接到查看器
             pass
         
-        # 连接姿态控制信号
-        if self.pose_control:
-            self.pose_control.poseSaved.connect(self.on_pose_saved)
-            self.pose_control.poseLoaded.connect(self.on_pose_loaded)
-            self.pose_control.poseDeleted.connect(self.on_pose_deleted)
+        # 连接姿态和动作控制信号
+        if self.pose_and_motion_control:
+            # 姿态控制信号
+            self.pose_and_motion_control.poseSaved.connect(self.on_pose_saved)
+            self.pose_and_motion_control.poseLoaded.connect(self.on_pose_loaded)
+            self.pose_and_motion_control.poseDeleted.connect(self.on_pose_deleted)
+            
+            # 动作控制信号
+            self.pose_and_motion_control.sequenceLoaded.connect(self.on_sequence_loaded)
+            self.pose_and_motion_control.keyframeSelected.connect(self.on_keyframe_selected)
+            self.pose_and_motion_control.playbackStarted.connect(self.on_playback_started)
+            self.pose_and_motion_control.playbackPaused.connect(self.on_playback_paused)
+            self.pose_and_motion_control.playbackStopped.connect(self.on_playback_stopped)
     
     def on_joint_angle_changed(self, joint_name: str, angle: float):
         """关节角度改变处理"""
@@ -270,8 +280,8 @@ class ControlPanel(QWidget):
             self.robot_model.set_joint_angle(joint_name, angle)
         
         # 更新姿态信息
-        if self.pose_control:
-            self.pose_control.update_current_pose(self.current_pose)
+        if self.pose_and_motion_control:
+            self.pose_and_motion_control.update_current_pose(self.current_pose)
         
         # 发送信号
         self.jointAngleChanged.emit(joint_name, angle)
@@ -310,8 +320,8 @@ class ControlPanel(QWidget):
                 self.current_pose = self.joint_mapping.get_default_pose()
                 
                 # 更新姿态信息显示
-                if self.pose_control:
-                    self.pose_control.update_pose_info(self.current_pose)
+                if self.pose_and_motion_control:
+                    self.pose_and_motion_control.update_status(f"重置完成: {len(self.current_pose)} 个关节")
                 
                 print("✅ 模拟重置完成")
             else:
@@ -327,8 +337,8 @@ class ControlPanel(QWidget):
             self.current_pose = self.joint_mapping.get_default_pose()
             
             # 更新姿态信息显示
-            if self.pose_control:
-                self.pose_control.update_pose_info(self.current_pose)
+            if self.pose_and_motion_control:
+                self.pose_and_motion_control.update_status(f"重置完成: {len(self.current_pose)} 个关节")
         
         self.allJointsReset.emit()
     
@@ -363,12 +373,38 @@ class ControlPanel(QWidget):
         self.set_pose(joint_angles)
         
         # 更新姿态信息显示
-        if self.pose_control:
-            self.pose_control.update_current_pose(joint_angles)
+        if self.pose_and_motion_control:
+            self.pose_and_motion_control.update_current_pose(joint_angles)
     
     def on_pose_deleted(self, pose_name: str):
         """姿态删除处理"""
         print(f"🗑️ 姿态已删除: {pose_name}")
+    
+    def on_sequence_loaded(self, sequence):
+        """动作序列加载处理"""
+        print(f"📁 动作序列已加载: {sequence.name if sequence else 'None'}")
+    
+    def on_keyframe_selected(self, keyframe_index: int, keyframe):
+        """关键帧选中处理"""
+        print(f"🎯 关键帧已选中: 第{keyframe_index+1}帧")
+        
+        # 关键帧包含姿态名称，需要先加载姿态
+        if hasattr(keyframe, 'pose_name'):
+            print(f"🎯 应用关键帧姿态: {keyframe.pose_name}")
+            # 这里可以添加加载姿态的逻辑
+            # 目前只打印日志
+    
+    def on_playback_started(self):
+        """播放开始处理"""
+        print("▶️ 动作播放已开始")
+    
+    def on_playback_paused(self):
+        """播放暂停处理"""
+        print("⏸️ 动作播放已暂停")
+    
+    def on_playback_stopped(self):
+        """播放停止处理"""
+        print("⏹️ 动作播放已停止")
     
     def set_robot_model(self, robot_model: RobotModel):
         """设置机器人模型"""
