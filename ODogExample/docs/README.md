@@ -431,62 +431,55 @@ gui/viewer_widget.py
 
 ```mermaid
 graph TD
-    A[程序启动] --> B{检查绑定状态}
-    B -->|未完全绑定| C[启动关节绑定向导]
-    B -->|已完全绑定| D[进入主功能界面]
+    A[程序启动] --> B[初始化系统]
+    B --> C[加载MuJoCo模型]
+    C --> D[创建主应用窗口]
+    D --> E[初始化3D渲染器]
+    E --> F[创建控制面板]
+    F --> G[连接信号系统]
+    G --> H[系统就绪]
     
-    C --> E[运动测试绑定流程]
-    E --> F[用户确认关节功能]
-    F --> G{所有关节绑定完成?}
-    G -->|否| E
-    G -->|是| D
+    H --> I[主应用窗口]
+    I --> J[3D渲染视图]
+    I --> K[关节控制面板]
+    I --> L[姿态管理面板]
     
-    D --> H[主应用窗口]
-    H --> I[姿态编辑标签页]
-    H --> J[动作编辑标签页]
+    J --> M[实时物理仿真]
+    K --> N[8自由度控制]
+    L --> O[姿态库操作]
     
-    I --> K[3D渲染视图]
-    I --> L[关节控制面板]
-    I --> M[姿态库管理]
-    
-    J --> K
-    J --> N[时间轴编辑器]
-    J --> O[关键帧管理]
-    J --> P[动作播放控制]
-    
-    I <--> J[标签页切换]
-    M -.->|姿态数据| O
-    L <-->|实时同步| K
-    N <-->|实时同步| K
+    M <--> N[实时同步]
+    N <--> O[数据交互]
+    J <--> K[3D预览]
 ```
 
 ### 核心模块关系
 ```mermaid
 graph LR
-    A[GUI Application] --> B[Binding Wizard]
-    A --> C[Main Interface]
+    A[GUI Application] --> B[Main Interface]
     
-    C --> D[3D Viewer]
-    C --> E[Pose Editor]
-    C --> F[Motion Editor]
-    C --> G[Control Panels]
+    B --> C[3D Viewer]
+    B --> D[Joint Controls]
+    B --> E[Pose Manager]
+    B --> F[Camera System]
     
-    A --> H[Core Modules]
-    H --> I[Binding Manager]
-    H --> J[Pose Manager]
-    H --> K[Motion Sequence]
-    H --> L[Robot Model]
+    A --> G[Core Modules]
+    G --> H[Robot Model]
+    G --> I[Joint Mapping]
+    G --> J[Pose Manager]
     
+    H --> C
     I --> D
     J --> E
-    J --> F
-    K --> F
-    L --> D
+    
+    D --> C[3D预览]
+    E --> C[姿态预览]
+    F --> C[相机控制]
 ```
 
 ## 🔧 核心功能实现
 
-### 1. 8自由度关节绑定
+### 1. 8自由度关节控制
 
 #### 关节定义
 根据 `model.xml` 分析，8个关节为：
@@ -499,58 +492,14 @@ graph LR
 - **xuan_zhuan_7**: 右前腿髋关节 (rfu body)
 - **xuan_zhuan_8**: 右前腿膝关节 (rfd body)
 
-#### 运动测试绑定流程
+#### 直接控制系统 ✅ **已实现**
+- ✅ **关节直接映射**: 基于模型XML的关节名称直接映射
+- ✅ **实时控制**: 通过滑块直接控制关节角度
+- ✅ **腿部控制组**: 按腿部分组控制（左前、右前、左后、右后）
+- ✅ **对称编辑**: 支持对称关节同步调节
+- ✅ **精细控制**: 0.1°精度调节模式
 
-```mermaid
-sequenceDiagram
-    participant S as 系统
-    participant U as 用户
-    participant J as 关节
-    participant D as 数据库
-    
-    loop 8个关节
-        S->>J: 移动到测试角度(±30°)
-        S->>U: 显示3D视图和选择界面
-        U->>S: 选择运动类型
-        S->>S: 推断关节位置和功能
-        S->>D: 保存绑定信息
-    end
-    
-    S->>D: 检查绑定完成状态
-    alt 所有关节已绑定
-        S->>U: 进入主界面
-    else
-        S->>S: 继续测试下一个关节
-    end
-```
-
-**详细步骤**:
-1. **逐个关节测试**: 移动关节到测试角度（±30度）
-2. **用户判断**: 用户观察运动效果并选择功能类型
-   - 抬头/低头 → 前腿髋关节
-   - 抬屁股/撅屁股 → 后腿髋关节
-   - 腿前摆/后摆 → 膝关节
-3. **逻辑推断**: 结合关节位置确定具体位置（左/右、前/后）
-4. **配置保存**: 保存绑定配置到 `joint_binding_config.json`
-
-#### 绑定配置数据结构
-```json
-{
-  "binding_complete": true,
-  "joint_mappings": {
-    "xuan_zhuan_1": {
-      "actuator_id": 0,
-      "leg": "左前腿",
-      "type": "髋关节",
-      "description": "左前腿髋关节",
-      "movement_range": [-90, 90],
-      "test_angle": 30
-    }
-  },
-  "binding_timestamp": "2025-09-16T10:30:00",
-  "validation_passed": true
-}
-```
+> **注意**: 项目已放弃"运动测试绑定流程"，采用基于模型定义的直接控制系统。
 
 ### 2. 姿态编辑系统
 
@@ -680,20 +629,26 @@ gantt
 - **功能面板切换**: 右侧面板根据选择的标签页显示对应的功能控件
 - **操作连贯性**: 避免多窗口切换，提供流畅的用户体验
 
-### 关节绑定向导界面
+### 关节控制界面 ✅ **已实现**
 ```
-🔧 关节功能绑定向导
+🦿 腿部控制组
 
-步骤 2/8：测试关节 xuan_zhuan_1
+左前腿              右前腿
+髋关节: ■□□□□□□□   髋关节: ■□□□□□□□
+膝关节: ■□□□□□□□   膝关节: ■□□□□□□□
 
-[3D视图显示关节运动]
+左后腿              右后腿
+髋关节: ■□□□□□□□   髋关节: ■□□□□□□□
+膝关节: ■□□□□□□□   膝关节: ■□□□□□□□
 
-这个关节控制什么动作？
-○ 抬头/低头      ○ 抬屁股/撅屁股
-○ 腿前摆/后摆    ○ 腿内摆/外摆
-
-[观察运动] [确认选择] [跳过] [重新测试]
+[✓ 对称编辑] [🔄 全部归零]
 ```
+
+**控制特点**:
+- 直接滑块控制，无需绑定流程
+- 实时3D预览，立即看到效果
+- 支持腿部独立控制和整体操作
+- 精细控制模式提供0.1°精度调节
 
 ### 姿态编辑器界面
 ```
@@ -892,48 +847,47 @@ def play_motion_sequence(motion_data, callback=None):
             time.sleep(keyframe["hold_duration"])
 ```
 
-### 3. 关节绑定测试算法
+### 3. 关节直接控制算法 ✅ **已实现**
 ```python
-def test_joint_movement(joint_id, test_angle=30):
+def set_joint_angle_direct(joint_name: str, angle: float):
     """
-    测试关节运动并获取用户反馈
+    直接设置关节角度（无需绑定流程）
     """
-    # 移动关节到测试角度
-    set_joint_angle(joint_id, test_angle)
+    # 获取关节ID
+    joint_id = joint_name_to_id(joint_name)
     
-    # 显示用户判断界面
-    # 用户选择运动类型
-    # 返回推断的关节信息
+    # 设置执行器控制信号
+    actuator_id = joint_id  # 直接映射
     
-    movement_type = get_user_selection()
-    joint_position = get_joint_position(joint_id)
+    # 使用MuJoCo执行器控制
+    robot.data.ctrl[actuator_id] = angle
     
-    return infer_joint_info(movement_type, joint_position)
+    # 触发物理仿真
+    mujoco.mj_step(robot.model, robot.data)
+    
+    return True
 
-def infer_joint_info(movement_type, joint_position):
-    """根据运动类型和位置推断关节信息"""
-    x, y, z = joint_position
+def get_joint_current_angles() -> Dict[str, float]:
+    """
+    获取所有关节的当前角度
+    """
+    angles = {}
+    for joint_name in joint_names:
+        joint_id = joint_name_to_id(joint_name)
+        angles[joint_name] = robot.data.qpos[joint_id]
+    return angles
+
+def symmetric_joint_control(primary_joint: str, angle: float):
+    """
+    对称关节控制
+    """
+    # 设置主关节
+    set_joint_angle_direct(primary_joint, angle)
     
-    if movement_type == "抬头/低头":
-        leg_position = "前腿"
-        joint_type = "髋关节"
-        side = "左" if x < 0 else "右"
-        
-    elif movement_type == "抬屁股/撅屁股":
-        leg_position = "后腿"
-        joint_type = "髋关节"
-        side = "左" if x < 0 else "右"
-        
-    elif movement_type == "腿前摆/后摆":
-        leg_position = "前腿" if y > 0 else "后腿"
-        joint_type = "膝关节"
-        side = "左" if x < 0 else "右"
-    
-    return {
-        'leg': f"{side}{leg_position}",
-        'type': joint_type,
-        'description': f"{side}{leg_position}{joint_type}"
-    }
+    # 获取对称关节并设置相同角度
+    symmetric_joint = get_symmetric_joint(primary_joint)
+    if symmetric_joint:
+        set_joint_angle_direct(symmetric_joint, angle)
 ```
 
 ### 系统类关系图
@@ -942,20 +896,7 @@ classDiagram
     class MainApplication {
         +main()
         +initialize()
-        +check_binding_status()
-    }
-    
-    class BindingWizard {
-        +start_binding()
-        +test_joint()
-        +save_binding()
-    }
-    
-    class BindingManager {
-        +load_config()
-        +save_config()
-        +get_joint_mapping()
-        +is_binding_complete()
+        +create_interfaces()
     }
     
     class RobotModel {
@@ -965,57 +906,59 @@ classDiagram
         +update_physics()
     }
     
+    class JointMapping {
+        +get_joint_names()
+        +get_joint_id()
+        +get_symmetric_joint()
+        +get_joint_groups()
+    }
+    
     class PoseManager {
         +save_pose()
         +load_pose()
-        +interpolate_poses()
+        +delete_pose()
         +get_pose_library()
     }
     
-    class MotionSequence {
-        +add_keyframe()
-        +remove_keyframe()
-        +play_sequence()
-        +set_loop()
-    }
-    
-    class MuJoCoWidget {
+    class MuJoCoViewerWidget {
         +render()
         +update_camera()
         +handle_mouse()
+        +toggle_simulation()
     }
     
-    class PoseEditor {
-        +update_joint_sliders()
-        +on_pose_changed()
-        +save_to_library()
+    class JointControlWidget {
+        +create_joint_sliders()
+        +on_joint_changed()
+        +set_symmetric_mode()
     }
     
-    class MotionEditor {
-        +update_timeline()
-        +on_keyframe_selected()
-        +play_preview()
+    class PoseControlWidget {
+        +save_current_pose()
+        +load_selected_pose()
+        +delete_selected_pose()
+        +refresh_pose_list()
     }
     
-    MainApplication --> BindingWizard
-    MainApplication --> BindingManager
+    class CameraSystem {
+        +update_orbit()
+        +handle_input()
+        +toggle_tracking()
+        +refocus()
+    }
+    
     MainApplication --> RobotModel
+    MainApplication --> MuJoCoViewerWidget
+    MainApplication --> JointControlWidget
+    MainApplication --> PoseControlWidget
     
-    BindingWizard --> BindingManager
-    BindingWizard --> RobotModel
-    
-    PoseEditor --> PoseManager
-    PoseEditor --> RobotModel
-    
-    MotionEditor --> MotionSequence
-    MotionEditor --> PoseManager
-    MotionEditor --> RobotModel
+    JointControlWidget --> JointMapping
+    JointControlWidget --> RobotModel
+    PoseControlWidget --> PoseManager
+    MuJoCoViewerWidget --> CameraSystem
+    MuJoCoViewerWidget --> RobotModel
     
     PoseManager --> RobotModel
-    MotionSequence --> PoseManager
-    
-    PoseEditor --> MuJoCoWidget
-    MotionEditor --> MuJoCoWidget
 ```
 
 ## 📅 开发阶段规划 (✅ 已完成85%)
@@ -1208,10 +1151,10 @@ classDiagram
 - 颜色主题设置
 - 默认参数配置
 
-### 绑定配置 (joint_binding_config.json)
-- 关节映射关系
-- 绑定状态标记
-- 测试参数设置
+### 关节映射配置 (joint_mapping_config.json)
+- 关节名称和ID映射
+- 关节分组信息
+- 对称关系定义
 
 ### 姿态数据 (saved_poses.json)
 - 预设姿态库
@@ -1249,6 +1192,8 @@ python interact_viewer.py         # 交互式查看器
 - ✅ **模型配置**: `model-actuator-position.xml` - 带执行器的MuJoCo模型
 - ✅ **关节映射**: `joint_mapping_config.json` - 8自由度关节映射配置
 - ✅ **模块配置**: 自动检测和配置，支持热重载
+
+> **注意**: 已弃用绑定配置文件，采用直接的关节映射系统
 
 ### 性能优化配置
 - **物理仿真**: timestep=0.002s, RK4积分器
