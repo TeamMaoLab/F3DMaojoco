@@ -5,8 +5,6 @@ ODogExample GUI模块 - 保存姿态对话框
 """
 
 import math
-import sys
-import os
 from typing import Dict, List, Optional
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
@@ -14,12 +12,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal
 
-try:
-    from ..pose_manager import get_pose_manager
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from gui.pose_manager import get_pose_manager
+from .pose_manager import get_pose_manager
 
 
 class PoseSaveDialog(QDialog):
@@ -163,6 +156,17 @@ class PoseSaveDialog(QDialog):
         
         pose_data = self.get_pose_data()
         
+        print(f"💾 准备保存姿态: {pose_data['name']}")
+        print(f"💾 关节角度数据: {pose_data['joint_angles']}")
+        print(f"💾 数据类型: {type(pose_data['joint_angles'])}")
+        print(f"💾 数据长度: {len(pose_data['joint_angles']) if pose_data['joint_angles'] else 0}")
+        
+        # 验证数据不为空
+        if not pose_data['joint_angles'] or len(pose_data['joint_angles']) == 0:
+            QMessageBox.critical(self, "数据错误", 
+                               f"关节角度数据为空或无效！\n数据类型: {type(pose_data['joint_angles'])}\n数据内容: {pose_data['joint_angles']}")
+            return
+        
         # 保存到姿态管理器
         success = self.pose_manager.save_pose(
             pose_data['name'],
@@ -177,16 +181,12 @@ class PoseSaveDialog(QDialog):
             super().accept()
         else:
             QMessageBox.critical(self, "保存失败", 
-                               "姿态保存失败，请重试！")
+                               f"姿态保存失败！\n\n可能的原因:\n1. 姿态名称已存在\n2. 关节角度数据无效\n3. 文件权限问题\n\n请检查后重试。")
     
     def keyPressEvent(self, event):
         """键盘事件处理"""
         if event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return:
-            # 如果在多行文本框中，允许换行
-            if self.desc_edit.hasFocus():
-                super().keyPressEvent(event)
-            else:
-                self.accept()
+            self.accept()
         elif event.key() == Qt.Key_Escape:
             self.reject()
         else:

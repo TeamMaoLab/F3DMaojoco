@@ -4,8 +4,6 @@ ODogExample GUI模块 - 控制面板主组件
 整合所有控制组件，提供统一的控制面板接口。
 """
 
-import sys
-import os
 import math
 from typing import Dict, Optional, Any
 from PySide6.QtWidgets import (
@@ -15,24 +13,13 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
 
-try:
-    from ..core.robot_model import RobotModel
-    from ..core.joint_mapping import JointMapping
-    from .joint_controls import JointControlWidget, LegControlGroup
-    from .global_controls import (
-        GlobalControlGroup, PrecisionControlGroup, 
-        CameraControlGroup, PoseControlGroup
-    )
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from core.robot_model import RobotModel
-    from core.joint_mapping import JointMapping
-    from gui.joint_controls import JointControlWidget, LegControlGroup
-    from gui.global_controls import (
-        GlobalControlGroup, PrecisionControlGroup, 
-        CameraControlGroup, PoseControlGroup
-    )
+from ..core.robot_model import RobotModel
+from ..core.joint_mapping import JointMapping
+from .joint_controls import JointControlWidget, LegControlGroup
+from .global_controls import (
+    GlobalControlGroup, PrecisionControlGroup, 
+    CameraControlGroup, PoseControlGroup
+)
 
 
 class ControlPanel(QWidget):
@@ -57,7 +44,7 @@ class ControlPanel(QWidget):
         self.global_control = None
         self.precision_control = None
         self.camera_control = None
-        self.pose_control = None
+        self.pose_and_motion_control = None
         
         # 设置尺寸策略，防止过度扩展
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
@@ -220,12 +207,11 @@ class ControlPanel(QWidget):
         self.precision_control.hide()
         main_layout.addWidget(self.precision_control)
           
-        # 相机控制区域（隐藏，因为功能已经移到顶部）
+        # 相机控制区域
         self.camera_control = CameraControlGroup()
-        self.camera_control.hide()
         main_layout.addWidget(self.camera_control)
           
-        # 姿态操作区域
+        # 姿态操作区域 - 从global_controls导入
         self.pose_control = PoseControlGroup()
         main_layout.addWidget(self.pose_control)
         
@@ -311,7 +297,7 @@ class ControlPanel(QWidget):
                 
                 # 更新姿态信息显示
                 if self.pose_control:
-                    self.pose_control.update_pose_info(self.current_pose)
+                    self.pose_control.update_status(f"重置完成: {len(self.current_pose)} 个关节")
                 
                 print("✅ 模拟重置完成")
             else:
@@ -328,7 +314,7 @@ class ControlPanel(QWidget):
             
             # 更新姿态信息显示
             if self.pose_control:
-                self.pose_control.update_pose_info(self.current_pose)
+                self.pose_control.update_status(f"重置完成: {len(self.current_pose)} 个关节")
         
         self.allJointsReset.emit()
     
@@ -370,6 +356,7 @@ class ControlPanel(QWidget):
         """姿态删除处理"""
         print(f"🗑️ 姿态已删除: {pose_name}")
     
+        
     def set_robot_model(self, robot_model: RobotModel):
         """设置机器人模型"""
         self.robot_model = robot_model
@@ -417,16 +404,14 @@ class ControlPanel(QWidget):
         """切换相机追踪"""
         if self.camera_control:
             # 找到相机追踪按钮并切换状态
-            if hasattr(self.camera_control, 'tracking_btn_ref'):
-                self.camera_control.tracking_btn_ref.setChecked(checked)
+            self.camera_control.tracking_btn_ref.setChecked(checked)
         print(f"📷 相机追踪: {'开启' if checked else '关闭'}")
     
     def refocus_camera(self):
         """重新聚焦相机"""
         if self.camera_control:
             # 触发重新聚焦
-            if hasattr(self.camera_control, 'refocus_btn_ref'):
-                self.camera_control.refocus_btn_ref.click()
+            self.camera_control.refocus_btn_ref.click()
         print("🎯 重新聚焦相机")
 
 

@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "sequences": [
+    {
+      "name": "俯卧撑",
+      "keyframes": [
+        {
+          "pose_name": "趴下-抬头",
+          "transition_duration": 0.5,
+          "hold_duration": 1.0,
+          "interpolation_type": "linear"
+        },
+        {
+          "pose_name": "趴下-低头",
+          "transition_duration": 0.5,
+          "hold_duration": 1.0,
+          "interpolation_type": "linear"
+        }
+      ],
+      "loop": true,
+      "created_at": "2025-09-18T21:04:22.334292",
+      "updated_at": "2025-09-18T21:04:22.334293"
+    }
+  ],
+  "last_updated": "2025-09-18T22:38:34.086107"
+}

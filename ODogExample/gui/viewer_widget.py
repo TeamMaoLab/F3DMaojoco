@@ -4,24 +4,15 @@ ODogExample GUI模块 - 查看器组件
 集成了相机系统和MuJoCo渲染器的3D查看器组件。
 """
 
-import sys
-import os
 from typing import Optional
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtGui import QSurfaceFormat
 from OpenGL.GL import *
 
-try:
-    from ..core.robot_model import RobotModel
-    from .camera_system import OrbitCamera, InputHandler
-    from .mujoco_renderer import MuJoCoRenderer
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from core.robot_model import RobotModel
-    from gui.camera_system import OrbitCamera, InputHandler
-    from gui.mujoco_renderer import MuJoCoRenderer
+from ..core.robot_model import RobotModel
+from .camera_system import OrbitCamera, InputHandler
+from .mujoco_renderer import MuJoCoRenderer
 
 
 class MuJoCoViewerWidget(QOpenGLWidget):

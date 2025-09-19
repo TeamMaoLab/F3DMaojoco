@@ -5,8 +5,6 @@ ODogExample GUI模块 - 全局控制组件
 """
 
 import math
-import sys
-import os
 from typing import Dict, List, Optional
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, 
@@ -16,18 +14,10 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QFont
 
-try:
-    from ..core.robot_model import RobotModel
-    from ..core.joint_mapping import JointMapping
-    from .pose_save_dialog import show_save_pose_dialog
-    from ..pose_manager import get_pose_manager
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from core.robot_model import RobotModel
-    from core.joint_mapping import JointMapping
-    from gui.pose_save_dialog import show_save_pose_dialog
-    from gui.pose_manager import get_pose_manager
+from ..core.robot_model import RobotModel
+from ..core.joint_mapping import JointMapping
+from .pose_save_dialog import show_save_pose_dialog
+from .pose_manager import get_pose_manager
 
 
 class GlobalControlGroup(QGroupBox):
@@ -239,13 +229,55 @@ class PoseControlGroup(QGroupBox):
     
     def __init__(self, parent=None):
         super().__init__("🎯 姿态操作", parent)
-        self.current_pose = {}
         self.pose_manager = get_pose_manager()
         self.pose_list_widget = None
+        # Initialize current_pose with default joint angles
+        self.current_pose = self._get_default_pose()
+        
+        # Validate initialization
+        if not self.current_pose or len(self.current_pose) == 0:
+            print("❌ 姿态控制组初始化失败：current_pose 为空")
+            # Emergency fallback
+            self.current_pose = {"xuan_zhuan_1": 0.0}
+        else:
+            print(f"✅ 姿态控制组初始化成功：{len(self.current_pose)} 个关节")
+            print(f"📊 初始姿态数据: {self.current_pose}")
+        
         self.init_ui()
         self.load_pose_list()
         
         print("🎯 姿态控制组初始化完成")
+    
+    def _get_default_pose(self):
+        """获取默认姿态"""
+        print(f"🔍 _get_default_pose 被调用")
+        
+        try:
+            # Try to load the default pose from pose manager
+            print(f"🔍 尝试从姿态管理器加载默认姿态")
+            default_pose = self.pose_manager.load_pose("默认姿态")
+            print(f"🔍 从姿态管理器获取到的默认姿态: {default_pose}")
+            if default_pose and len(default_pose) > 0:
+                print(f"✅ 使用姿态管理器的默认姿态: {len(default_pose)} 个关节")
+                return default_pose
+        except Exception as e:
+            print(f"⚠️ 无法加载默认姿态: {e}")
+        
+        # Fallback to hardcoded default pose with all 8 joints
+        print(f"🔍 使用硬编码的默认姿态")
+        default_pose = {
+            "xuan_zhuan_1": 0.0, "xuan_zhuan_2": 0.0, "xuan_zhuan_3": 0.0, "xuan_zhuan_4": 0.0,
+            "xuan_zhuan_5": 0.0, "xuan_zhuan_6": 0.0, "xuan_zhuan_7": 0.0, "xuan_zhuan_8": 0.0
+        }
+        print(f"🔍 硬编码默认姿态: {default_pose}")
+        
+        # Validate that we have a proper default pose
+        if not default_pose or len(default_pose) == 0:
+            print("❌ 默认姿态初始化失败，使用紧急 fallback")
+            return {"xuan_zhuan_1": 0.0}  # At least one joint to prevent empty data
+        
+        print(f"✅ 默认姿态验证通过: {len(default_pose)} 个关节")
+        return default_pose
     
     def init_ui(self):
         """初始化UI"""
@@ -366,23 +398,53 @@ class PoseControlGroup(QGroupBox):
     
     def save_current_pose(self):
         """保存当前姿态"""
-        if not self.current_pose:
+        print(f"🔍 save_current_pose 被调用")
+        print(f"🔍 当前 current_pose: {self.current_pose}")
+        print(f"🔍 current_pose 类型: {type(self.current_pose)}")
+        print(f"🔍 current_pose 长度: {len(self.current_pose) if self.current_pose else 0}")
+        
+        # 创建当前姿态的副本以防止在对话框显示过程中被修改
+        pose_to_save = None
+        if self.current_pose and len(self.current_pose) > 0:
+            pose_to_save = self.current_pose.copy()
+            print(f"✅ 创建姿态副本成功: {len(pose_to_save)} 个关节")
+        else:
+            print(f"❌ current_pose 无效，尝试获取后备姿态")
+            pose_to_save = self._get_default_pose()
+            
+        if not pose_to_save or len(pose_to_save) == 0:
             QMessageBox.warning(self, "警告", "没有当前姿态数据可保存！")
             return
+        
+        print(f"📊 准备保存的姿态数据: {pose_to_save}")
+        
+        # Check if current pose contains valid joint angles
+        if not any(abs(angle) > 0.001 for angle in pose_to_save.values()):
+            reply = QMessageBox.question(
+                self, "确认保存", 
+                "当前所有关节角度都为0，确定要保存这个姿态吗？",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
         
         # 获取已存在的姿态名称
         existing_names = list(self.pose_manager.get_pose_names())
         
-        # 显示保存对话框
-        result = show_save_pose_dialog(self.current_pose, existing_names, self)
+        # 显示保存对话框，使用副本数据
+        result = show_save_pose_dialog(pose_to_save, existing_names, self)
         
         if result:
+            print(f"✅ 姿态保存成功: {result['name']}")
             # 保存成功，刷新列表
             self.load_pose_list()
             self.update_status(f"已保存姿态: {result['name']}")
             
             # 发送信号
             self.poseSaved.emit(result['name'], result)
+        else:
+            print(f"⚠️ 姿态保存被取消或失败")
     
     def load_selected_pose(self):
         """加载选中的姿态"""
@@ -457,10 +519,14 @@ class PoseControlGroup(QGroupBox):
     
     def update_current_pose(self, pose_data: Dict[str, float]):
         """更新当前姿态数据"""
-        self.current_pose = pose_data.copy()
+        if pose_data and len(pose_data) > 0:
+            self.current_pose = pose_data.copy()
+        else:
+            print(f"⚠️ 接收到无效的姿态数据: {pose_data}")
+            # Keep the current pose unchanged if invalid data is received
         
         # 更新状态显示
-        non_zero_count = sum(1 for angle in pose_data.values() if abs(angle) > 0.01)
+        non_zero_count = sum(1 for angle in self.current_pose.values() if abs(angle) > 0.01)
         self.update_status(f"当前姿态: {non_zero_count} 个非零关节")
     
     def update_status(self, message: str):

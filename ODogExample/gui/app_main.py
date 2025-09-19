@@ -5,27 +5,19 @@ ODogExample GUI模块 - 主应用窗口
 """
 
 import sys
-import os
 from typing import Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-    QLabel, QApplication
+    QLabel, QApplication, QMessageBox
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 
-try:
-    from ..core.robot_model import create_test_model, RobotModel
-    from .viewer_widget import MuJoCoViewerWidget
-    from .control_panel import create_control_panel
-    from .app_signals import SignalManager
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from core.robot_model import create_test_model, RobotModel
-    from gui.viewer_widget import MuJoCoViewerWidget
-    from gui.control_panel import create_control_panel
-    from gui.app_signals import SignalManager
+from ..core.robot_model import create_test_model, RobotModel
+from .viewer_widget import MuJoCoViewerWidget
+from .tabbed_control_panel import create_tabbed_control_panel
+from .app_signals import SignalManager
+from .pose_manager import get_pose_manager
 
 
 class MainApplication(QMainWindow):
@@ -111,8 +103,8 @@ class MainApplication(QMainWindow):
             if self.viewer and self.viewer.robot:
                 robot = self.viewer.robot
             
-            # 创建控制面板
-            panel = create_control_panel(robot)
+            # 创建Tab页控制面板
+            panel = create_tabbed_control_panel(robot)
             
             if panel:
                 # 设置机器人模型到控制面板
@@ -151,10 +143,14 @@ class MainApplication(QMainWindow):
             self.signal_manager.connect_joint_control_signals(self.control_panel, self.viewer)
             
             # 连接相机控制信号
-            self.signal_manager.connect_camera_control_signals(self.control_panel, self.viewer)
+            self.control_panel.cameraTrackingToggled.connect(self.viewer.toggle_camera_tracking)
+            self.control_panel.cameraRefocus.connect(self.viewer.refocus_camera)
             
             # 连接姿态信号
             self.signal_manager.connect_pose_signals(self.control_panel)
+            
+            # 连接动作编辑器播放信号
+            self._connect_motion_editor_signals()
             
             # 连接查看器信号
             self.signal_manager.connect_viewer_signals(self.viewer)
@@ -165,6 +161,115 @@ class MainApplication(QMainWindow):
             
         except Exception as e:
             print(f"❌ 信号连接失败: {e}")
+    
+    def _connect_motion_editor_signals(self):
+        """连接动作编辑器的播放信号"""
+        try:
+            # 检查是否有动作编辑器
+            motion_editor = self.control_panel.motion_editor
+            if motion_editor:
+                print(f"🔍 找到动作编辑器: {motion_editor}")
+                
+                # 连接姿态应用信号
+                motion_editor.applyPoseRequest.connect(self._on_apply_pose_request)
+                print(f"🔗 已连接applyPoseRequest信号到_on_apply_pose_request方法")
+                
+                print("🔗 动作编辑器播放信号连接完成")
+            else:
+                print("⚠️  控制面板没有motion_editor属性")
+        except Exception as e:
+            print(f"⚠️  动作编辑器信号连接失败: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _on_apply_pose_request(self, pose_name: str):
+        """处理姿态应用请求"""
+        try:
+            print(f"🎯 应用姿态请求: {pose_name}")
+            
+            if not (self.viewer and self.viewer.robot):
+                print("⚠️  机器人模型不可用")
+                return
+            
+            # 严格从姿态管理器加载姿态数据
+            try:
+                pose_manager = get_pose_manager()
+                joint_angles = pose_manager.load_pose(pose_name)
+                
+                if joint_angles:
+                    print(f"📁 从姿态管理器加载姿态: {pose_name}")
+                else:
+                    print(f"⚠️ 姿态管理器中没有找到姿态: {pose_name}")
+                    print(f"📋 可用姿态列表: {pose_manager.get_pose_names()}")
+                    QMessageBox.warning(self, "姿态未找到", 
+                                      f"姿态 '{pose_name}' 在姿态管理器中不存在！\n\n"
+                                      f"可用姿态:\n{chr(10).join(pose_manager.get_pose_names())}")
+                    return
+                        
+            except Exception as e:
+                print(f"❌ 加载姿态失败: {e}")
+                QMessageBox.critical(self, "加载失败", f"加载姿态 '{pose_name}' 失败: {e}")
+                return
+            
+            if joint_angles:
+                print(f"🤖 应用姿态 {pose_name} 到机器人: {len(joint_angles)} 个关节")
+                print(f"📊 关节角度数据:")
+                for joint_name, angle in joint_angles.items():
+                    print(f"  - {joint_name}: {angle:.3f} rad ({angle*180/3.14159:.1f}°)")
+                
+                # 使用控制面板的姿态应用功能
+                print("🔧 使用控制面板的set_pose方法")
+                self.control_panel.set_pose(joint_angles)
+                print("✅ 控制面板set_pose调用完成")
+                
+                # 更新状态栏
+                self.statusBar().showMessage(f"已应用姿态: {pose_name}", 2000)
+            else:
+                print(f"⚠️  未找到姿态: {pose_name}")
+                print(f"📋 可用姿态: {self._get_available_poses()}")
+                
+        except Exception as e:
+            print(f"❌ 应用姿态失败: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _get_fallback_pose(self, pose_name: str) -> dict:
+        """获取后备姿态数据"""
+        fallback_poses = {
+            "站立姿态": {
+                "xuan_zhuan_1": 0.0, "xuan_zhuan_2": 0.0, "xuan_zhuan_3": 0.0, "xuan_zhuan_4": 0.0,
+                "xuan_zhuan_5": 0.0, "xuan_zhuan_6": 0.0, "xuan_zhuan_7": 0.0, "xuan_zhuan_8": 0.0
+            },
+            "趴下姿态": {
+                "xuan_zhuan_1": 1.57, "xuan_zhuan_2": -1.57, "xuan_zhuan_3": 1.57, "xuan_zhuan_4": -1.57,
+                "xuan_zhuan_5": 1.57, "xuan_zhuan_6": -1.57, "xuan_zhuan_7": 1.57, "xuan_zhuan_8": -1.57
+            },
+            "坐下姿态": {
+                "xuan_zhuan_1": 0.8, "xuan_zhuan_2": -1.57, "xuan_zhuan_3": 0.8, "xuan_zhuan_4": -1.57,
+                "xuan_zhuan_5": 0.8, "xuan_zhuan_6": -1.57, "xuan_zhuan_7": 0.8, "xuan_zhuan_8": -1.57
+            },
+            "行走姿态1": {
+                "xuan_zhuan_1": 0.5, "xuan_zhuan_2": -1.0, "xuan_zhuan_3": -0.5, "xuan_zhuan_4": 1.0,
+                "xuan_zhuan_5": 0.5, "xuan_zhuan_6": -1.0, "xuan_zhuan_7": -0.5, "xuan_zhuan_8": 1.0
+            },
+            "行走姿态2": {
+                "xuan_zhuan_1": -0.5, "xuan_zhuan_2": 1.0, "xuan_zhuan_3": 0.5, "xuan_zhuan_4": -1.0,
+                "xuan_zhuan_5": -0.5, "xuan_zhuan_6": 1.0, "xuan_zhuan_7": 0.5, "xuan_zhuan_8": -1.0
+            },
+            "趴下-抬头": {
+                "xuan_zhuan_1": 1.0, "xuan_zhuan_2": -0.3, "xuan_zhuan_3": 1.0, "xuan_zhuan_4": -0.3,
+                "xuan_zhuan_5": 1.0, "xuan_zhuan_6": -0.3, "xuan_zhuan_7": 1.0, "xuan_zhuan_8": -0.3
+            }
+        }
+        return fallback_poses.get(pose_name, {})
+    
+    def _get_available_poses(self) -> list:
+        """获取可用姿态列表"""
+        try:
+            pose_manager = get_pose_manager()
+            return pose_manager.get_pose_names()
+        except Exception:
+            return list(self._get_fallback_pose("站立姿态").keys())
     
     def _on_joint_angle_changed(self, joint_name: str, angle: float):
         """关节角度改变处理"""
@@ -234,9 +339,6 @@ class MainApplication(QMainWindow):
 
 def main():
     """主程序入口 - 用于直接运行app_main.py"""
-    import sys
-    from PySide6.QtWidgets import QApplication
-    
     app = QApplication(sys.argv)
     
     # 创建主应用
