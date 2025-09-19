@@ -185,6 +185,11 @@ class ModelGenerationPhase(ConversionPhase):
         """添加关节到 XML"""
         joint_type = self._convert_joint_type(joint_data.joint_type)
         
+        # 刚性连接不需要关节元素
+        if joint_type is None:
+            logger.debug(f"刚性连接 {joint_data.name} 跳过关节元素")
+            return
+        
         # 关节名称已在数据加载阶段转换为拼音，直接使用
         joint_name = joint_data.name
         
@@ -203,13 +208,20 @@ class ModelGenerationPhase(ConversionPhase):
         
         # 添加关节限制
         if joint_data.limits and joint_data.limits.get('has_limits'):
-            limits = joint_data.limits['range']
-            ET.SubElement(joint_elem, "range", {
-                "min": str(limits[0]),
-                "max": str(limits[1])
-            })
+            if joint_data.limits.get('type') == 'ball':
+                # 球关节 - MuJoCo不支持球关节的range限制，跳过
+                logger.debug(f"球关节 {joint_name} 不需要range限制")
+                pass
+            else:
+                # 旋转关节 - 添加单轴限制
+                if joint_data.limits.get('range'):
+                    limits = joint_data.limits['range']
+                    ET.SubElement(joint_elem, "range", {
+                        "min": str(limits[0]),
+                        "max": str(limits[1])
+                    })
     
-    def _convert_joint_type(self, fusion_type: JointType) -> str:
+    def _convert_joint_type(self, fusion_type: JointType) -> Optional[str]:
         """转换 Fusion 360 关节类型到 MuJoCo 关节类型"""
         type_mapping = {
             JointType.REVOLUTE: 'hinge',
@@ -217,7 +229,7 @@ class ModelGenerationPhase(ConversionPhase):
             JointType.CYLINDRICAL: 'slide',
             JointType.PLANAR: 'slide',
             JointType.BALL: 'ball',
-            JointType.RIGID: 'free'
+            JointType.RIGID: None  # 刚性连接不创建关节元素
         }
         return type_mapping.get(fusion_type, 'free')
     

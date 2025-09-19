@@ -697,10 +697,31 @@ class RelationshipAnalysisPhase(ConversionPhase):
     
     def _get_joint_limits(self, joint_info: JointInfo) -> Optional[Dict[str, Any]]:
         """获取关节限制"""
-        if joint_info.limits:
+        if not joint_info.limits:
+            return None
+        
+        if joint_info.joint_type == JointType.REVOLUTE and joint_info.limits.revolute_limits:
+            # 旋转关节
+            limits = joint_info.limits.revolute_limits.rotation_limits
             return {
-                'has_limits': joint_info.limits.has_limits,
-                'range': [joint_info.limits.minimum_value, joint_info.limits.maximum_value] if joint_info.limits.has_limits else None
+                'has_limits': limits.has_limits,
+                'range': [limits.minimum_value, limits.maximum_value] if limits.has_limits else None
+            }
+        elif joint_info.joint_type == JointType.BALL and joint_info.limits.ball_limits:
+            # 球关节 - 返回三轴限制
+            ball_limits = joint_info.limits.ball_limits
+            return {
+                'has_limits': True,  # 球关节总是有限制
+                'type': 'ball',
+                'pitch_range': [ball_limits.pitch_limits.minimum_value, ball_limits.pitch_limits.maximum_value] if ball_limits.pitch_limits else None,
+                'yaw_range': [ball_limits.yaw_limits.minimum_value, ball_limits.yaw_limits.maximum_value] if ball_limits.yaw_limits else None,
+                'roll_range': [ball_limits.roll_limits.minimum_value, ball_limits.roll_limits.maximum_value] if ball_limits.roll_limits else None,
+                'center_position': ball_limits.center_position,
+                'axes': {
+                    'pitch': ball_limits.pitch_axis,
+                    'yaw': ball_limits.yaw_axis,
+                    'roll': ball_limits.roll_axis
+                }
             }
         
         return None
