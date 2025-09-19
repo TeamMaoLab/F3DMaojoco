@@ -1,5 +1,45 @@
 # ODogExample 开发任务纲要
 
+## 🚀 快速开始
+
+### 环境要求
+- Python 3.12+ (推荐)
+- uv (包管理器)
+
+### 安装和运行
+
+1. **安装uv包管理器**：
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+2. **克隆项目**：
+```bash
+git clone <repository-url>
+cd ODogExample
+```
+
+3. **安装Python和依赖**：
+```bash
+# 使用uv安装Python 3.12
+uv python install 3.12
+
+# 同步项目依赖
+uv sync
+```
+
+4. **运行应用程序**：
+```bash
+# 使用uv运行
+uv run -m ODogExample.gui.app_entry
+```
+
+### 一键启动
+如果已安装uv，直接在项目根目录运行：
+```bash
+uv run -m ODogExample.gui.app_entry
+```
+
 ## 🎯 项目概述
 
 ODogExample 是一个基于 PySide6 + MuJoCo 的 8 自由度四足机器狗 GUI 应用，专注于四足机器人研发过程中的"过程"探索。
