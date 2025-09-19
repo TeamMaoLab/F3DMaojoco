@@ -18,10 +18,11 @@ from ..common.geometry_math import Transform4D
 class ComponentCollector:
     """零部件收集器
     
-    遍历装配体，收集所有零部件信息：
-    - 递归遍历装配树结构
+    遍历装配体，只收集叶子零部件信息：
+    - 递归遍历装配树结构，只处理叶子节点
+    - 过滤掉不可见的零部件和occurrence
     - 提取零部件的几何信息、变换矩阵
-    - 统计实体数量和子零部件关系
+    - 统计实体数量
     - 生成 ComponentInfo 对象
     """
     
@@ -97,14 +98,10 @@ class ComponentCollector:
             # 记录当前处理的组件
             log_component(self.logger, component.name, "收集")
             
-            # 处理当前组件的所有 occurrence
+            # 只处理当前组件的所有 occurrence，不重复处理子组件
+            # 子组件会通过 occurrence 的层级结构自动处理
             for occurrence in component.occurrences:
                 self._collect_from_occurrence(occurrence, components, current_path)
-            
-            # 递归处理子组件
-            for child_component in component.allOccurrences:
-                if child_component.component and child_component.component != component:
-                    self._collect_from_component(child_component.component, components, current_path)
             
         except Exception as e:
             self.logger.error(f"收集组件 {component.name} 时发生错误: {str(e)}")
@@ -124,15 +121,27 @@ class ComponentCollector:
             if not occurrence.component:
                 return
             
+            # 检查 occurrence 是否可见
+            if not self._is_occurrence_visible(occurrence):
+                self.logger.debug(f"跳过不可见的 occurrence: {occurrence.name}")
+                return
+            
             # 构建完整路径
             full_path = f"{parent_path}/{occurrence.name}"
             
-            # 创建零部件信息
-            component_info = self._create_component_info(occurrence, full_path)
+            # 检查是否为叶子节点（没有子 occurrence）
+            is_leaf = len(occurrence.childOccurrences) == 0
             
-            if component_info:
-                components.append(component_info)
-                log_component(self.logger, component_info.name, "创建")
+            if is_leaf:
+                # 只有叶子节点才创建零部件信息
+                component_info = self._create_component_info(occurrence, full_path)
+                
+                if component_info:
+                    components.append(component_info)
+                    log_component(self.logger, component_info.name, "创建叶子节点")
+            else:
+                # 非叶子节点，只递归处理子节点
+                self.logger.debug(f"跳过非叶子节点 {occurrence.name}，有 {len(occurrence.childOccurrences)} 个子节点")
             
             # 递归处理子 occurrence
             for child_occurrence in occurrence.childOccurrences:
@@ -167,17 +176,14 @@ class ComponentCollector:
             # 统计实体数量
             bodies_count = len(component.bRepBodies)
             
-            # 检查是否有子零部件
-            has_children = len(occurrence.childOccurrences) > 0
-            
-            # 创建零部件信息
+            # 创建零部件信息（叶子节点，所以 has_children 总是 False）
             component_info = ComponentInfo(
                 name=component.name,
                 occurrence_name=occurrence.name,
                 full_path_name=full_path,
-                component_id=component.name,
+                component_id=id(component),  # 使用组件的唯一ID作为整数
                 bodies_count=bodies_count,
-                has_children=has_children,
+                has_children=False,  # 叶子节点没有子零部件
                 world_transform=world_transform
             )
             
@@ -187,7 +193,8 @@ class ComponentCollector:
             
             # 调试：记录装配体层次结构信息
             self.logger.debug(f"{component.name}: 装配体路径 = {full_path}")
-            self.logger.debug(f"{component.name}: 有子零部件 = {has_children}")
+            self.logger.debug(f"{component.name}: 有子零部件 = False")
+            self.logger.debug(f"{component.name}: 实体数量 = {bodies_count}")
             
             return component_info
             
@@ -259,3 +266,33 @@ class ComponentCollector:
         except Exception as e:
             self.logger.error(f"厘米转毫米转换时发生错误: {str(e)}")
             return transform
+    
+    def _is_occurrence_visible(self, occurrence: adsk.fusion.Occurrence) -> bool:
+        """检查 occurrence 是否可见
+        
+        Args:
+            occurrence: Fusion 360 occurrence
+            
+        Returns:
+            bool: 如果可见返回 True，否则返回 False
+        """
+        try:
+            # 检查 occurrence 本身的可见性
+            if not occurrence.isVisible:
+                return False
+            
+            # 检查 occurrence 的组件是否可见
+            if not occurrence.component.isLightBulbOn:
+                return False
+            
+            # 检查父级 occurrence 的可见性（如果存在）
+            if occurrence.parentOccurrence:
+                if not self._is_occurrence_visible(occurrence.parentOccurrence):
+                    return False
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"检查可见性时发生错误: {str(e)}")
+            # 默认返回 True 以避免误过滤
+            return True

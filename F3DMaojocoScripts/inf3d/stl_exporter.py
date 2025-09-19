@@ -123,6 +123,13 @@ class STLExporter:
                 self.logger.warning(f"未找到零部件 {component.name} 对应的 Fusion 360 组件")
                 return None
             
+            self.logger.debug(f"找到组件 {component.name}，包含 {len(fusion_component.bRepBodies)} 个实体")
+            
+            # 检查组件是否有几何实体
+            if len(fusion_component.bRepBodies) == 0:
+                self.logger.warning(f"组件 {component.name} 没有几何实体，无法导出STL")
+                return None
+            
             # 创建导出管理器
             export_manager = self.design.exportManager
             
@@ -133,6 +140,7 @@ class STLExporter:
             self._configure_mesh_quality(stl_options)
             
             # 执行导出
+            self.logger.debug(f"开始导出 {component.name} 到 {stl_filepath}")
             export_manager.execute(stl_options)
             
             # 检查文件是否成功创建
@@ -159,16 +167,17 @@ class STLExporter:
             # 在根组件的所有 occurrences 中查找
             root_component = self.design.rootComponent
             
-            # 遍历所有 occurrences
+            # 遍历所有 occurrences，使用组件名称而不是 component_id
             for occurrence in root_component.allOccurrences:
-                if occurrence.component and occurrence.component.name == component.component_id:
+                if occurrence.component and occurrence.component.name == component.name:
                     return occurrence.component
             
             # 如果在 occurrences 中没找到，尝试在所有组件中查找
             for fusion_component in self.design.allComponents:
-                if fusion_component.name == component.component_id:
+                if fusion_component.name == component.name:
                     return fusion_component
             
+            self.logger.warning(f"未找到组件: {component.name} (搜索了 {len(root_component.allOccurrences)} 个 occurrences 和 {len(self.design.allComponents)} 个组件)")
             return None
             
         except Exception as e:
