@@ -5,8 +5,6 @@ ODogExample GUI模块 - 全局控制组件
 """
 
 import math
-import sys
-import os
 from typing import Dict, List, Optional
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, 
@@ -16,18 +14,10 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QFont
 
-try:
-    from ..core.robot_model import RobotModel
-    from ..core.joint_mapping import JointMapping
-    from .pose_save_dialog import show_save_pose_dialog
-    from ..pose_manager import get_pose_manager
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from core.robot_model import RobotModel
-    from core.joint_mapping import JointMapping
-    from gui.pose_save_dialog import show_save_pose_dialog
-    from gui.pose_manager import get_pose_manager
+from ..core.robot_model import RobotModel
+from ..core.joint_mapping import JointMapping
+from .pose_save_dialog import show_save_pose_dialog
+from .pose_manager import get_pose_manager
 
 
 class GlobalControlGroup(QGroupBox):

@@ -5,29 +5,20 @@ ODogExample GUI模块 - 动作编辑器Tab页组件
 """
 
 import sys
-import os
 from typing import Optional
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, 
     QPushButton, QLabel, QListWidget, QListWidgetItem,
-    QComboBox, QProgressBar, QMessageBox, QFrame
+    QComboBox, QProgressBar, QMessageBox, QFrame,
+    QDialog, QVBoxLayout, QLineEdit, QDialogButtonBox,
+    QApplication
 )
 from PySide6.QtCore import Signal, Qt, QTimer
 
-try:
-    from ..core.motion_manager import get_motion_manager
-    from ..core.motion_sequence import Keyframe, MotionSequence
-    from .pose_save_dialog import show_save_pose_dialog
-    from ..pose_manager import get_pose_manager
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
-    from core.motion_manager import get_motion_manager
-    from core.motion_sequence import Keyframe, MotionSequence
-    from gui.pose_save_dialog import show_save_pose_dialog
-    from gui.pose_manager import get_pose_manager
+from ..core.motion_manager import get_motion_manager
+from ..core.motion_sequence import Keyframe, MotionSequence
+from .pose_save_dialog import show_save_pose_dialog
+from .pose_manager import get_pose_manager
 
 
 class MotionSequenceTabWidget(QGroupBox):
@@ -286,7 +277,6 @@ class MotionSequenceTabWidget(QGroupBox):
     
     def create_sequence(self):
         """创建新的动作序列"""
-        from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QDialogButtonBox
         
         dialog = QDialog(self)
         dialog.setWindowTitle("创建动作序列")
@@ -328,10 +318,6 @@ class MotionSequenceTabWidget(QGroupBox):
                 return
             
             # 创建序列，默认添加IDLE姿态作为第一个姿态
-            try:
-                from ..core.motion_sequence import Keyframe
-            except ImportError:
-                from core.motion_sequence import Keyframe
             idle_keyframe = Keyframe("IDLE", 0.5, 1.0, "linear")
             sequence = MotionSequence(sequence_name, [idle_keyframe])
             
@@ -464,9 +450,6 @@ class MotionSequenceTabWidget(QGroupBox):
         
         # 创建姿态选择和时间设置对话框
         try:
-            from PySide6.QtWidgets import (QDialog, QVBoxLayout, QListWidget, 
-                                          QDialogButtonBox, QLabel, QDoubleSpinBox,
-                                          QHBoxLayout, QComboBox)
             
             dialog = QDialog(self)
             dialog.setWindowTitle("添加姿态")
@@ -568,7 +551,6 @@ class MotionSequenceTabWidget(QGroupBox):
         keyframe = self.current_sequence.keyframes[pose_index]
         
         # 创建时长编辑对话框
-        from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QDoubleSpinBox, QDialogButtonBox
         
         dialog = QDialog(self)
         dialog.setWindowTitle("编辑姿态时长")
@@ -891,7 +873,6 @@ class MotionSequenceTabWidget(QGroupBox):
 
 if __name__ == "__main__":
     """测试脚本"""
-    from PySide6.QtWidgets import QApplication
     
     app = QApplication(sys.argv)
     

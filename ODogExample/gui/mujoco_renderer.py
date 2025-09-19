@@ -4,22 +4,14 @@ ODogExample GUI模块 - MuJoCo渲染器
 处理MuJoCo模型的核心渲染逻辑和物理仿真。
 """
 
-import sys
-import os
 import math
 import time
 import numpy as np
 import mujoco
 from typing import Optional, Dict, Any
 
-try:
-    from ..core.robot_model import RobotModel
-    from .camera_system import OrbitCamera
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from core.robot_model import RobotModel
-    from gui.camera_system import OrbitCamera
+from ..core.robot_model import RobotModel
+from .camera_system import OrbitCamera
 
 
 class MuJoCoRenderer:

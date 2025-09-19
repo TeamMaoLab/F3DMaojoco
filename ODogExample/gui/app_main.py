@@ -5,7 +5,6 @@ ODogExample GUI模块 - 主应用窗口
 """
 
 import sys
-import os
 from typing import Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
@@ -14,18 +13,11 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 
-try:
-    from ..core.robot_model import create_test_model, RobotModel
-    from .viewer_widget import MuJoCoViewerWidget
-    from .tabbed_control_panel import create_tabbed_control_panel
-    from .app_signals import SignalManager
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from core.robot_model import create_test_model, RobotModel
-    from gui.viewer_widget import MuJoCoViewerWidget
-    from gui.tabbed_control_panel import create_tabbed_control_panel
-    from gui.app_signals import SignalManager
+from ..core.robot_model import create_test_model, RobotModel
+from .viewer_widget import MuJoCoViewerWidget
+from .tabbed_control_panel import create_tabbed_control_panel
+from .app_signals import SignalManager
+from .pose_manager import get_pose_manager
 
 
 class MainApplication(QMainWindow):
@@ -201,15 +193,6 @@ class MainApplication(QMainWindow):
             
             # 严格从姿态管理器加载姿态数据
             try:
-                try:
-                    from ..pose_manager import get_pose_manager
-                except ImportError:
-                    # 相对导入失败，尝试绝对导入
-                    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                    if project_root not in sys.path:
-                        sys.path.insert(0, project_root)
-                    from gui.pose_manager import get_pose_manager
-                
                 pose_manager = get_pose_manager()
                 joint_angles = pose_manager.load_pose(pose_name)
                 
@@ -223,10 +206,6 @@ class MainApplication(QMainWindow):
                                       f"可用姿态:\n{chr(10).join(pose_manager.get_pose_names())}")
                     return
                         
-            except ImportError as e:
-                print(f"⚠️ 无法导入姿态管理器: {e}")
-                QMessageBox.critical(self, "系统错误", "无法加载姿态管理器！")
-                return
             except Exception as e:
                 print(f"❌ 加载姿态失败: {e}")
                 QMessageBox.critical(self, "加载失败", f"加载姿态 '{pose_name}' 失败: {e}")
@@ -287,18 +266,9 @@ class MainApplication(QMainWindow):
     def _get_available_poses(self) -> list:
         """获取可用姿态列表"""
         try:
-            try:
-                from ..pose_manager import get_pose_manager
-            except ImportError:
-                # 相对导入失败，尝试绝对导入
-                project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                if project_root not in sys.path:
-                    sys.path.insert(0, project_root)
-                from gui.pose_manager import get_pose_manager
-            
             pose_manager = get_pose_manager()
             return pose_manager.get_pose_names()
-        except ImportError:
+        except Exception:
             return list(self._get_fallback_pose("站立姿态").keys())
     
     def _on_joint_angle_changed(self, joint_name: str, angle: float):
@@ -369,9 +339,6 @@ class MainApplication(QMainWindow):
 
 def main():
     """主程序入口 - 用于直接运行app_main.py"""
-    import sys
-    from PySide6.QtWidgets import QApplication
-    
     app = QApplication(sys.argv)
     
     # 创建主应用

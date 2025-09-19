@@ -7,20 +7,12 @@ ODogExample核心模块 - 动作序列管理器
 
 import json
 import os
-import sys
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 import threading
 from pathlib import Path
 
-try:
-    from .motion_sequence import MotionSequence, Keyframe, create_test_sequence
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    import sys
-    import os
-    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-    from motion_sequence import MotionSequence, Keyframe, create_test_sequence
+from .motion_sequence import MotionSequence, Keyframe, create_test_sequence
 
 
 class MotionManager:

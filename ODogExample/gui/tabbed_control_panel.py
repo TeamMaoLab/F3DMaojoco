@@ -4,24 +4,15 @@ ODogExample GUI模块 - Tab页控制面板
 将原有控制面板和动作编辑器整合为Tab页形式。
 """
 
-import sys
-import os
 from typing import Optional
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QTabWidget, QFrame
 )
 from PySide6.QtCore import Signal
 
-try:
-    from ..core.robot_model import RobotModel
-    from .control_panel import ControlPanel
-    from .motion_editor_tab import MotionSequenceTabWidget
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from core.robot_model import RobotModel
-    from gui.control_panel import ControlPanel
-    from gui.motion_editor_tab import MotionSequenceTabWidget
+from ..core.robot_model import RobotModel
+from .control_panel import ControlPanel
+from .motion_editor_tab import MotionSequenceTabWidget
 
 
 class TabbedControlPanel(QWidget):

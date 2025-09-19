@@ -4,8 +4,6 @@ ODogExample GUI模块 - 控制面板主组件
 整合所有控制组件，提供统一的控制面板接口。
 """
 
-import sys
-import os
 import math
 from typing import Dict, Optional, Any
 from PySide6.QtWidgets import (
@@ -15,25 +13,13 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
 
-try:
-    from ..core.robot_model import RobotModel
-    from ..core.joint_mapping import JointMapping
-    from .joint_controls import JointControlWidget, LegControlGroup
-    from .global_controls import (
-        GlobalControlGroup, PrecisionControlGroup, 
-        CameraControlGroup, PoseControlGroup
-    )
-    from .pose_and_motion_control import PoseAndMotionControlGroup
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from core.robot_model import RobotModel
-    from core.joint_mapping import JointMapping
-    from gui.joint_controls import JointControlWidget, LegControlGroup
-    from gui.global_controls import (
-        GlobalControlGroup, PrecisionControlGroup, 
-        CameraControlGroup, PoseControlGroup
-    )
+from ..core.robot_model import RobotModel
+from ..core.joint_mapping import JointMapping
+from .joint_controls import JointControlWidget, LegControlGroup
+from .global_controls import (
+    GlobalControlGroup, PrecisionControlGroup, 
+    CameraControlGroup, PoseControlGroup
+)
 
 
 class ControlPanel(QWidget):

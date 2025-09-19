@@ -9,16 +9,6 @@ import numpy as np
 from typing import Dict, Any, Optional
 from PySide6.QtCore import QPointF
 
-# 尝试导入robot_model，但不实际使用，仅为保持兼容性
-try:
-    from ..core import robot_model
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    import sys
-    import os
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    import core.robot_model
-
 
 class OrbitCamera:
     """通用轨道相机控制器 - 基于设计说明书的完整实现"""

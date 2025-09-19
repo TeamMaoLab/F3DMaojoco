@@ -4,8 +4,6 @@ ODogExample GUI模块 - 关节控制组件
 提供单个关节和腿部控制的UI组件，包括滑块控制、精细控制等功能。
 """
 
-import sys
-import os
 import math
 from typing import Dict, List, Optional, Any, Tuple
 from PySide6.QtWidgets import (
@@ -16,12 +14,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
 
-try:
-    from ..core.joint_mapping import JointMapping
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from core.joint_mapping import JointMapping
+from ..core.joint_mapping import JointMapping
+
 
 
 class JointControlWidget(QWidget):

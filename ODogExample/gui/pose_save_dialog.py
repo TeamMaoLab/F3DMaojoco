@@ -5,8 +5,6 @@ ODogExample GUI模块 - 保存姿态对话框
 """
 
 import math
-import sys
-import os
 from typing import Dict, List, Optional
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
@@ -14,12 +12,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal
 
-try:
-    from ..pose_manager import get_pose_manager
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from gui.pose_manager import get_pose_manager
+from .pose_manager import get_pose_manager
 
 
 class PoseSaveDialog(QDialog):
