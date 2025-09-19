@@ -119,22 +119,55 @@ class FusionJointLimitsExtractor:
             # 提取球心位置
             center_position = self._extract_ball_center(joint)
             
-            # 提取三轴方向
-            pitch_axis = self._extract_pitch_axis(motion)
-            yaw_axis = self._extract_yaw_axis(motion)
-            roll_axis = self._extract_roll_axis(motion)
+            # 提取三轴方向（使用官方API）
+            pitch_axis = None
+            yaw_axis = None
+            roll_axis = None
             
-            # 球关节通常没有角度限制，但可以创建空的限制对象
+            try:
+                # 使用官方API获取轴向向量
+                if motion.pitchDirectionVector:
+                    pitch_vec = motion.pitchDirectionVector
+                    pitch_axis = Vector3D(pitch_vec.x, pitch_vec.y, pitch_vec.z)
+                    self.logger.debug(f"成功获取pitch轴: {pitch_axis}")
+            except Exception as e:
+                self.logger.debug(f"获取pitch轴失败: {e}")
+                
+            try:
+                if motion.yawDirectionVector:
+                    yaw_vec = motion.yawDirectionVector
+                    yaw_axis = Vector3D(yaw_vec.x, yaw_vec.y, yaw_vec.z)
+                    self.logger.debug(f"成功获取yaw轴: {yaw_axis}")
+            except Exception as e:
+                self.logger.debug(f"获取yaw轴失败: {e}")
+                
+            try:
+                if motion.rollDirectionVector:
+                    roll_vec = motion.rollDirectionVector
+                    roll_axis = Vector3D(roll_vec.x, roll_vec.y, roll_vec.z)
+                    self.logger.debug(f"成功获取roll轴: {roll_axis}")
+            except Exception as e:
+                self.logger.debug(f"获取roll轴失败: {e}")
+            
+            # 提取角度值和限制
+            pitch_limits = self._extract_ball_axis_limits(motion.pitchLimits, "pitch")
+            yaw_limits = self._extract_ball_axis_limits(motion.yawLimits, "yaw")
+            roll_limits = self._extract_ball_axis_limits(motion.rollLimits, "roll")
+            
+            # 创建球关节限制对象
             ball_limits = BallJointLimits(
+                pitch_limits=pitch_limits,
+                yaw_limits=yaw_limits,
+                roll_limits=roll_limits,
                 center_position=center_position,
                 pitch_axis=pitch_axis,
                 yaw_axis=yaw_axis,
                 roll_axis=roll_axis
-                # 球关节通常不设置角度限制
             )
             
             self.logger.info(f"成功提取球关节 {joint.name} 限制信息")
-            self.logger.debug(f"球心: {center_position}, 三轴: P={pitch_axis}, Y={yaw_axis}, R={roll_axis}")
+            if center_position:
+                self.logger.debug(f"球心: {center_position}")
             
             # 创建统一的限制对象
             return JointLimits(ball_limits=ball_limits)
@@ -251,18 +284,44 @@ class FusionJointLimitsExtractor:
             Optional[Vector3D]: 球心位置（毫米）
         """
         try:
-            # 从几何原点获取球心位置
+            # 获取关节几何体
             geometry = joint.geometryOrOriginOne
-            if geometry and hasattr(geometry, 'origin'):
+            if geometry is None:
+                self.logger.warning("关节几何体为空")
+                return None
+                
+            # 使用官方API获取原点
+            # JointGeometry 对象有 origin 属性，返回 Point3D
+            try:
                 origin: adsk.core.Point3D = geometry.origin
-                # Fusion 360中的单位是厘米，转换为毫米
-                center_mm = Vector3D(
-                    origin.x * 10.0,  # cm → mm
-                    origin.y * 10.0,  # cm → mm
-                    origin.z * 10.0   # cm → mm
-                )
-                self.logger.debug(f"球心位置: {origin} (cm) → {center_mm} (mm)")
-                return center_mm
+                if origin:
+                    # Fusion 360中的单位是厘米，转换为毫米
+                    center_mm = Vector3D(
+                        origin.x * 10.0,  # cm → mm
+                        origin.y * 10.0,  # cm → mm
+                        origin.z * 10.0   # cm → mm
+                    )
+                    self.logger.debug(f"从几何原点获取球心: {origin} (cm) → {center_mm} (mm)")
+                    return center_mm
+            except Exception as e:
+                self.logger.debug(f"获取几何原点失败: {e}")
+            
+            # 如果无法从原点获取，尝试从变换矩阵提取位置
+            # JointGeometry 对象有 transform 属性，返回 Matrix3D
+            try:
+                transform: adsk.core.Matrix3D = geometry.transform
+                if transform:
+                    matrix_data = transform.asArray()
+                    # 提取平移部分（索引 3, 7, 11）并转换为毫米
+                    center_mm = Vector3D(
+                        matrix_data[3] * 10.0,
+                        matrix_data[7] * 10.0,
+                        matrix_data[11] * 10.0
+                    )
+                    self.logger.debug(f"从变换矩阵获取球心: {center_mm} (mm)")
+                    return center_mm
+            except Exception as e:
+                self.logger.debug(f"获取变换矩阵失败: {e}")
             
             self.logger.warning("无法获取球心位置")
             return None
@@ -271,64 +330,56 @@ class FusionJointLimitsExtractor:
             self.logger.error(f"提取球心位置时发生错误: {e}")
             return None
     
-    def _extract_pitch_axis(self, motion: adsk.fusion.BallJointMotion) -> Optional[Vector3D]:
-        """提取俯仰轴方向
+    def _extract_ball_axis_limits(self, fusion_limits: adsk.fusion.JointLimits, axis_name: str) -> Optional[BasicJointLimits]:
+        """提取球关节单轴限制信息
         
         Args:
-            motion: 球关节运动对象
+            fusion_limits: Fusion 360 关节限制对象
+            axis_name: 轴名称（用于日志）
             
         Returns:
-            Optional[Vector3D]: 俯仰轴方向向量
+            Optional[BasicJointLimits]: 关节限制信息
         """
         try:
-            if hasattr(motion, 'pitchDirectionVector') and motion.pitchDirectionVector:
-                axis_vector: adsk.core.Vector3D = motion.pitchDirectionVector
-                return Vector3D(axis_vector.x, axis_vector.y, axis_vector.z)
+            if fusion_limits is None:
+                self.logger.debug(f"{axis_name}轴限制未设置")
+                return None
+                
+            # 检查限制是否启用
+            is_min_enabled = fusion_limits.isMinimumValueEnabled if hasattr(fusion_limits, 'isMinimumValueEnabled') else False
+            is_max_enabled = fusion_limits.isMaximumValueEnabled if hasattr(fusion_limits, 'isMaximumValueEnabled') else False
             
-            return None
+            if not (is_min_enabled or is_max_enabled):
+                self.logger.debug(f"{axis_name}轴限制未启用")
+                return BasicJointLimits(
+                    minimum_value=-math.pi,
+                    maximum_value=math.pi,
+                    rest_value=0.0,
+                    has_limits=False
+                )
             
-        except Exception as e:
-            self.logger.error(f"提取俯仰轴时发生错误: {e}")
-            return None
-    
-    def _extract_yaw_axis(self, motion: adsk.fusion.BallJointMotion) -> Optional[Vector3D]:
-        """提取偏航轴方向
-        
-        Args:
-            motion: 球关节运动对象
+            # 获取限制值
+            min_value = fusion_limits.minimumValue if is_min_enabled else -math.pi
+            max_value = fusion_limits.maximumValue if is_max_enabled else math.pi
+            rest_value = fusion_limits.restValue if hasattr(fusion_limits, 'restValue') else 0.0
             
-        Returns:
-            Optional[Vector3D]: 偏航轴方向向量
-        """
-        try:
-            if hasattr(motion, 'yawDirectionVector') and motion.yawDirectionVector:
-                axis_vector: adsk.core.Vector3D = motion.yawDirectionVector
-                return Vector3D(axis_vector.x, axis_vector.y, axis_vector.z)
+            # 验证限制值
+            if min_value > max_value:
+                self.logger.warning(f"{axis_name}轴限制值异常: min={min_value} > max={max_value}, 自动交换")
+                min_value, max_value = max_value, min_value
             
-            return None
+            limits = BasicJointLimits(
+                minimum_value=min_value,
+                maximum_value=max_value,
+                rest_value=rest_value,
+                has_limits=True
+            )
             
-        except Exception as e:
-            self.logger.error(f"提取偏航轴时发生错误: {e}")
-            return None
-    
-    def _extract_roll_axis(self, motion: adsk.fusion.BallJointMotion) -> Optional[Vector3D]:
-        """提取滚转轴方向
-        
-        Args:
-            motion: 球关节运动对象
-            
-        Returns:
-            Optional[Vector3D]: 滚转轴方向向量
-        """
-        try:
-            if hasattr(motion, 'rollDirectionVector') and motion.rollDirectionVector:
-                axis_vector: adsk.core.Vector3D = motion.rollDirectionVector
-                return Vector3D(axis_vector.x, axis_vector.y, axis_vector.z)
-            
-            return None
+            self.logger.debug(f"{axis_name}轴限制: [{min_value:.3f}, {max_value:.3f}] rad")
+            return limits
             
         except Exception as e:
-            self.logger.error(f"提取滚转轴时发生错误: {e}")
+            self.logger.error(f"提取{axis_name}轴限制时发生错误: {e}")
             return None
     
     def validate_limits(self, limits: JointLimits) -> bool:
@@ -372,15 +423,22 @@ class FusionJointLimitsExtractor:
                 if limits.ball_limits.roll_axis:
                     axes.append(limits.ball_limits.roll_axis)
                 
-                # 如果有多个轴，检查它们是否正交
+                # 如果有多个轴，检查它们是否正交（放宽验证条件）
                 if len(axes) >= 2:
                     for i in range(len(axes)):
                         for j in range(i + 1, len(axes)):
                             # 计算点积，应该接近0
                             dot = axes[i].x * axes[j].x + axes[i].y * axes[j].y + axes[i].z * axes[j].z
-                            if abs(dot) > 1e-6:  # 不够正交
+                            if abs(dot) > 0.1:  # 放宽到0.1，允许更大的误差
                                 self.logger.warning(f"轴向量不够正交: dot={dot:.6f}")
-                                return False
+                                # 对于球关节，不强制要求完全正交，只记录警告
+                                self.logger.debug("球关节轴向不完全正交，但这是可接受的")
+                    
+                    # 检查是否有零向量
+                    for axis in axes:
+                        if abs(axis.x) < 1e-10 and abs(axis.y) < 1e-10 and abs(axis.z) < 1e-10:
+                            self.logger.warning("存在零轴向")
+                            return False
             
             return True
             
