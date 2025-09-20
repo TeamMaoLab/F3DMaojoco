@@ -9,8 +9,9 @@ from pathlib import Path
 
 import pyvista as pv
 from pyvistaqt import QtInteractor
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel
 from PySide6.QtCore import Signal, Qt
+from PySide6.QtGui import QFont, QColor
 
 from utils.logger import logger
 
@@ -35,6 +36,8 @@ class VisualizationWidget(QWidget):
         super().__init__(parent)
         self._plotter: Optional[QtInteractor] = None
         self._current_models: List[Any] = []
+        self._initial_text_actor = None
+        self._initial_text_label = None
         self._setup_pyvista()
         
     def _setup_ui(self) -> None:
@@ -88,6 +91,9 @@ class VisualizationWidget(QWidget):
             # 设置相机位置
             self._plotter.camera_position = [(2, 2, 2), (0, 0, 0), (0, 0, 1)]
             
+            # 创建覆盖的提示文字标签
+            self._create_overlay_text()
+            
             # 将plotter添加到布局中，设置拉伸因子
             layout.addWidget(self._plotter, 1)  # 1 表示拉伸因子
                 
@@ -96,6 +102,85 @@ class VisualizationWidget(QWidget):
         except Exception as e:
             logger.error(f"PyVista渲染器初始化失败: {e}")
             self.error_occurred.emit(f"渲染器初始化失败: {e}")
+            
+    def _create_overlay_text(self) -> None:
+        """创建覆盖在3D窗口上的提示文字"""
+        try:
+            # 创建一个透明的覆盖标签
+            self._initial_text_label = QLabel("点击右侧加载目录", self)
+            self._initial_text_label.setAlignment(Qt.AlignCenter)
+            self._initial_text_label.setStyleSheet("""
+                QLabel {
+                    background-color: rgba(255, 255, 255, 200);
+                    color: black;
+                    font-size: 24px;
+                    font-weight: bold;
+                    border: 2px solid #ccc;
+                    border-radius: 10px;
+                    padding: 20px;
+                }
+            """)
+            
+            # 设置字体
+            font = QFont("Arial", 18, QFont.Bold)
+            self._initial_text_label.setFont(font)
+            
+            # 将标签提升到最上层
+            self._initial_text_label.raise_()
+            
+            # 初始时隐藏，等布局完成后再显示
+            self._initial_text_label.setVisible(False)
+            
+            # 延迟显示以确保布局完成
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(100, self._position_and_show_text)
+            
+            logger.info("覆盖文字标签创建完成")
+            
+        except Exception as e:
+            logger.error(f"创建覆盖文字失败: {e}")
+    
+    def _position_and_show_text(self) -> None:
+        """定位并显示提示文字"""
+        if self._initial_text_label and self._plotter:
+            try:
+                # 获取3D窗口的几何位置
+                plotter_geometry = self._plotter.geometry()
+                
+                # 计算居中位置
+                x = plotter_geometry.x() + plotter_geometry.width() // 2 - 150
+                y = plotter_geometry.y() + plotter_geometry.height() // 2 - 30
+                
+                # 设置标签位置和大小
+                self._initial_text_label.setGeometry(x, y, 300, 60)
+                self._initial_text_label.setVisible(True)
+                
+                logger.info("提示文字定位完成")
+                
+            except Exception as e:
+                logger.error(f"文字定位失败: {e}")
+                # 如果定位失败，尝试简单居中
+                self._initial_text_label.move(50, 50)
+                self._initial_text_label.setVisible(True)
+    
+    def _show_initial_text(self) -> None:
+        """显示初始化提示文字"""
+        if self._initial_text_label:
+            self._initial_text_label.setVisible(True)
+            self._initial_text_label.raise_()
+    
+    def _hide_initial_text(self) -> None:
+        """隐藏初始化提示文字"""
+        if self._initial_text_label:
+            self._initial_text_label.setVisible(False)
+    
+    def _add_initial_text(self) -> None:
+        """添加初始化提示文字（保留兼容性）"""
+        self._show_initial_text()
+            
+    def _remove_initial_text(self) -> None:
+        """移除初始化提示文字（保留兼容性）"""
+        self._hide_initial_text()
             
     def load_stl_model(self, file_path: Path) -> bool:
         """加载STL模型
@@ -116,9 +201,10 @@ class VisualizationWidget(QWidget):
             # 加载STL文件
             mesh = pv.read(file_path)
             
-            # 清除之前的模型
+            # 清除之前的模型和初始化文字
             self._plotter.clear()
             self._current_models.clear()
+            self._remove_initial_text()
             
             # 添加新模型
             actor = self._plotter.add_mesh(
@@ -161,9 +247,10 @@ class VisualizationWidget(QWidget):
             return False
             
         try:
-            # 清除之前的模型
+            # 清除之前的模型和初始化文字
             self._plotter.clear()
             self._current_models.clear()
+            self._remove_initial_text()
             
             success_count = 0
             
@@ -261,6 +348,8 @@ class VisualizationWidget(QWidget):
         if self._plotter:
             self._plotter.clear()
             self._current_models.clear()
+            # 重新显示初始化文字
+            self._add_initial_text()
             self._plotter.render()
             
     def get_plotter(self) -> Optional[QtInteractor]:
