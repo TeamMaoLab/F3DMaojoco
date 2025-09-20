@@ -109,20 +109,32 @@ class VisualizationWidget(QWidget):
             # 创建一个透明的覆盖标签
             self._initial_text_label = QLabel("点击右侧加载目录", self)
             self._initial_text_label.setAlignment(Qt.AlignCenter)
+            self._initial_text_label.setWordWrap(True)  # 允许文字换行
             self._initial_text_label.setStyleSheet("""
                 QLabel {
-                    background-color: rgba(255, 255, 255, 200);
-                    color: black;
-                    font-size: 24px;
+                    background-color: rgba(255, 255, 200, 240);
+                    color: #222222;
+                    font-size: 32px;
                     font-weight: bold;
-                    border: 2px solid #ccc;
-                    border-radius: 10px;
-                    padding: 20px;
+                    border: 3px solid #FF6B35;
+                    border-radius: 20px;
+                    padding: 30px 35px;
+                    min-width: 500px;
+                    min-height: 90px;
                 }
             """)
             
-            # 设置字体
-            font = QFont("Arial", 18, QFont.Bold)
+            # 设置更大的字体，使用系统可用的字体
+            font = QFont("Arial", 26, QFont.Bold)  # 使用Arial字体，增大字号
+            # 尝试使用更好的中文字体
+            available_families = font.families()
+            chinese_fonts = ["PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "STHeiti", "SimHei"]
+            
+            for chinese_font in chinese_fonts:
+                if chinese_font in available_families:
+                    font.setFamily(chinese_font)
+                    break
+            
             self._initial_text_label.setFont(font)
             
             # 将标签提升到最上层
@@ -133,7 +145,7 @@ class VisualizationWidget(QWidget):
             
             # 延迟显示以确保布局完成
             from PySide6.QtCore import QTimer
-            QTimer.singleShot(100, self._position_and_show_text)
+            QTimer.singleShot(200, self._position_and_show_text)  # 增加延迟时间
             
             logger.info("覆盖文字标签创建完成")
             
@@ -147,20 +159,30 @@ class VisualizationWidget(QWidget):
                 # 获取3D窗口的几何位置
                 plotter_geometry = self._plotter.geometry()
                 
+                # 计算更大的标签尺寸以确保文字不被裁减
+                label_width = 550
+                label_height = 120
+                
                 # 计算居中位置
-                x = plotter_geometry.x() + plotter_geometry.width() // 2 - 150
-                y = plotter_geometry.y() + plotter_geometry.height() // 2 - 30
+                x = plotter_geometry.x() + (plotter_geometry.width() - label_width) // 2
+                y = plotter_geometry.y() + (plotter_geometry.height() - label_height) // 2
+                
+                # 确保不会超出边界
+                if x < 10:
+                    x = 10
+                if y < 10:
+                    y = 10
                 
                 # 设置标签位置和大小
-                self._initial_text_label.setGeometry(x, y, 300, 60)
+                self._initial_text_label.setGeometry(x, y, label_width, label_height)
                 self._initial_text_label.setVisible(True)
                 
-                logger.info("提示文字定位完成")
+                logger.info(f"提示文字定位完成: 位置({x}, {y}), 尺寸({label_width}x{label_height})")
                 
             except Exception as e:
                 logger.error(f"文字定位失败: {e}")
-                # 如果定位失败，尝试简单居中
-                self._initial_text_label.move(50, 50)
+                # 如果定位失败，使用安全的默认位置
+                self._initial_text_label.setGeometry(20, 20, 550, 120)
                 self._initial_text_label.setVisible(True)
     
     def _show_initial_text(self) -> None:
