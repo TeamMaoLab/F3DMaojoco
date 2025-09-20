@@ -241,14 +241,12 @@ class VisualizationWidget(QWidget):
             self._current_models.clear()
             self._remove_initial_text()
             
-            # 添加新模型
+            # 添加新模型 - 不显示三角形边线
             actor = self._plotter.add_mesh(
                 mesh,
                 color="#4A90E2",  # 专业的蓝色
                 opacity=1.0,
-                show_edges=True,  # 显示边线
-                edge_color="darkgray",  # 深灰色边线，不要太明显
-                line_width=0.5,  # 细线条
+                show_edges=False,  # 不显示三角形边线
                 smooth_shading=True,  # 启用平滑着色
                 lighting=True,  # 启用光照效果
                 specular=0.3,  # 设置高光反射
@@ -256,6 +254,31 @@ class VisualizationWidget(QWidget):
             )
             
             self._current_models.append(actor)
+            
+            # 添加清晰的轮廓线以增强模型边界定义
+            try:
+                # 提取特征边创建轮廓线
+                outline_edges = mesh.extract_feature_edges(
+                    feature_angle=30.0,
+                    boundary_edges=True,
+                    non_manifold_edges=True,
+                    manifold_edges=False
+                )
+                
+                if outline_edges and outline_edges.n_points > 0:
+                    # 添加轮廓线，使用细线宽和适中的透明度
+                    outline_actor = self._plotter.add_mesh(
+                        outline_edges,
+                        color="black",
+                        line_width=1.5,
+                        opacity=0.7,
+                        render_lines_as_tubes=True
+                    )
+                    self._current_models.append(outline_actor)
+                    logger.debug(f"为模型添加轮廓线: {file_path.name}")
+                    
+            except Exception as outline_error:
+                logger.debug(f"轮廓线添加失败（不影响主模型）: {outline_error}")
             
             # 重置相机视图
             self._plotter.reset_camera()
@@ -304,14 +327,12 @@ class VisualizationWidget(QWidget):
                     colors = ["#4A90E2", "#7ED321", "#F5A623", "#BD10E0", "#50E3C2", "#B8E986"]
                     color = colors[i % len(colors)]
                     
-                    # 添加模型
+                    # 添加模型 - 不显示三角形边线
                     actor = self._plotter.add_mesh(
                         mesh,
                         color=color,
                         opacity=1.0,
-                        show_edges=True,  # 显示边线
-                        edge_color="darkgray",  # 深灰色边线，不要太明显
-                        line_width=0.5,  # 细线条
+                        show_edges=False,  # 不显示三角形边线
                         smooth_shading=True,  # 启用平滑着色
                         lighting=True,  # 启用光照效果
                         specular=0.3,  # 设置高光反射
@@ -319,6 +340,30 @@ class VisualizationWidget(QWidget):
                     )
                     
                     self._current_models.append(actor)
+                    
+                    # 为每个模型添加轮廓线以增强边界定义
+                    try:
+                        outline_edges = mesh.extract_feature_edges(
+                            feature_angle=30.0,
+                            boundary_edges=True,
+                            non_manifold_edges=True,
+                            manifold_edges=False
+                        )
+                        
+                        if outline_edges and outline_edges.n_points > 0:
+                            outline_actor = self._plotter.add_mesh(
+                                outline_edges,
+                                color="black",
+                                line_width=1.0,
+                                opacity=0.6,
+                                render_lines_as_tubes=True
+                            )
+                            self._current_models.append(outline_actor)
+                            logger.debug(f"为模型 {file_path.name} 添加轮廓线")
+                            
+                    except Exception as outline_error:
+                        logger.debug(f"轮廓线添加失败（不影响主模型）: {outline_error}")
+                    
                     success_count += 1
                     
                 except Exception as e:
