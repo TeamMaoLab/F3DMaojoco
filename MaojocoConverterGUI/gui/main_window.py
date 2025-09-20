@@ -168,7 +168,8 @@ class MainWindow(QMainWindow):
             if data_loading_panel and hasattr(data_loading_panel, 'preview_requested'):
                 # 断开之前的连接（避免重复连接）
                 try:
-                    data_loading_panel.preview_requested.disconnect()
+                    # 使用更安全的断开方式
+                    data_loading_panel.preview_requested.disconnect(self._on_preview_requested)
                 except (TypeError, RuntimeError):
                     pass
                 data_loading_panel.preview_requested.connect(self._on_preview_requested)
@@ -222,6 +223,20 @@ class MainWindow(QMainWindow):
         # self.setWindowIcon(QIcon("resources/icon.png"))
         
         logger.info(f"主窗口设置完成 - 大小: {self.size()}")
+    
+    def closeEvent(self, event):
+        """窗口关闭事件处理"""
+        logger.info("正在关闭应用程序...")
+        
+        # 确保所有线程都被正确清理
+        if hasattr(self, 'stage_manager'):
+            for stage_name, stage_panel in self.stage_manager.stages.items():
+                if hasattr(stage_panel, '_async_manager') and stage_panel._async_manager:
+                    logger.info(f"清理 {stage_name} 的异步管理器...")
+                    stage_panel._async_manager.stop_loading()
+        
+        super().closeEvent(event)
+        logger.info("应用程序已安全关闭")
 
 
 class Application:

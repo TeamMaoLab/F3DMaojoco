@@ -13,10 +13,10 @@ from PySide6.QtWidgets import (
     QPushButton, QFrame, QScrollArea, QFileDialog,
     QLineEdit, QGroupBox, QFormLayout, QTableWidget, 
     QTableWidgetItem, QHeaderView, QProgressBar, 
-    QCheckBox, QSpinBox
+    QCheckBox, QSpinBox, QTextEdit, QSplitter
 )
-from PySide6.QtCore import Signal, Qt
-from PySide6.QtGui import QFont
+from PySide6.QtCore import Signal, Qt, QTimer
+from PySide6.QtGui import QFont, QColor
 
 from utils.logger import logger
 
@@ -250,27 +250,33 @@ class InitializationPanel(StagePanel):
         
     def _browse_input_directory(self) -> None:
         """浏览输入目录"""
-        directory = QFileDialog.getExistingDirectory(
-            self, 
-            "选择包含导出数据的目录",
-            str(self.input_directory) if self.input_directory else ""
-        )
-        
-        if directory:
-            self.input_directory = Path(directory)
-            self.input_path_edit.setText(str(self.input_directory))
+        try:
+            # 使用静态方法，避免线程问题
+            directory = QFileDialog.getExistingDirectory(
+                None,  # 使用 None 而不是 self，避免父窗口问题
+                "选择包含导出数据的目录",
+                str(self.input_directory) if self.input_directory else str(Path.home()),
+                QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks
+            )
             
-            # 自动设置输出目录
-            default_output = self.input_directory / "mujoco_template"
-            self.output_directory = default_output
-            # 输出目录编辑框已隐藏，不再设置文本
-            
-            # 保存到配置
-            self.config.set_parameter("input_directory", str(self.input_directory))
-            self.config.set_parameter("output_directory", str(self.output_directory))
-            
-            # 自动执行初始化阶段
-            self._on_execute_clicked()
+            if directory:
+                self.input_directory = Path(directory)
+                self.input_path_edit.setText(str(self.input_directory))
+                
+                # 自动设置输出目录
+                default_output = self.input_directory / "mujoco_template"
+                self.output_directory = default_output
+                
+                # 保存到配置
+                self.config.set_parameter("input_directory", str(self.input_directory))
+                self.config.set_parameter("output_directory", str(self.output_directory))
+                
+                # 自动执行初始化阶段
+                self._on_execute_clicked()
+                
+        except Exception as e:
+            logger.error(f"文件选择器错误: {e}")
+            self.stage_error.emit(self.stage_name, f"文件选择器错误: {e}")
             
     def _browse_output_directory(self) -> None:
         """浏览输出目录"""
@@ -348,225 +354,327 @@ class DataLoadingPanel(StagePanel):
         super().__init__("data_loading", "数据加载", parent)
         self.input_directory: Optional[Path] = None
         self.stl_files: List[Path] = []
+        self.project_info = None
+        self._async_manager = None
+        self._is_loading = False
         self._create_config_widgets()
         
     def _create_config_widgets(self) -> None:
         """创建配置控件"""
         
-        # 数据加载信息
-        info_group = QGroupBox("数据加载信息")
-        info_layout = QVBoxLayout()
+        # 创建主分割器
+        main_splitter = QSplitter(Qt.Vertical)
         
-        self.info_label = QLabel("等待初始化阶段完成...")
-        self.info_label.setStyleSheet("color: gray; padding: 10px;")
-        info_layout.addWidget(self.info_label)
-        info_group.setLayout(info_layout)
+        # 上部：项目信息区域
+        top_widget = QWidget()
+        top_layout = QVBoxLayout(top_widget)
         
-        # STL文件表格
+        # 项目基本信息
+        project_group = QGroupBox("项目信息")
+        project_layout = QVBoxLayout()
+        
+        self.project_info_label = QLabel("等待扫描项目结构...")
+        self.project_info_label.setWordWrap(True)
+        self.project_info_label.setStyleSheet("color: #666; font-size: 12px; padding: 10px; background-color: #f9f9f9; border-radius: 5px;")
+        project_layout.addWidget(self.project_info_label)
+        project_group.setLayout(project_layout)
+        
+        # 状态信息
+        status_group = QGroupBox("加载状态")
+        status_layout = QVBoxLayout()
+        
+        self.status_label = QLabel("准备就绪")
+        self.status_label.setStyleSheet("color: blue; font-weight: bold; padding: 5px;")
+        status_layout.addWidget(self.status_label)
+        
+        # 总体进度条
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setVisible(False)
+        status_layout.addWidget(self.progress_bar)
+        
+        status_group.setLayout(status_layout)
+        
+        top_layout.addWidget(project_group)
+        top_layout.addWidget(status_group)
+        
+        # 中部：详细日志
+        log_group = QGroupBox("详细日志")
+        log_layout = QVBoxLayout()
+        
+        self.log_text = QTextEdit()
+        self.log_text.setReadOnly(True)
+        self.log_text.setMaximumHeight(150)
+        self.log_text.setStyleSheet("font-family: monospace; font-size: 10px; background-color: #f5f5f5;")
+        log_layout.addWidget(self.log_text)
+        
+        log_group.setLayout(log_layout)
+        
+        # 下部：STL文件列表
         files_group = QGroupBox("STL文件列表")
         files_layout = QVBoxLayout()
         
         self.files_table = QTableWidget()
         self.files_table.setColumnCount(4)
-        self.files_table.setHorizontalHeaderLabels(["文件名", "大小 (KB)", "状态", "操作"])
+        self.files_table.setHorizontalHeaderLabels(["文件名", "大小 (KB)", "状态", "进度"])
         self.files_table.horizontalHeader().setStretchLastSection(True)
         self.files_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.files_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.files_table.setMaximumHeight(200)
         
         files_layout.addWidget(self.files_table)
         files_group.setLayout(files_layout)
         
-        # 加载选项
-        options_group = QGroupBox("加载选项")
-        options_layout = QVBoxLayout()
+        # 操作按钮区域
+        button_widget = QWidget()
+        button_layout = QHBoxLayout(button_widget)
         
-        # 过滤选项
-        filter_layout = QHBoxLayout()
-        self.filter_hidden = QCheckBox("过滤隐藏组件")
-        self.filter_hidden.setChecked(True)
-        self.min_bodies_spin = QSpinBox()
-        self.min_bodies_spin.setRange(0, 1000)
-        self.min_bodies_spin.setValue(1)
-        self.min_bodies_spin.setPrefix("最小实体数: ")
+        self.cancel_button = QPushButton("取消加载")
+        self.cancel_button.clicked.connect(self._cancel_loading)
+        self.cancel_button.setEnabled(False)
         
-        filter_layout.addWidget(self.filter_hidden)
-        filter_layout.addWidget(self.min_bodies_spin)
-        filter_layout.addStretch()
-        
-        # 加载进度
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setVisible(False)
-        
-        options_layout.addLayout(filter_layout)
-        options_layout.addWidget(self.progress_bar)
-        options_group.setLayout(options_layout)
-        
-        # 操作按钮
-        button_layout = QHBoxLayout()
-        
-        self.scan_button = QPushButton("扫描STL文件")
-        self.scan_button.clicked.connect(self._scan_stl_files)
-        
-        self.load_button = QPushButton("加载选中文件")
-        self.load_button.clicked.connect(self._load_selected_files)
-        self.load_button.setEnabled(False)
+        self.retry_button = QPushButton("重试")
+        self.retry_button.clicked.connect(self._retry_loading)
+        self.retry_button.setEnabled(False)
         
         self.preview_button = QPushButton("3D预览")
         self.preview_button.clicked.connect(self._preview_3d)
         self.preview_button.setEnabled(False)
         
-        button_layout.addWidget(self.scan_button)
-        button_layout.addWidget(self.load_button)
+        button_layout.addWidget(self.cancel_button)
+        button_layout.addWidget(self.retry_button)
+        button_layout.addStretch()
         button_layout.addWidget(self.preview_button)
         
-        # 添加到布局
-        self.content_layout.addWidget(info_group)
-        self.content_layout.addWidget(files_group)
-        self.content_layout.addWidget(options_group)
-        self.content_layout.addLayout(button_layout)
+        # 添加到主分割器
+        main_splitter.addWidget(top_widget)
+        main_splitter.addWidget(log_group)
+        main_splitter.addWidget(files_group)
+        main_splitter.addWidget(button_widget)
         
-        # 修改执行按钮文本
+        # 设置分割器比例
+        main_splitter.setSizes([200, 150, 200, 60])
+        
+        self.content_layout.addWidget(main_splitter)
+        
+        # 修改执行按钮文本和状态
         self.execute_button.setText("完成数据加载")
+        self.execute_button.setEnabled(False)  # 自动加载期间禁用
         
+        # 导入异步管理器
+        try:
+            from .async_data_loader import AsyncDataManager
+            self._async_manager = AsyncDataManager()
+        except ImportError:
+            logger.warning("异步数据加载器导入失败，将使用同步模式")
+            
     def set_input_directory(self, directory: Path) -> None:
-        """设置输入目录
-        
-        Args:
-            directory: 输入目录路径
-        """
+        """设置输入目录并开始自动加载"""
         self.input_directory = directory
-        self.info_label.setText(f"输入目录: {directory.name}")
-        self.info_label.setStyleSheet("color: blue; padding: 10px;")
+        self.status_label.setText(f"输入目录: {directory.name}")
+        self._add_log(f"设置输入目录: {directory}")
         
-    def _scan_stl_files(self) -> None:
-        """扫描STL文件"""
-        if not self.input_directory:
-            self.stage_error.emit(self.stage_name, "输入目录未设置")
+        # 自动开始加载
+        if self._async_manager:
+            self._start_async_loading()
+        else:
+            self._add_log("警告：异步管理器不可用，请手动操作")
+            
+    def _start_async_loading(self) -> None:
+        """开始异步加载"""
+        if not self.input_directory or not self._async_manager:
             return
             
-        logger.info(f"开始扫描STL文件: {self.input_directory}")
+        self._is_loading = True
+        self._reset_ui()
         
-        # 查找所有STL文件
-        stl_patterns = ["*.stl", "*.STL"]
-        self.stl_files = []
+        self._add_log("开始自动数据加载...")
+        self.status_label.setText("正在扫描项目结构...")
         
-        for pattern in stl_patterns:
-            self.stl_files.extend(self.input_directory.rglob(pattern))
+        # 显示进度条
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setValue(0)
+        
+        # 启用取消按钮
+        self.cancel_button.setEnabled(True)
+        
+        # 开始异步加载
+        self._async_manager.start_data_loading(
+            self.input_directory,
+            progress_callback=self._on_progress_updated,
+            scan_complete_callback=self._on_scan_completed,
+            loading_complete_callback=self._on_loading_completed,
+            error_callback=self._on_error_occurred
+        )
+        
+    def _on_progress_updated(self, progress: int, message: str) -> None:
+        """进度更新回调"""
+        self.progress_bar.setValue(progress)
+        self.status_label.setText(message)
+        self._add_log(f"[{progress:3d}%] {message}")
+        
+    def _on_scan_completed(self, json_data: dict, project_info) -> None:
+        """扫描完成回调"""
+        self.project_info = project_info
+        
+        # 更新项目信息显示
+        info_text = f"""项目信息：
+• 导出时间: {project_info.export_time}
+• 几何单位: {project_info.geometry_unit}
+• 位置单位: {project_info.position_unit}
+• 组件数量: {project_info.component_count}
+• 关节数量: {project_info.joint_count}
+• 格式版本: {project_info.format_version}"""
+        
+        self.project_info_label.setText(info_text)
+        self._add_log(f"项目扫描完成: {project_info.component_count} 个组件, {project_info.joint_count} 个关节")
+        
+    def _on_loading_completed(self, successful_files: list, failed_files: list) -> None:
+        """加载完成回调"""
+        self._is_loading = False
+        self.progress_bar.setValue(100)
+        
+        # 更新文件表格
+        self._update_files_table(successful_files, failed_files)
+        
+        # 加载STL文件到3D视图
+        if successful_files:
+            self._add_log(f"开始加载 {len(successful_files)} 个STL文件到3D视图...")
+            self.preview_requested.emit(successful_files)
             
-        # 更新表格
-        self.files_table.setRowCount(len(self.stl_files))
+        # 更新UI状态
+        self.status_label.setText("加载完成！")
+        self.cancel_button.setEnabled(False)
+        self.preview_button.setEnabled(len(successful_files) > 0)
+        self.execute_button.setEnabled(True)
         
-        for i, stl_file in enumerate(self.stl_files):
+        # 显示结果摘要
+        summary = f"加载完成！成功: {len(successful_files)}, 失败: {len(failed_files)}"
+        self._add_log(summary)
+        
+        if failed_files:
+            self.retry_button.setEnabled(True)
+            self._add_log(f"失败的文件: {[(f[0].name, f[1]) for f in failed_files]}")
+            
+    def _on_error_occurred(self, error_msg: str) -> None:
+        """错误发生回调"""
+        self._is_loading = False
+        self.status_label.setText("加载失败")
+        self.status_label.setStyleSheet("color: red; font-weight: bold; padding: 5px;")
+        self._add_log(f"错误: {error_msg}")
+        
+        self.cancel_button.setEnabled(False)
+        self.retry_button.setEnabled(True)
+        self.execute_button.setEnabled(True)
+        
+    def _cancel_loading(self) -> None:
+        """取消加载"""
+        if self._async_manager:
+            self._async_manager.stop_loading()
+        self._is_loading = False
+        self.status_label.setText("加载已取消")
+        self._add_log("用户取消了加载操作")
+        
+        self.cancel_button.setEnabled(False)
+        self.retry_button.setEnabled(True)
+        
+    def _retry_loading(self) -> None:
+        """重试加载"""
+        self._start_async_loading()
+        self.retry_button.setEnabled(False)
+        
+    def _reset_ui(self) -> None:
+        """重置UI状态"""
+        self.status_label.setText("准备就绪")
+        self.status_label.setStyleSheet("color: blue; font-weight: bold; padding: 5px;")
+        self.progress_bar.setValue(0)
+        self.files_table.setRowCount(0)
+        self.log_text.clear()
+        self.cancel_button.setEnabled(False)
+        self.retry_button.setEnabled(False)
+        self.preview_button.setEnabled(False)
+        
+    def _update_files_table(self, successful_files: list, failed_files: list) -> None:
+        """更新文件表格"""
+        self.files_table.setRowCount(len(successful_files) + len(failed_files))
+        
+        row = 0
+        # 添加成功文件
+        for file_path in successful_files:
             # 文件名
-            name_item = QTableWidgetItem(stl_file.name)
-            self.files_table.setItem(i, 0, name_item)
+            name_item = QTableWidgetItem(file_path.name)
+            self.files_table.setItem(row, 0, name_item)
             
             # 文件大小
             try:
-                size_kb = stl_file.stat().st_size / 1024
+                size_kb = file_path.stat().st_size / 1024
                 size_item = QTableWidgetItem(f"{size_kb:.1f}")
             except:
                 size_item = QTableWidgetItem("N/A")
-            self.files_table.setItem(i, 1, size_item)
+            self.files_table.setItem(row, 1, size_item)
             
             # 状态
-            status_item = QTableWidgetItem("未加载")
-            from PySide6.QtGui import QColor
-            status_item.setForeground(QColor(100, 100, 100))  # 灰色
-            self.files_table.setItem(i, 2, status_item)
+            status_item = QTableWidgetItem("成功")
+            status_item.setForeground(QColor(0, 128, 0))  # 绿色
+            self.files_table.setItem(row, 2, status_item)
             
-            # 操作按钮
-            btn_widget = QWidget()
-            btn_layout = QHBoxLayout(btn_widget)
-            btn_layout.setContentsMargins(0, 0, 0, 0)
+            # 进度
+            progress_item = QTableWidgetItem("✓")
+            progress_item.setTextAlignment(Qt.AlignCenter)
+            self.files_table.setItem(row, 3, progress_item)
             
-            preview_btn = QPushButton("预览")
-            preview_btn.clicked.connect(lambda checked, file_path=stl_file: self._preview_single_file(file_path))
+            row += 1
             
-            btn_layout.addWidget(preview_btn)
-            self.files_table.setCellWidget(i, 3, btn_widget)
+        # 添加失败文件
+        for file_path, error_msg in failed_files:
+            # 文件名
+            name_item = QTableWidgetItem(file_path.name)
+            self.files_table.setItem(row, 0, name_item)
             
-        # 更新按钮状态
-        if self.stl_files:
-            self.load_button.setEnabled(True)
-            self.preview_button.setEnabled(True)
-            self.info_label.setText(f"找到 {len(self.stl_files)} 个STL文件")
-        else:
-            self.info_label.setText("未找到STL文件")
-            self.info_label.setStyleSheet("color: orange; padding: 10px;")
+            # 文件大小
+            size_item = QTableWidgetItem("N/A")
+            self.files_table.setItem(row, 1, size_item)
             
-        logger.info(f"扫描完成，找到 {len(self.stl_files)} 个STL文件")
+            # 状态
+            status_item = QTableWidgetItem("失败")
+            status_item.setForeground(QColor(255, 0, 0))  # 红色
+            self.files_table.setItem(row, 2, status_item)
+            
+            # 错误信息
+            error_item = QTableWidgetItem(error_msg[:20] + "..." if len(error_msg) > 20 else error_msg)
+            error_item.setForeground(QColor(255, 0, 0))
+            self.files_table.setItem(row, 3, error_item)
+            
+            row += 1
+            
+    def _add_log(self, message: str) -> None:
+        """添加日志消息"""
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        log_entry = f"[{timestamp}] {message}\n"
         
-    def _load_selected_files(self) -> None:
-        """加载选中的文件"""
-        selected_rows = set()
-        for item in self.files_table.selectedItems():
-            selected_rows.add(item.row())
-            
-        if not selected_rows:
-            self.stage_error.emit(self.stage_name, "请先选择要加载的文件")
-            return
-            
-        logger.info(f"开始加载 {len(selected_rows)} 个STL文件")
+        self.log_text.append(log_entry)
+        # 滚动到底部
+        scrollbar = self.log_text.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
         
-        # 显示进度条
-        self.progress_bar.setMaximum(len(selected_rows))
-        self.progress_bar.setValue(0)
-        self.progress_bar.setVisible(True)
-        
-        loaded_files = []
-        
-        for i, row in enumerate(selected_rows):
-            if row < len(self.stl_files):
-                stl_file = self.stl_files[row]
-                
-                try:
-                    # 更新状态
-                    status_item = self.files_table.item(row, 2)
-                    status_item.setText("加载中...")
-                    from PySide6.QtGui import QColor
-                    status_item.setForeground(QColor(0, 0, 255))  # 蓝色
-                    
-                    # 这里可以添加实际的STL文件验证逻辑
-                    # 暂时假设所有文件都有效
-                    status_item.setText("已加载")
-                    status_item.setForeground(QColor(0, 128, 0))  # 绿色
-                    
-                    loaded_files.append(stl_file)
-                    
-                except Exception as e:
-                    status_item.setText(f"失败: {str(e)[:20]}")
-                    from PySide6.QtGui import QColor
-                    status_item.setForeground(QColor(255, 0, 0))  # 红色
-                    
-                self.progress_bar.setValue(i + 1)
-                
-        self.progress_bar.setVisible(False)
-        
-        if loaded_files:
-            self.stl_files_loaded.emit(loaded_files)
-            logger.success(f"成功加载 {len(loaded_files)} 个STL文件")
-        else:
-            logger.warning("没有成功加载任何STL文件")
-            
     def _preview_3d(self) -> None:
-        """3D预览所有已加载文件"""
-        loaded_files = []
-        
-        for row in range(self.files_table.rowCount()):
-            status_item = self.files_table.item(row, 2)
-            if status_item and status_item.text() == "已加载":
-                loaded_files.append(self.stl_files[row])
+        """3D预览功能"""
+        if self.input_directory:
+            # 查找所有成功的STL文件
+            stl_files = []
+            for row in range(self.files_table.rowCount()):
+                status_item = self.files_table.item(row, 2)
+                if status_item and status_item.text() == "成功":
+                    file_name = self.files_table.item(row, 0).text()
+                    file_path = self.input_directory / "stl_files" / file_name
+                    if file_path.exists():
+                        stl_files.append(file_path)
+                        
+            if stl_files:
+                self.preview_requested.emit(stl_files)
+            else:
+                self._add_log("没有可预览的有效STL文件")
                 
-        if loaded_files:
-            self.preview_requested.emit(loaded_files)
-        else:
-            self.stage_error.emit(self.stage_name, "没有已加载的文件可以预览")
-            
-    def _preview_single_file(self, file_path: Path) -> None:
-        """预览单个文件"""
-        self.preview_requested.emit([file_path])
-        
     def _execute_stage(self) -> bool:
         """执行数据加载阶段"""
         logger.info("开始执行数据加载阶段")
@@ -575,23 +683,28 @@ class DataLoadingPanel(StagePanel):
             self.stage_error.emit(self.stage_name, "输入目录未设置")
             return False
             
-        # 检查是否有已加载的文件
-        loaded_count = 0
+        # 检查是否有成功加载的文件
+        successful_count = 0
         for row in range(self.files_table.rowCount()):
             status_item = self.files_table.item(row, 2)
-            if status_item and status_item.text() == "已加载":
-                loaded_count += 1
+            if status_item and status_item.text() == "成功":
+                successful_count += 1
                 
-        if loaded_count == 0:
-            self.stage_error.emit(self.stage_name, "请先加载至少一个STL文件")
+        if successful_count == 0:
+            self.stage_error.emit(self.stage_name, "没有成功加载任何STL文件")
             return False
             
         # 保存配置
-        self.config.set_parameter("loaded_files_count", loaded_count)
-        self.config.set_parameter("filter_hidden", self.filter_hidden.isChecked())
-        self.config.set_parameter("min_bodies", self.min_bodies_spin.value())
+        self.config.set_parameter("loaded_files_count", successful_count)
+        self.config.set_parameter("input_directory", str(self.input_directory))
+        if self.project_info:
+            self.config.set_parameter("project_info", {
+                "component_count": self.project_info.component_count,
+                "joint_count": self.project_info.joint_count,
+                "export_time": self.project_info.export_time
+            })
         
-        logger.success(f"数据加载阶段完成，共加载 {loaded_count} 个文件")
+        logger.success(f"数据加载阶段完成，共加载 {successful_count} 个文件")
         return True
 
 
