@@ -202,7 +202,7 @@ class InitializationPanel(StagePanel):
         input_layout = QHBoxLayout()
         
         self.input_path_edit = QLineEdit()
-        self.input_path_edit.setPlaceholderText("选择包含导出数据的目录...")
+        self.input_path_edit.setPlaceholderText("选择包含导出数据的目录（输出目录将自动创建）...")
         self.input_path_edit.setEnabled(False)
         
         input_browse_btn = QPushButton("浏览...")
@@ -227,9 +227,10 @@ class InitializationPanel(StagePanel):
         output_layout.addWidget(output_browse_btn)
         output_group.setLayout(output_layout)
         
-        # 添加到布局
+        # 添加到布局（只显示输入目录，输出目录自动配置）
         self.content_layout.addWidget(input_group)
-        self.content_layout.addWidget(output_group)
+        # 注释掉输出目录显示，因为它是自动配置的
+        # self.content_layout.addWidget(output_group)
         
         # 隐藏执行按钮（自动跳转到下一阶段）
         self.execute_button.setVisible(False)
