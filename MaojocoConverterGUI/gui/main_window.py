@@ -55,11 +55,11 @@ class MainWindow(QMainWindow):
         splitter.addWidget(right_panel)
         
         # 设置分割器比例和最小尺寸
-        splitter.setStretchFactor(0, 7)
-        splitter.setStretchFactor(1, 3)
+        splitter.setStretchFactor(0, 6)
+        splitter.setStretchFactor(1, 4)
         
-        # 设置右侧面板固定宽度为400像素
-        right_panel.setFixedWidth(400)
+        # 设置右侧面板固定宽度为500像素
+        right_panel.setFixedWidth(500)
         
         # 设置左侧面板最小宽度为400像素
         left_panel.setMinimumWidth(400)

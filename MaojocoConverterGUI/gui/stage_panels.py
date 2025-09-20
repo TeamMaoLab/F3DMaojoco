@@ -199,41 +199,54 @@ class InitializationPanel(StagePanel):
         
         # 输入目录选择
         input_group = QGroupBox("输入目录")
-        input_layout = QHBoxLayout()
+        input_layout = QVBoxLayout()
+        input_layout.setSpacing(10)
+        
+        # 添加说明文字
+        info_label = QLabel("请选择包含导出数据的目录，输出目录将自动创建")
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("color: #666; font-size: 12px; padding: 5px;")
+        input_layout.addWidget(info_label)
+        
+        # 输入目录选择行
+        dir_select_layout = QHBoxLayout()
+        dir_select_layout.setSpacing(10)
         
         self.input_path_edit = QLineEdit()
-        self.input_path_edit.setPlaceholderText("选择包含导出数据的目录（输出目录将自动创建）...")
+        self.input_path_edit.setPlaceholderText("点击浏览选择输入目录...")
         self.input_path_edit.setEnabled(False)
         
-        input_browse_btn = QPushButton("浏览...")
+        input_browse_btn = QPushButton("浏览目录")
+        input_browse_btn.setMinimumWidth(100)
         input_browse_btn.clicked.connect(self._browse_input_directory)
         
-        input_layout.addWidget(self.input_path_edit)
-        input_layout.addWidget(input_browse_btn)
+        dir_select_layout.addWidget(self.input_path_edit, 1)  # 占据更多空间
+        dir_select_layout.addWidget(input_browse_btn)
+        input_layout.addLayout(dir_select_layout)
+        
         input_group.setLayout(input_layout)
-        
-        # 输出目录选择
-        output_group = QGroupBox("输出目录")
-        output_layout = QHBoxLayout()
-        
-        self.output_path_edit = QLineEdit()
-        self.output_path_edit.setPlaceholderText("自动设置为输入目录下的mujoco_template")
-        self.output_path_edit.setEnabled(False)
-        
-        output_browse_btn = QPushButton("浏览...")
-        output_browse_btn.clicked.connect(self._browse_output_directory)
-        
-        output_layout.addWidget(self.output_path_edit)
-        output_layout.addWidget(output_browse_btn)
-        output_group.setLayout(output_layout)
         
         # 添加到布局（只显示输入目录，输出目录自动配置）
         self.content_layout.addWidget(input_group)
-        # 注释掉输出目录显示，因为它是自动配置的
-        # self.content_layout.addWidget(output_group)
         
         # 隐藏执行按钮（自动跳转到下一阶段）
         self.execute_button.setVisible(False)
+        
+        # 添加一些说明信息
+        info_group = QGroupBox("说明")
+        info_layout = QVBoxLayout()
+        
+        info_text = QLabel(
+            "• 输出目录将自动设置为: [输入目录]/mujoco_template\n"
+            "• 选择目录后系统会自动验证必要文件\n"
+            "• 验证通过后将自动进入下一阶段"
+        )
+        info_text.setWordWrap(True)
+        info_text.setStyleSheet("color: #555; font-size: 11px; padding: 10px; background-color: #f9f9f9; border-radius: 5px;")
+        info_layout.addWidget(info_text)
+        
+        info_group.setLayout(info_layout)
+        self.content_layout.addWidget(info_group)
         
     def _browse_input_directory(self) -> None:
         """浏览输入目录"""
@@ -250,7 +263,7 @@ class InitializationPanel(StagePanel):
             # 自动设置输出目录
             default_output = self.input_directory / "mujoco_template"
             self.output_directory = default_output
-            self.output_path_edit.setText(str(default_output))
+            # 输出目录编辑框已隐藏，不再设置文本
             
             # 保存到配置
             self.config.set_parameter("input_directory", str(self.input_directory))
