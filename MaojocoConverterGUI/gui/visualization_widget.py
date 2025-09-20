@@ -213,7 +213,7 @@ class VisualizationWidget(QWidget):
         if self._initial_text_label:
             self._initial_text_label.setVisible(False)
             # 停止任何未执行的定时器
-            if hasattr(self, '_initial_text_timer') and self._initial_text_timer:
+            if self._initial_text_timer:
                 self._initial_text_timer.stop()
     
     def _add_initial_text(self) -> None:
@@ -223,6 +223,11 @@ class VisualizationWidget(QWidget):
     def _remove_initial_text(self) -> None:
         """移除初始化提示文字（保留兼容性）"""
         self._hide_initial_text()
+    
+    def _update_render(self) -> None:
+        """更新渲染器"""
+        if self._plotter:
+            self._plotter.render()
             
     def load_stl_model(self, file_path: Path) -> bool:
         """加载STL模型
@@ -302,6 +307,94 @@ class VisualizationWidget(QWidget):
             self.error_occurred.emit(f"模型加载失败: {e}")
             return False
             
+    def display_transformed_models(self, meshes: List[pv.PolyData], colors: List[str]) -> bool:
+        """显示已变换的模型
+        
+        Args:
+            meshes: 已变换的网格数据列表
+            colors: 对应的颜色列表
+            
+        Returns:
+            bool: 是否显示成功
+        """
+        if not meshes or len(meshes) != len(colors):
+            logger.warning("模型数据或颜色数据无效")
+            return False
+            
+        logger.info(f"开始显示 {len(meshes)} 个已变换模型")
+        
+        if not self._plotter:
+            logger.error("PyVista渲染器未初始化")
+            return False
+            
+        try:
+            # 清除之前的模型和初始化文字
+            self._plotter.clear()
+            self._current_models.clear()
+            self._remove_initial_text()
+            
+            success_count = 0
+            
+            for mesh, color in zip(meshes, colors):
+                try:
+                    # 添加模型 - 不显示三角形边线
+                    actor = self._plotter.add_mesh(
+                        mesh,
+                        color=color,
+                        opacity=1.0,
+                        show_edges=False,  # 不显示三角形边线
+                        smooth_shading=True,  # 启用平滑着色
+                        lighting=True,  # 启用光照效果
+                        specular=0.3,  # 设置高光反射
+                        specular_power=20  # 设置高光强度
+                    )
+                    
+                    self._current_models.append(actor)
+                    success_count += 1
+                    
+                    # 为每个模型添加轮廓线以增强边界定义
+                    try:
+                        outline_edges = mesh.extract_feature_edges(
+                            feature_angle=30.0,
+                            boundary_edges=True,
+                            non_manifold_edges=False,
+                            manifold_edges=False
+                        )
+                        
+                        if outline_edges.n_points > 0:
+                            outline_actor = self._plotter.add_mesh(
+                                outline_edges,
+                                color="black",
+                                line_width=1,
+                                opacity=0.8
+                            )
+                            self._current_models.append(outline_actor)
+                    except Exception:
+                        # 轮廓线提取失败不影响主要功能
+                        pass
+                        
+                except Exception as e:
+                    logger.error(f"显示模型失败: {e}")
+                    continue
+            
+            # 更新渲染器和视图
+            self._update_render()
+            self.fit_to_screen()
+            
+            success = success_count > 0
+            if success:
+                logger.success(f"成功显示 {success_count}/{len(meshes)} 个模型")
+                self.model_loaded.emit(f"成功显示 {success_count} 个变换模型")
+            else:
+                logger.error("所有模型显示失败")
+                
+            return success
+            
+        except Exception as e:
+            logger.error(f"显示变换模型失败: {e}")
+            self.error_occurred.emit(f"模型显示失败: {e}")
+            return False
+    
     def load_multiple_stl_models(self, file_paths: List[Path]) -> bool:
         """加载多个STL模型
         

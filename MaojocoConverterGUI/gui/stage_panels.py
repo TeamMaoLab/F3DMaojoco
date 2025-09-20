@@ -7,6 +7,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List
 from pathlib import Path
+import datetime
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
@@ -19,6 +20,8 @@ from PySide6.QtCore import Signal, Qt, QTimer
 from PySide6.QtGui import QFont, QColor
 
 from utils.logger import logger
+from core.transform_service import TransformService, LoadMode
+from .async_data_loader import AsyncDataManager
 
 
 class StageConfig:
@@ -179,6 +182,10 @@ class StagePanel(QWidget):
         
     def _update_ui_from_config(self) -> None:
         """根据配置更新UI（子类实现）"""
+        pass
+    
+    def cleanup(self) -> None:
+        """清理资源（子类可根据需要重写）"""
         pass
 
 
@@ -355,6 +362,7 @@ class DataLoadingPanel(StagePanel):
         self.input_directory: Optional[Path] = None
         self.stl_files: List[Path] = []
         self.project_info = None
+        self._transform_service: Optional[TransformService] = None
         self._async_manager = None
         self._is_loading = False
         self._create_config_widgets()
@@ -460,13 +468,17 @@ class DataLoadingPanel(StagePanel):
         self.execute_button.setText("完成数据加载")
         self.execute_button.setEnabled(False)  # 自动加载期间禁用
         
-        # 导入异步管理器
-        try:
-            from .async_data_loader import AsyncDataManager
-            self._async_manager = AsyncDataManager()
-        except ImportError:
-            logger.warning("异步数据加载器导入失败，将使用同步模式")
+        # 初始化异步管理器
+        self._async_manager = AsyncDataManager()
             
+    def set_transform_service(self, transform_service: TransformService) -> None:
+        """设置TransformService
+        
+        Args:
+            transform_service: 变换服务实例
+        """
+        self._transform_service = transform_service
+        
     def set_input_directory(self, directory: Path) -> None:
         """设置输入目录并开始自动加载"""
         self.input_directory = directory
@@ -648,7 +660,6 @@ class DataLoadingPanel(StagePanel):
             
     def _add_log(self, message: str) -> None:
         """添加日志消息"""
-        import datetime
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         log_entry = f"[{timestamp}] {message}\n"
         
@@ -706,6 +717,12 @@ class DataLoadingPanel(StagePanel):
         
         logger.success(f"数据加载阶段完成，共加载 {successful_count} 个文件")
         return True
+    
+    def cleanup(self) -> None:
+        """清理异步管理器资源"""
+        if self._async_manager:
+            logger.info("清理数据加载面板的异步管理器...")
+            self._async_manager.stop_loading()
 
 
 class RelationshipAnalysisPanel(StagePanel):
@@ -836,8 +853,7 @@ class StageManager(QWidget):
             
             # 如果是初始化面板，设置特殊信号连接
             if stage_panel.stage_name == "initialization":
-                if hasattr(stage_panel, 'directory_loaded'):
-                    stage_panel.directory_loaded.connect(self._on_directory_loaded)
+                stage_panel.directory_loaded.connect(self._on_directory_loaded)
                     
             main_layout.addWidget(stage_panel)
         

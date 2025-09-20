@@ -22,6 +22,8 @@ from PySide6.QtCore import QDir
 
 # 本地模块导入
 from gui import create_application
+from gui.main_window import MainWindow
+from gui.stage_panels import DataLoadingPanel
 from utils.logger import logger
 
 
@@ -82,22 +84,21 @@ def main() -> None:
         
         # 创建应用程序
         gui_app = create_application()
+        main_window: MainWindow = gui_app.get_main_window()
         
         # 如果指定了目录，设置快速启动
         if args.directory:
             directory_path = Path(args.directory)
             if directory_path.exists():
                 logger.info(f"快速启动模式：使用目录 {directory_path}")
-                # 获取主窗口实例
-                main_window = gui_app.get_main_window()
                 # 直接切换到数据加载阶段并设置目录
                 main_window.stage_manager.switch_to_stage("data_loading")
                 data_loading_panel = main_window.stage_manager.stages.get("data_loading")
-                if data_loading_panel and hasattr(data_loading_panel, 'set_input_directory'):
+                if data_loading_panel:
                     data_loading_panel.set_input_directory(directory_path)
                 
                 # 隐藏3D视图的提示文字
-                if hasattr(main_window, 'viz_widget') and main_window.viz_widget:
+                if main_window.viz_widget:
                     main_window.viz_widget._hide_initial_text()
                     logger.info("已隐藏3D视图提示文字")
             else:

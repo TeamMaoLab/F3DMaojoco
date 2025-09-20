@@ -5,9 +5,8 @@ MaojocoConverter GUI - 基础框架搭建
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
-import pyvista as pv
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QLabel, QPushButton, QFrame, QSplitter
@@ -16,6 +15,9 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 
 from utils.logger import logger
+from core.transform_service import TransformService, LoadMode
+from .stage_panels import StageManager
+from .visualization_widget import VisualizationWidget
 
 
 class MainWindow(QMainWindow):
@@ -26,6 +28,7 @@ class MainWindow(QMainWindow):
     
     def __init__(self) -> None:
         super().__init__()
+        self._transform_service = TransformService()
         self._setup_ui()
         self._setup_window()
         
@@ -85,7 +88,6 @@ class MainWindow(QMainWindow):
         layout.addWidget(line)
         
         # 3D视图组件
-        from .visualization_widget import VisualizationWidget
         self.viz_widget = VisualizationWidget()
         layout.addWidget(self.viz_widget)
         
@@ -126,7 +128,6 @@ class MainWindow(QMainWindow):
         layout.addWidget(line)
         
         # 阶段配置面板
-        from .stage_panels import StageManager
         self.stage_manager = StageManager()
         layout.addWidget(self.stage_manager)
         
@@ -144,16 +145,16 @@ class MainWindow(QMainWindow):
         
         return panel
     
-    def _on_data_loaded(self, data: dict) -> None:
+    def _on_data_loaded(self, data: Dict[str, Any]) -> None:
         """数据加载完成处理"""
         logger.info(f"数据加载完成: {data}")
         
-        # 如果有数据加载阶段面板，传递输入目录
+        # 传递输入目录和transform_service给数据加载面板
         data_loading_panel = self.stage_manager.stages.get("data_loading")
-        if data_loading_panel and hasattr(data_loading_panel, 'set_input_directory'):
-            from pathlib import Path
+        if data_loading_panel:
             input_dir = Path(data.get('input_directory', ''))
             data_loading_panel.set_input_directory(input_dir)
+            data_loading_panel.set_transform_service(self._transform_service)
             
     def _on_stage_changed(self, stage_name: str) -> None:
         """阶段切换处理"""
@@ -165,30 +166,47 @@ class MainWindow(QMainWindow):
         # 连接数据加载阶段的预览信号
         if stage_name == "data_loading":
             data_loading_panel = self.stage_manager.stages.get("data_loading")
-            if data_loading_panel and hasattr(data_loading_panel, 'preview_requested'):
-                # 断开之前的连接（避免重复连接）
-                try:
-                    # 使用更安全的断开方式
-                    data_loading_panel.preview_requested.disconnect(self._on_preview_requested)
-                except (TypeError, RuntimeError):
-                    pass
+            if data_loading_panel:
+                # 使用blockSignals避免重复连接
+                was_blocked = data_loading_panel.blockSignals(True)
                 data_loading_panel.preview_requested.connect(self._on_preview_requested)
+                data_loading_panel.blockSignals(was_blocked)
                 
-    def _on_preview_requested(self, file_paths: list) -> None:
-        """处理3D预览请求"""
+    def _on_preview_requested(self, file_paths: List[Path]) -> None:
+        """处理3D预览请求
+        
+        Args:
+            file_paths: STL文件路径列表
+        """
         logger.info(f"收到3D预览请求: {len(file_paths)} 个文件")
         
-        if hasattr(self, 'viz_widget') and self.viz_widget:
+        if self.viz_widget:
             # 转换路径格式
-            from pathlib import Path
-            stl_paths = [Path(fp) if isinstance(fp, str) else fp for fp in file_paths]
+            stl_paths = [Path(fp) for fp in file_paths]
             
-            # 加载到3D视图
-            success = self.viz_widget.load_multiple_stl_models(stl_paths)
-            if success:
-                logger.success("3D预览加载成功")
+            # 使用TransformService加载项目
+            if stl_paths and stl_paths[0].parent.parent:
+                project_dir = stl_paths[0].parent.parent
+                result = self._transform_service.load_project(project_dir, LoadMode.AUTO)
+                
+                if result.success:
+                    # 将转换后的模型传递给可视化组件
+                    meshes = [model.mesh for model in result.models]
+                    colors = [model.color for model in result.models]
+                    success = self.viz_widget.display_transformed_models(meshes, colors)
+                    if success:
+                        logger.success("3D预览加载成功")
+                    else:
+                        logger.error("3D预览加载失败")
+                else:
+                    logger.error(f"项目加载失败: {result.message}")
             else:
-                logger.error("3D预览加载失败")
+                # 回退到原始STL加载方式
+                success = self.viz_widget.load_multiple_stl_models(stl_paths)
+                if success:
+                    logger.success("3D预览加载成功")
+                else:
+                    logger.error("3D预览加载失败")
         else:
             logger.error("3D可视化组件未初始化")
             
@@ -206,8 +224,7 @@ class MainWindow(QMainWindow):
         if stage_name in stage_info:
             info = stage_info[stage_name]
             title_text = f"配置面板-「{info['order']}」{info['name']}"
-            if hasattr(self, 'right_panel_title'):
-                self.right_panel_title.setText(title_text)
+            self.right_panel_title.setText(title_text)
             
     def _setup_window(self) -> None:
         """设置窗口属性"""
@@ -224,16 +241,26 @@ class MainWindow(QMainWindow):
         
         logger.info(f"主窗口设置完成 - 大小: {self.size()}")
     
+    def get_transform_service(self) -> TransformService:
+        """获取TransformService实例
+        
+        Returns:
+            TransformService: 变换服务实例
+        """
+        return self._transform_service
+    
     def closeEvent(self, event):
         """窗口关闭事件处理"""
         logger.info("正在关闭应用程序...")
         
         # 确保所有线程都被正确清理
-        if hasattr(self, 'stage_manager'):
-            for stage_name, stage_panel in self.stage_manager.stages.items():
-                if hasattr(stage_panel, '_async_manager') and stage_panel._async_manager:
-                    logger.info(f"清理 {stage_name} 的异步管理器...")
-                    stage_panel._async_manager.stop_loading()
+        if self.stage_manager:
+            for _, stage_panel in self.stage_manager.stages.items():
+                stage_panel.cleanup()
+        
+        # 清理TransformService数据
+        if self._transform_service:
+            self._transform_service.clear_data()
         
         super().closeEvent(event)
         logger.info("应用程序已安全关闭")
