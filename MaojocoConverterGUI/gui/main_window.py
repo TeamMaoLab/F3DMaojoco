@@ -169,7 +169,7 @@ class MainWindow(QMainWindow):
                 # 断开之前的连接（避免重复连接）
                 try:
                     data_loading_panel.preview_requested.disconnect()
-                except:
+                except (TypeError, RuntimeError):
                     pass
                 data_loading_panel.preview_requested.connect(self._on_preview_requested)
                 
