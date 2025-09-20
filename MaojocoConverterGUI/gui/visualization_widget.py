@@ -84,12 +84,25 @@ class VisualizationWidget(QWidget):
             size_policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             self._plotter.setSizePolicy(size_policy)
             
-            # 添加坐标轴和网格
+            # 设置渲染参数以改善视觉效果
+            try:
+                self._plotter.renderer.enable_anti_aliasing()  # 启用抗锯齿
+            except AttributeError:
+                logger.warning("抗锯齿功能不可用，跳过")
+            self._plotter.renderer.set_background("white")  # 白色背景
+            
+            # 添加坐标轴，但不显示网格
             self._plotter.add_axes()
-            self._plotter.show_grid()
+            # self._plotter.show_grid()  # 注释掉网格显示
             
             # 设置相机位置
             self._plotter.camera_position = [(2, 2, 2), (0, 0, 0), (0, 0, 1)]
+            
+            # 设置光照参数
+            try:
+                self._plotter.enable_light_kit()  # 启用光照套件
+            except AttributeError:
+                logger.warning("光照套件功能不可用，跳过")
             
             # 创建覆盖的提示文字标签
             self._create_overlay_text()
@@ -231,9 +244,15 @@ class VisualizationWidget(QWidget):
             # 添加新模型
             actor = self._plotter.add_mesh(
                 mesh,
-                color="lightblue",
+                color="#4A90E2",  # 专业的蓝色
                 opacity=1.0,
-                show_edges=True
+                show_edges=True,  # 显示边线
+                edge_color="darkgray",  # 深灰色边线，不要太明显
+                line_width=0.5,  # 细线条
+                smooth_shading=True,  # 启用平滑着色
+                lighting=True,  # 启用光照效果
+                specular=0.3,  # 设置高光反射
+                specular_power=20  # 设置高光强度
             )
             
             self._current_models.append(actor)
@@ -281,8 +300,8 @@ class VisualizationWidget(QWidget):
                     # 加载STL文件
                     mesh = pv.read(file_path)
                     
-                    # 为不同模型设置不同颜色
-                    colors = ["lightblue", "lightgreen", "lightcoral", "lightyellow", "lightpink"]
+                    # 为不同模型设置专业的颜色方案
+                    colors = ["#4A90E2", "#7ED321", "#F5A623", "#BD10E0", "#50E3C2", "#B8E986"]
                     color = colors[i % len(colors)]
                     
                     # 添加模型
@@ -290,7 +309,13 @@ class VisualizationWidget(QWidget):
                         mesh,
                         color=color,
                         opacity=1.0,
-                        show_edges=True
+                        show_edges=True,  # 显示边线
+                        edge_color="darkgray",  # 深灰色边线，不要太明显
+                        line_width=0.5,  # 细线条
+                        smooth_shading=True,  # 启用平滑着色
+                        lighting=True,  # 启用光照效果
+                        specular=0.3,  # 设置高光反射
+                        specular_power=20  # 设置高光强度
                     )
                     
                     self._current_models.append(actor)
