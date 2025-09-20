@@ -38,6 +38,7 @@ class VisualizationWidget(QWidget):
         self._current_models: List[Any] = []
         self._initial_text_actor = None
         self._initial_text_label = None
+        self._initial_text_timer = None
         self._setup_pyvista()
         
     def _setup_ui(self) -> None:
@@ -158,7 +159,10 @@ class VisualizationWidget(QWidget):
             
             # 延迟显示以确保布局完成
             from PySide6.QtCore import QTimer
-            QTimer.singleShot(200, self._position_and_show_text)  # 增加延迟时间
+            self._initial_text_timer = QTimer()
+            self._initial_text_timer.setSingleShot(True)
+            self._initial_text_timer.timeout.connect(self._position_and_show_text)
+            self._initial_text_timer.start(200)  # 增加延迟时间
             
             logger.info("覆盖文字标签创建完成")
             
@@ -208,6 +212,9 @@ class VisualizationWidget(QWidget):
         """隐藏初始化提示文字"""
         if self._initial_text_label:
             self._initial_text_label.setVisible(False)
+            # 停止任何未执行的定时器
+            if hasattr(self, '_initial_text_timer') and self._initial_text_timer:
+                self._initial_text_timer.stop()
     
     def _add_initial_text(self) -> None:
         """添加初始化提示文字（保留兼容性）"""

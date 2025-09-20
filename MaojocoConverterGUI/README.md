@@ -268,10 +268,27 @@ def test_stl_loader_uses_pyvista():
 - 如需运行代码，请使用项目虚拟环境：`.venv/bin/python`
 
 ### 运行方式
+
+#### 基本运行
 ```bash
 # 在项目根目录下执行
 .venv/bin/python MaojocoConverterGUI/main.py
 ```
+
+#### 快速启动（跳过初始化阶段）
+```bash
+# 直接打开指定目录，跳过第一个环节
+.venv/bin/python MaojocoConverterGUI/main.py --directory /path/to/project
+
+# 示例：打开测试目录
+.venv/bin/python MaojocoConverterGUI/main.py --directory TmpFinger
+```
+
+#### 命令行参数
+- `--directory, -d`: 指定项目目录路径，自动跳过初始化阶段
+- `--help, -h`: 显示帮助信息
+
+**注意**: 快速启动功能主要用于开发测试，可以直接进入数据加载阶段，提高测试效率。
 
 ## 🚀 开发目标
 
