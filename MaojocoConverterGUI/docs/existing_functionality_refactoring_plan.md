@@ -963,6 +963,305 @@ class MainWindow(QMainWindow):
 3. **阶段5**: 实现Presenter层，建立服务层和UI层的桥梁
 4. **阶段6-7**: 重构UI组件，使其只负责显示和用户交互
 
+### 阶段性验证内容
+
+#### ✅ 阶段1验证：基础架构搭建
+**验证目标**: 确保基础架构正确搭建，类型系统和服务接口设计合理
+
+**验证方法**:
+```python
+# 1. 类型系统验证
+def test_domain_types():
+    """验证独立类型系统的完整性"""
+    # 测试所有类型可以正常导入和使用
+    from core.domain_types import ComponentInfo, JointInfo, ExportData
+    
+    # 测试序列化/反序列化
+    component = ComponentInfo(name="test", file_path=Path("test.stl"))
+    serialized = component.to_dict()
+    deserialized = ComponentInfo.from_dict(serialized)
+    assert component.name == deserialized.name
+
+# 2. 服务接口验证  
+def test_service_interfaces():
+    """验证服务接口定义的完整性"""
+    from core.service_interfaces import IDataLoadingService
+    
+    # 测试接口方法签名正确
+    methods = IDataLoadingService.__abstractmethods__
+    assert 'load_project_data' in methods
+    assert 'scan_project_structure' in methods
+```
+
+**验收标准**:
+- [ ] 所有domain_types可以正常导入和实例化
+- [ ] 服务接口定义完整，方法签名正确
+- [ ] 类型检查通过（mypy验证）
+- [ ] 导入依赖无循环引用
+
+#### ✅ 阶段2验证：数据加载服务重构
+**验证目标**: 确保数据加载功能从UI迁移到Core服务后功能完整
+
+**验证方法**:
+```python
+# 1. 服务功能验证
+def test_data_loading_service():
+    """验证数据加载服务功能"""
+    service = DataLoadingService()
+    
+    # 测试项目扫描
+    project_info = service.scan_project_structure(test_directory)
+    assert project_info.component_count > 0
+    
+    # 测试数据加载
+    export_data = service.load_project_data(test_directory)
+    assert len(export_data.components) > 0
+    assert len(export_data.joints) >= 0
+
+# 2. 异步功能验证
+def test_async_data_service():
+    """验证异步数据加载功能"""
+    service = AsyncDataService(DataLoadingService())
+    
+    # 测试信号连接
+    progress_received = []
+    service.progress_updated.connect(lambda p, m: progress_received.append((p, m)))
+    
+    # 执行异步加载
+    service.start_async_loading(test_directory)
+    assert len(progress_received) > 0  # 确保进度更新正常
+```
+
+**验收标准**:
+- [ ] DataLoadingService可以独立运行并正确加载数据
+- [ ] 异步进度通知机制正常工作
+- [ ] 错误处理机制完整
+- [ ] 与原有async_data_loader.py功能对等
+
+#### ✅ 阶段3验证：可视化服务重构
+**验证目标**: 确保3D可视化功能从UI组件迁移到Core服务后渲染正常
+
+**验证方法**:
+```python
+# 1. 渲染服务验证
+def test_visualization_service():
+    """验证可视化服务功能"""
+    service = VisualizationService()
+    
+    # 测试初始化
+    service.initialize_renderer()
+    
+    # 测试模型加载
+    result = service.load_stl_model(test_stl_file)
+    assert result == True
+    
+    # 测试显示控制
+    meshes = [test_mesh_data]
+    colors = ["red"]
+    result = service.display_transformed_models(meshes, colors)
+    assert result == True
+
+# 2. 集成验证
+def test_visualization_integration():
+    """验证可视化服务与TransformService集成"""
+    viz_service = VisualizationService()
+    transform_service = TransformService()
+    
+    # 设置依赖
+    viz_service.set_transform_service(transform_service)
+    
+    # 测试完整流程
+    load_result = transform_service.load_project(test_directory)
+    assert load_result.success
+    
+    # 验证可以正常显示变换后的模型
+    assert viz_service.display_transformed_models(load_result.models, ["blue"])
+```
+
+**验收标准**:
+- [ ] VisualizationService可以独立完成3D渲染
+- [ ] 模型加载和显示功能正常
+- [ ] 与TransformService集成正确
+- [ ] 渲染效果与原有visualization_widget.py一致
+
+#### ✅ 阶段4验证：阶段管理服务重构
+**验证目标**: 确保阶段管理功能从UI迁移到Core服务后流程控制正常
+
+**验证方法**:
+```python
+# 1. 阶段管理验证
+def test_stage_management_service():
+    """验证阶段管理服务功能"""
+    service = StageManagementService()
+    
+    # 测试阶段初始化
+    service.initialize_stages()
+    stages = service.get_all_stages()
+    assert len(stages) == 6  # 6个阶段
+    
+    # 测试阶段执行
+    result = service.execute_stage("initialization")
+    assert result == True
+    
+    # 测试阶段切换
+    service.switch_to_stage("data_loading")
+    assert service.get_current_stage() == "data_loading"
+
+# 2. 流程控制验证
+def test_stage_flow_control():
+    """验证阶段流程控制"""
+    service = StageManagementService()
+    
+    # 测试顺序执行
+    service.initialize_stages()
+    
+    # 模拟完成前一阶段
+    service.complete_stage("initialization")
+    
+    # 验证自动切换到下一阶段
+    assert service.get_current_stage() == "data_loading"
+```
+
+**验收标准**:
+- [ ] StageManagementService可以管理所有6个阶段
+- [ ] 阶段执行顺序正确
+- [ ] 阶间切换机制正常
+- [ ] 与原有StageManager功能对等
+
+#### ✅ 阶段5验证：Presenter层实现
+**验证目标**: 确保Presenter层能正确协调Core服务和View层
+
+**验证方法**:
+```python
+# 1. 主Presenter验证
+def test_main_presenter():
+    """验证主Presenter协调功能"""
+    # 创建Mock服务
+    mock_services = create_mock_services()
+    presenter = MainPresenter(**mock_services)
+    
+    # 测试应用初始化
+    presenter.initialize_application()
+    
+    # 测试阶段执行协调
+    presenter.execute_stage("initialization")
+    
+    # 验证服务间调用正确
+    assert mock_services['stage_management'].initialize_called
+    assert mock_services['visualization'].initialize_called
+
+# 2. 信号连接验证
+def test_presenter_signal_handling():
+    """验证Presenter信号处理"""
+    presenter = MainPresenter(**create_mock_services())
+    
+    # 模拟View事件
+    presenter.on_directory_selected(test_directory)
+    
+    # 验证正确的服务调用序列
+    assert presenter._data_service.validate_directory_called
+    assert presenter._stage_service.complete_stage_called
+```
+
+**验收标准**:
+- [ ] MainPresenter能正确初始化所有服务
+- [ ] Presenter能处理用户操作并调用相应服务
+- [ ] 服务间依赖关系正确建立
+- [ ] 错误处理机制完善
+
+#### ✅ 阶段6验证：UI组件重构
+**验证目标**: 确保重构后的UI组件功能完整且只负责显示和交互
+
+**验证方法**:
+```python
+# 1. UI组件功能验证
+def test_ui_components():
+    """验证UI组件基本功能"""
+    # 测试InitializationPanel
+    init_panel = InitializationPanel(presenter=mock_presenter)
+    assert init_panel.directory_selected is not None
+    
+    # 测试DataLoadingPanel  
+    data_panel = DataLoadingPanel(presenter=mock_presenter)
+    assert data_panel.preview_requested is not None
+    
+    # 测试信号连接
+    init_panel.directory_selected.connect(mock_handler)
+    init_panel._browse_directory()  # 模拟用户操作
+
+# 2. UI-Presenter集成验证
+def test_ui_presenter_integration():
+    """验证UI与Presenter集成"""
+    presenter = MainPresenter(**create_real_services())
+    
+    # 创建MainWindow
+    main_window = MainWindow(presenter)
+    
+    # 模拟用户操作流程
+    main_window.initialization_panel._browse_directory()
+    # 验证整个流程正常执行
+```
+
+**验收标准**:
+- [ ] 所有UI组件可以正常创建和显示
+- [ ] 用户交互事件正确传递给Presenter
+- [ ] UI状态更新机制正常
+- [ ] 界面布局和用户体验与重构前一致
+
+#### ✅ 阶段7验证：完整集成测试
+**验证目标**: 确保整个重构后系统功能完整且性能达标
+
+**验证方法**:
+```python
+# 1. 端到端功能测试
+def test_end_to_end_functionality():
+    """端到端功能测试"""
+    # 创建完整系统
+    app = create_test_application()
+    
+    # 模拟完整用户流程
+    # 1. 选择目录
+    app.select_test_directory()
+    
+    # 2. 数据加载
+    app.wait_for_data_loading()
+    
+    # 3. 验证3D显示
+    assert app.visualization_has_models()
+    
+    # 4. 阶段切换
+    app.switch_to_next_stage()
+    
+    # 5. 验证数据一致性
+    assert app.data_is_consistent()
+
+# 2. 性能测试
+def test_performance():
+    """性能对比测试"""
+    import time
+    
+    # 测试启动时间
+    start_time = time.time()
+    app = create_test_application()
+    startup_time = time.time() - start_time
+    
+    # 测试数据加载时间
+    start_time = time.time()
+    app.load_test_data()
+    load_time = time.time() - start_time
+    
+    # 与重构前对比
+    assert startup_time < old_startup_time * 1.2  # 允许20%性能损失
+    assert load_time < old_load_time * 1.2
+```
+
+**验收标准**:
+- [ ] 完整用户流程可以正常执行
+- [ ] 所有6个阶段功能正常
+- [ ] 3D可视化效果正确
+- [ ] 性能指标在可接受范围内
+- [ ] 错误处理和用户反馈机制完善
+
 ### 兼容性保证
 
 1. **功能保持**: 每个重构步骤都要确保现有功能正常工作
@@ -1294,11 +1593,176 @@ sequenceDiagram
 - **复用性**: Core服务可在其他项目中复用
 - **调试效率**: 问题定位更准确快捷
 
-## 🎯 下一步行动
+## 📋 实施计划清单
 
-1. **立即开始**: 创建独立类型系统和Core服务接口
-2. **逐步迁移**: 按照阶段计划逐步重构
-3. **持续测试**: 每个阶段完成后进行全面测试
-4. **文档更新**: 同步更新技术文档和用户手册
+### ✅ 已完成
+- [x] 分析现有代码结构，识别重构目标
+- [x] 创建详细重构计划文档
+- [x] 设计分层架构和文件结构
+- [x] 创建独立类型系统 (`core/domain_types.py`)
+
+### 🔄 阶段1: 基础架构搭建 (进行中)
+
+#### Core层
+- [ ] 创建 `core/service_interfaces.py` - 服务接口定义
+  - [ ] IDataLoadingService 接口
+  - [ ] IVisualizationService 接口  
+  - [ ] IStageManagementService 接口
+  - [ ] ITransformService 接口 (基于现有)
+  - **验证**: mypy类型检查通过，接口定义完整
+
+- [ ] 创建 `core/data_loading_service.py` - 数据加载服务
+  - [ ] DataLoadingService 主类
+  - [ ] AsyncDataService 异步支持
+  - [ ] 从 async_data_loader.py 迁移核心逻辑
+  - **验证**: 独立运行测试，功能对等验证
+
+- [ ] 创建 `core/visualization_service.py` - 可视化服务
+  - [ ] VisualizationService 主类
+  - [ ] ModelRenderer 渲染器
+  - [ ] 从 visualization_widget.py 迁移渲染逻辑
+  - **验证**: 3D渲染独立测试，与TransformService集成测试
+
+- [ ] 创建 `core/stage_management_service.py` - 阶段管理服务
+  - [ ] StageManagementService 主类
+  - [ ] StageExecutor 执行器
+  - [ ] 从 stage_panels.py 迁移 StageManager 逻辑
+  - **验证**: 6个阶段管理测试，流程控制测试
+
+#### Presenter层
+- [ ] 创建 `presenters/main_presenter.py` - 主协调器
+  - [ ] MainPresenter 类
+  - [ ] 应用程序初始化协调
+  - [ ] Core服务依赖管理
+  - **验证**: 服务初始化协调测试，依赖注入测试
+
+- [ ] 创建 `presenters/stage_presenter.py` - 阶段协调器
+  - [ ] StagePresenter 类
+  - [ ] 阶段执行逻辑协调
+  - **验证**: 阶段切换测试，错误处理测试
+
+- [ ] 创建 `presenters/visualization_presenter.py` - 可视化协调器
+  - [ ] VisualizationPresenter 类
+  - [ ] 3D显示逻辑协调
+  - **验证**: 模型加载协调测试，用户交互响应测试
+
+#### GUI层
+- [ ] 创建 `gui/main_window.py` - 主窗口
+  - [ ] MainWindow 类
+  - [ ] 主窗口布局和事件处理
+  - **验证**: 窗口显示测试，布局正确性测试
+
+- [ ] 创建阶段面板文件 (从 stage_panels.py 分离)
+  - [ ] `gui/initialization_panel.py` - InitializationPanel
+  - [ ] `gui/data_loading_panel.py` - DataLoadingPanel
+  - [ ] `gui/relationship_analysis_panel.py` - RelationshipAnalysisPanel
+  - [ ] `gui/unit_conversion_panel.py` - UnitConversionPanel
+  - [ ] `gui/model_generation_panel.py` - ModelGenerationPanel
+  - [ ] `gui/actuator_generation_panel.py` - ActuatorGenerationPanel
+  - **验证**: UI组件功能测试，信号连接测试
+
+#### 程序入口
+- [ ] 创建 `main.py` - 程序入口
+  - [ ] 依赖注入设置
+  - [ ] 应用程序启动流程
+  - **验证**: 启动流程测试，依赖注入验证
+
+### 📋 阶段2: 逐步迁移
+
+#### Core服务实现
+- [ ] 完成数据加载服务实现和测试
+- [ ] 完成可视化服务实现和测试
+- [ ] 完成阶段管理服务实现和测试
+- [ ] 集成现有 transform_service
+- **验证**: 阶段2验证测试，所有服务独立运行测试
+
+#### Presenter实现
+- [ ] 完成主Presenter实现和测试
+- [ ] 完成阶段Presenter实现和测试
+- [ ] 完成可视化Presenter实现和测试
+- [ ] 建立Presenter间协作机制
+- **验证**: 阶段5验证测试，Presenter协调功能测试
+
+#### UI组件迁移
+- [ ] 重构 stage_panels.py (保留基类，迁移业务逻辑)
+- [ ] 重构 async_data_loader.py (迁移到Core服务)
+- [ ] 重构 visualization_widget.py (简化为UI包装器)
+- [ ] 确保所有UI组件正常工作
+- **验证**: 阶段6验证测试，UI-Presenter集成测试
+
+### 📋 阶段3: 集成测试
+
+#### 功能测试
+- [ ] 完整启动流程测试
+- [ ] 各阶段功能测试
+- [ ] 数据加载和显示测试
+- [ ] 错误处理测试
+- **验证**: 阶段7验证测试，端到端功能测试
+
+#### 兼容性测试
+- [ ] 现有功能完整性验证
+- [ ] 性能对比测试
+- [ ] 用户体验一致性测试
+- **验证**: 与重构前功能对比测试，性能基准测试
+
+### 📋 阶段4: 优化和文档
+
+#### 代码优化
+- [ ] 性能优化
+- [ ] 错误处理完善
+- [ ] 日志记录优化
+- [ ] 代码规范检查
+- **验证**: 性能测试，代码质量检查
+
+#### 文档更新
+- [ ] API文档更新
+- [ ] 开发指南更新
+- [ ] 用户手册更新
+- [ ] 部署文档更新
+- **验证**: 文档完整性检查，用户试用反馈
+
+### 🎯 优先级标记
+
+#### 🔴 高优先级 (必须完成)
+- Core服务接口定义
+- MainPresenter实现
+- 基础UI组件创建
+- 完整启动流程
+
+#### 🟡 中优先级 (重要但可延后)
+- 复杂阶段面板迁移
+- 高级可视化功能
+- 性能优化
+
+#### 🟢 低优先级 (可选)
+- 额外错误处理
+- 高级用户交互
+- 文档完善
+
+### 📊 进度跟踪
+
+| 阶段 | 计划文件数 | 已完成 | 进行中 | 待开始 | 完成率 |
+|------|------------|--------|--------|--------|--------|
+| 阶段1 | 17 | 1 | 0 | 16 | 6% |
+| 阶段2 | 3 | 0 | 0 | 3 | 0% |
+| 阶段3 | 1 | 0 | 0 | 1 | 0% |
+| 阶段4 | 1 | 0 | 0 | 1 | 0% |
+| **总计** | **22** | **1** | **0** | **21** | **5%** |
+
+### 📝 实施原则
+
+1. **渐进式迁移**: 每次只迁移一个功能点，确保可回滚
+2. **保持兼容**: 重构过程中确保现有功能始终可用
+3. **测试驱动**: 每个组件完成后立即进行功能测试
+4. **文档同步**: 代码变更同时更新相关文档
+5. **团队沟通**: 重大架构变更及时沟通确认
+
+### ⚠️ 风险控制
+
+1. **回滚机制**: 保持原有代码可快速回滚
+2. **分支管理**: 使用特性分支进行重构
+3. **定期合并**: 频繁合并到主分支避免冲突
+4. **备份策略**: 重要节点创建代码备份
+5. **测试覆盖**: 关键路径必须有测试覆盖
 
 这个重构计划专注于现有功能的架构改进，确保在提升代码质量的同时保持所有功能正常运行。
