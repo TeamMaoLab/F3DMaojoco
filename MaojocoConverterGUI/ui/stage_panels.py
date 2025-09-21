@@ -30,6 +30,7 @@ from ..core.transform_service import TransformService, LoadResult, LoadMode
 from ..core.project_data_service import ProjectDataService, ProjectInfo
 from ..core.stl_model_manager import ModelData
 from .component_list import ComponentListWidget
+from .joint_list import ModelViewTabWidget
 
 
 @dataclass
@@ -112,18 +113,6 @@ class InitializationPanel(QWidget):
         dir_select_layout.addWidget(browse_btn)
         layout.addLayout(dir_select_layout)
         
-        # 项目信息显示
-        self.info_group = QGroupBox("项目信息")
-        info_layout = QVBoxLayout()
-        
-        self.info_label = QLabel("未选择项目")
-        self.info_label.setWordWrap(True)
-        info_layout.addWidget(self.info_label)
-        
-        self.info_group.setLayout(info_layout)
-        self.info_group.setVisible(False)
-        layout.addWidget(self.info_group)
-        
         # 状态显示
         self.status_label = QLabel("")
         self.status_label.setStyleSheet("color: #666; font-size: 12px;")
@@ -163,9 +152,6 @@ class InitializationPanel(QWidget):
                 self.status_label.setStyleSheet("color: #388e3c; font-size: 12px;")
                 self.project_validated.emit(True, "项目结构验证通过")
                 
-                # 显示项目基本信息
-                self._show_project_info()
-                
                 # 自动开始加载项目
                 self._load_project()
                 
@@ -175,25 +161,7 @@ class InitializationPanel(QWidget):
             self.status_label.setStyleSheet("color: #d32f2f; font-size: 12px;")
             self.project_validated.emit(False, error_msg)
     
-    def _show_project_info(self):
-        """显示项目基本信息"""
-        try:
-            project_info = self._data_service.scan_project(self._current_project)
-            
-            info_text = f"""项目信息：
-• 组件数量：{project_info.component_count}
-• 关节数量：{project_info.joint_count}
-• 导出时间：{project_info.export_time}
-• 几何单位：{project_info.geometry_unit}
-• 位置单位：{project_info.position_unit}
-• 包含变换数据：{'是' if project_info.has_transform_data else '否'}"""
-            
-            self.info_label.setText(info_text)
-            self.info_group.setVisible(True)
-            
-        except Exception as e:
-            logger.error(f"获取项目信息失败：{e}")
-    
+        
     def _load_project(self):
         """加载项目"""
         if not self._current_project:
@@ -262,24 +230,9 @@ class DataLoadingPanel(QWidget):
         result_group.setLayout(result_layout)
         layout.addWidget(result_group)
         
-        # 实体列表组件
-        self._component_list = ComponentListWidget()
-        layout.addWidget(self._component_list)
-        
-        # 项目详情
-        details_group = QGroupBox("项目详情")
-        details_layout = QFormLayout()
-        
-        self.load_mode_label = QLabel("-")
-        self.project_dir_label = QLabel("-")
-        self.transform_data_label = QLabel("-")
-        
-        details_layout.addRow("加载模式：", self.load_mode_label)
-        details_layout.addRow("项目目录：", self.project_dir_label)
-        details_layout.addRow("变换数据：", self.transform_data_label)
-        
-        details_group.setLayout(details_layout)
-        layout.addWidget(details_group)
+        # 实体列表组件 - 使用选项卡形式（实体列表 + 关节列表）
+        self._model_view_tab_widget = ModelViewTabWidget()
+        layout.addWidget(self._model_view_tab_widget)
         
         layout.addStretch()
         
@@ -301,26 +254,19 @@ class DataLoadingPanel(QWidget):
             )
             self.result_label.setStyleSheet("color: #388e3c;")
             
-            # 更新项目详情
-            self.load_mode_label.setText(str(result.load_mode) or "Unknown")
-            self.project_dir_label.setText(
-                result.project_info.project_directory if result.project_info else "-"
-            )
-            self.transform_data_label.setText(
-                "是" if result.project_info and result.project_info.has_transform_data else "否"
-            )
+            # 项目详情信息已移除，避免重复显示
             
             # 加载实体列表数据
             if result.project_info and result.project_info.project_directory:
                 project_path = Path(result.project_info.project_directory)
-                self._component_list.load_project_data(project_path)
+                self._model_view_tab_widget.load_project_data(project_path)
             
         else:
             self.result_label.setText(f"❌ 加载失败：{result.message}")
             self.result_label.setStyleSheet("color: #d32f2f;")
             
             # 清空实体列表
-            self._component_list.clear_data()
+            self._model_view_tab_widget.clear_data()
     
     def _update_models_table(self, models: List[Union[ModelData, Any]]):
         """更新模型表格
@@ -430,6 +376,8 @@ class StagePanelsContainer(QWidget):
     stage_changed = Signal(str)    # 阶段切换信号
     project_loaded = Signal(object) # 项目加载完成信号
     component_selected = Signal(str, bool)  # 组件选择信号
+    joint_selected = Signal(str, bool)     # 关节选择信号
+    components_highlight = Signal(object, str)  # 组件高亮信号
     
     def __init__(self, transform_service: TransformService, 
                  data_service: ProjectDataService, parent=None):
@@ -465,8 +413,23 @@ class StagePanelsContainer(QWidget):
         self._panels['data_loading'] = DataLoadingPanel(self._transform_service)
         
         # 连接组件选择信号
-        self._panels['data_loading']._component_list.component_selected.connect(
+        self._panels['data_loading']._model_view_tab_widget.component_selected.connect(
             self.component_selected
+        )
+        
+        # 连接关节选择信号
+        self._panels['data_loading']._model_view_tab_widget.joint_selected.connect(
+            self.joint_selected
+        )
+        
+        # 连接组件高亮信号
+        self._panels['data_loading']._model_view_tab_widget.components_highlight.connect(
+            self.components_highlight
+        )
+        
+        # 连接选项卡切换信号
+        self._panels['data_loading']._model_view_tab_widget.tab_changed.connect(
+            self._on_tab_changed
         )
         
         # 创建其他简单面板
@@ -569,3 +532,15 @@ class StagePanelsContainer(QWidget):
             error_msg: 错误信息
         """
         logger.error(f"异步加载错误：{error_msg}")
+    
+    def _on_tab_changed(self, index: int):
+        """选项卡切换处理
+        
+        Args:
+            index: 选项卡索引
+        """
+        try:
+            logger.info(f"阶段面板容器检测到选项卡切换: {index}")
+            # 可以在这里添加额外的逻辑，比如更新状态等
+        except Exception as e:
+            logger.error(f"处理选项卡切换失败: {e}")

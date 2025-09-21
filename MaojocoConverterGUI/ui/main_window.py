@@ -135,6 +135,14 @@ class MainWindowSimplified(QMainWindow):
         
         # 组件选择信号
         self.stage_panels.component_selected.connect(self._on_component_selected)
+        
+        # 关节选择信号
+        if hasattr(self.stage_panels, 'joint_selected'):
+            self.stage_panels.joint_selected.connect(self._on_joint_selected)
+        
+        # 组件高亮信号（用于关节选择时的实体高亮）
+        if hasattr(self.stage_panels, 'components_highlight'):
+            self.stage_panels.components_highlight.connect(self._on_components_highlight)
     
     def _on_stage_changed(self, stage_name: str):
         """阶段切换处理"""
@@ -211,11 +219,16 @@ class MainWindowSimplified(QMainWindow):
             
             # 获取数据加载面板
             data_panel = self.stage_panels._panels.get('data_loading')
-            if data_panel and hasattr(data_panel, '_component_list'):
-                # 使用模糊匹配查找正确的模型名称
-                matched_model_name = data_panel._component_list.find_matching_model_name(
-                    component_name, model_names
-                )
+            if data_panel and hasattr(data_panel, '_model_view_tab_widget'):
+                component_list = data_panel._model_view_tab_widget.component_list
+                if component_list:
+                    # 使用模糊匹配查找正确的模型名称
+                    matched_model_name = component_list.find_matching_model_name(
+                        component_name, model_names
+                    )
+                else:
+                    # 如果component_list为None，直接使用原始名称
+                    matched_model_name = component_name
                 
                 # 设置模型颜色
                 color = 'yellow' if selected else 'gray'
@@ -230,6 +243,61 @@ class MainWindowSimplified(QMainWindow):
             
         except Exception as e:
             logger.error(f"处理组件选择失败: {e}")
+    
+    def _on_joint_selected(self, joint_name: str, selected: bool):
+        """关节选择处理
+        
+        Args:
+            joint_name: 关节名称
+            selected: 是否选中
+        """
+        try:
+            logger.info(f"关节 {joint_name} 选择状态: {selected}")
+            # 这里可以添加关节选择的具体逻辑
+            # 比如高亮关节的连接点、显示关节信息等
+        except Exception as e:
+            logger.error(f"处理关节选择失败: {e}")
+    
+    def _on_components_highlight(self, component_names, color: str):
+        """组件高亮处理
+        
+        Args:
+            component_names: 组件名称列表
+            color: 高亮颜色
+        """
+        try:
+            # 获取实际的模型名称列表
+            model_names = self.viz_widget.get_model_names()
+            
+            # 获取数据加载面板
+            data_panel = self.stage_panels._panels.get('data_loading')
+            if data_panel and hasattr(data_panel, '_model_view_tab_widget'):
+                component_list = data_panel._model_view_tab_widget.component_list
+                
+                # 为每个组件名称设置颜色
+                for component_name in component_names:
+                    if component_name:  # 确保组件名称不为空
+                        if component_list:
+                            # 使用模糊匹配查找正确的模型名称
+                            matched_model_name = component_list.find_matching_model_name(
+                                component_name, model_names
+                            )
+                        else:
+                            # 如果component_list为None，直接使用原始名称
+                            matched_model_name = component_name
+                        
+                        # 设置模型颜色
+                        self.viz_widget.set_model_color(matched_model_name, color)
+                        logger.info(f"关节关联组件 {component_name} -> 模型 {matched_model_name} 高亮为: {color}")
+            else:
+                # 直接使用原始组件名称
+                for component_name in component_names:
+                    if component_name:
+                        self.viz_widget.set_model_color(component_name, color)
+                        logger.info(f"关节关联组件 {component_name} 高亮为: {color}")
+                        
+        except Exception as e:
+            logger.error(f"处理组件高亮失败: {e}")
     
     def _process_quick_start(self):
         """处理快速启动"""
