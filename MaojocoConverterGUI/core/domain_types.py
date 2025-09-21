@@ -68,12 +68,13 @@ BoundingBox (轴对齐包围盒)
 """
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from enum import Enum
 from pathlib import Path
 import json
 import time
 import math
+import networkx as nx
 
 
 class JointType(Enum):
@@ -723,13 +724,14 @@ class StageConfig:
         return []
 
 
-@dataclass 
+@dataclass
 class LoadResult:
     """加载结果"""
     success: bool
     models: List['STLModel']  # 前向引用
     message: str
     project_info: Optional[ProjectInfo] = None
+    export_data: Optional[ExportData] = None
     load_mode: Optional[str] = None
     error_details: Optional[str] = None
 
@@ -932,6 +934,16 @@ class KinematicBody:
         """获取位置向量"""
         return self.world_transform.get_translation()
     
+    @position.setter
+    def position(self, value: Vector3D):
+        """设置位置向量"""
+        # 更新世界变换矩阵的平移部分
+        current_matrix = self.world_transform.matrix
+        current_matrix[0][3] = value.x
+        current_matrix[1][3] = value.y
+        current_matrix[2][3] = value.z
+        self.world_transform.matrix = current_matrix
+    
     @property
     def rotation(self) -> List[List[float]]:
         """获取旋转矩阵"""
@@ -1010,6 +1022,53 @@ class ConvertedData:
         return len(self.joint_coordinates)
 
 
+# 新增类型定义 - 从 MaojocoConverter 移植
+@dataclass
+class JointPairwiseRelationship:
+    """关节两两关系"""
+    joint1_name: str
+    joint2_name: str
+    distance: float
+    joint1_type: JointType
+    joint2_type: JointType
+    joint1_components: List[str]
+    joint2_components: List[str]
+    shared_components: List[str]
+    has_shared_components: bool
+    connection_strength: float
+
+
+@dataclass
+class CycleInfo:
+    """环结构信息"""
+    cycle_id: int
+    nodes: List[str]
+    edges: List[Tuple[str, str]]
+    joints: List[str]
+    length: int
+
+
+@dataclass
+class BrokenJointInfo:
+    """断开关节信息"""
+    joint_name: str
+    component1: str
+    component2: str
+    joint_type: JointType
+    reason: str  # 断开原因，如 "cycle_breaking"
+    break_time: Optional[float] = None  # 断开时间
+
+
+@dataclass
+class AssemblyTreeInfo:
+    """装配树信息"""
+    root_node: str
+    tree_depth: int
+    node_count: int
+    broken_edges: List[Tuple[str, str]]
+    tree_structure: Dict[str, Any]
+
+
 @dataclass
 class ProjectContext:
     """项目上下文数据
@@ -1028,6 +1087,13 @@ class ProjectContext:
     joint_global_coordinates: Dict[str, JointGlobalCoordinates] = field(default_factory=dict)
     kinematic_tree: Optional[KinematicTree] = None
     
+    # 关系分析数据（新增）
+    joint_pairwise_relationships: Dict[str, JointPairwiseRelationship] = field(default_factory=dict)
+    assembly_graph: Optional[nx.Graph] = None
+    assembly_trees: List[AssemblyTreeInfo] = field(default_factory=list)
+    detected_cycles: List[CycleInfo] = field(default_factory=list)
+    broken_joints: List[BrokenJointInfo] = field(default_factory=list)
+    
     # 转换结果
     converted_data: Optional[ConvertedData] = None
     xml_content: Optional[str] = None
@@ -1045,6 +1111,11 @@ class ProjectContext:
         self.body_4d_coordinates.clear()
         self.joint_global_coordinates.clear()
         self.kinematic_tree = None
+        self.joint_pairwise_relationships.clear()
+        self.assembly_graph = None
+        self.assembly_trees.clear()
+        self.detected_cycles.clear()
+        self.broken_joints.clear()
         self.converted_data = None
         self.xml_content = None
         self.processing_options.clear()

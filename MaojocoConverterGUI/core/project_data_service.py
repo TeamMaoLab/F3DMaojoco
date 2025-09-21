@@ -11,7 +11,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from PySide6.QtCore import QObject, Signal, QThread, QTimer
 
-from core.domain_types import ExportData, ProjectInfo, ComponentInfo, create_default_metadata
+from core.domain_types import ExportData, ProjectInfo, ComponentInfo, create_default_metadata, LoadResult
 from utils.logger import logger
 
 
@@ -280,28 +280,118 @@ class ProjectDataService(QObject):
             with open(json_file, 'r', encoding='utf-8') as f:
                 json_data = json.load(f)
             
-            # 构建ExportData
-            components = self._load_components(json_data)
-            joints = self._load_joints(json_data)
-            
-            export_data = ExportData(
-                meta=create_default_metadata(
-                    component_count=len(components),
-                    joint_count=len(joints)
-                ),
-                components=components,
-                joints=joints
-            )
+            # 使用ExportData.from_dict构建完整的数据对象
+            export_data = ExportData.from_dict(json_data)
             
             self._current_project = directory
             self._loaded_data = export_data
             
-            logger.success(f"项目数据加载成功: {len(components)} 个组件, {len(joints)} 个关节")
+            logger.success(f"项目数据加载成功: {len(export_data.components)} 个组件, {len(export_data.joints)} 个关节")
             return export_data
             
         except Exception as e:
             logger.error(f"加载项目数据失败: {e}")
             raise
+    
+    def validate_project_structure(self, directory: Path) -> List[str]:
+        """验证项目结构 - 实现IDataLoadingService接口
+        
+        Args:
+            directory: 项目目录路径
+            
+        Returns:
+            List[str]: 错误信息列表（空列表表示无错误）
+        """
+        errors = []
+        
+        try:
+            # 检查必需文件
+            json_file = directory / "component_positions.json"
+            if not json_file.exists():
+                errors.append(f"缺少项目数据文件: component_positions.json")
+                return errors
+            
+            # 解析JSON验证基本结构
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # 验证必需字段
+            if 'meta' not in data:
+                errors.append("缺少meta字段")
+            
+            if 'components' not in data:
+                errors.append("缺少components字段")
+            
+            logger.info(f"项目结构验证完成: 发现 {len(errors)} 个问题")
+            return errors
+            
+        except Exception as e:
+            errors.append(f"验证项目结构时发生错误: {str(e)}")
+            return errors
+    
+    def load_stl_files(self, stl_paths: List[Path]) -> List:
+        """加载STL文件 - 实现IDataLoadingService接口
+        
+        Args:
+            stl_paths: STL文件路径列表
+            
+        Returns:
+            List[STLModel]: STL模型对象列表
+        """
+        # TODO: 实现STL文件加载
+        logger.warning("STL文件加载功能尚未实现")
+        return []
+    
+    def load_component_data(self, project_dir: Path) -> List:
+        """加载零部件数据 - 实现IDataLoadingService接口
+        
+        Args:
+            project_dir: 项目目录路径
+            
+        Returns:
+            List[ComponentInfo]: 零部件信息列表
+        """
+        try:
+            export_data = self.load_project_data(project_dir)
+            return export_data.components
+        except Exception as e:
+            logger.error(f"加载零部件数据失败: {e}")
+            return []
+    
+    def load_joint_data(self, project_dir: Path) -> List:
+        """加载关节数据 - 实现IDataLoadingService接口
+        
+        Args:
+            project_dir: 项目目录路径
+            
+        Returns:
+            List[JointInfo]: 关节信息列表
+        """
+        try:
+            export_data = self.load_project_data(project_dir)
+            return export_data.joints
+        except Exception as e:
+            logger.error(f"加载关节数据失败: {e}")
+            return []
+    
+    def load_project_metadata(self, project_dir: Path) -> ProjectInfo:
+        """加载项目元数据 - 实现IDataLoadingService接口
+        
+        Args:
+            project_dir: 项目目录路径
+            
+        Returns:
+            ProjectInfo: 项目信息
+        """
+        return self.scan_project(project_dir)
+    
+    def get_supported_file_extensions(self) -> List[str]:
+        """获取支持的文件扩展名 - 实现IDataLoadingService接口
+        
+        Returns:
+            List[str]: 支持的文件扩展名列表
+        """
+        return ['.json', '.stl']
     
     def validate_project_structure(self, directory: Path) -> List[str]:
         """验证项目结构
@@ -435,6 +525,42 @@ class ProjectDataService(QObject):
                 continue
         
         return components
+    
+    def load_project_directory(self, directory_path: Path, mode=None, progress_callback=None) -> LoadResult:
+        """加载项目目录 - 实现IDataLoadingService接口
+        
+        Args:
+            directory_path: 项目目录路径
+            mode: 加载模式（当前忽略）
+            progress_callback: 进度回调（当前忽略）
+            
+        Returns:
+            LoadResult: 加载结果
+        """
+        try:
+            # 加载项目数据
+            export_data = self.load_project_data(directory_path)
+            
+            # 扫描项目信息
+            project_info = self.scan_project(directory_path)
+            
+            # 返回加载结果
+            return LoadResult(
+                success=True,
+                models=[],  # STL模型加载暂时留空
+                message="项目加载成功",
+                project_info=project_info,
+                export_data=export_data,
+                load_mode=mode or "full_load"
+            )
+            
+        except Exception as e:
+            return LoadResult(
+                success=False,
+                models=[],
+                message=f"项目加载失败: {str(e)}",
+                error_details=str(e)
+            )
     
     def _load_joints(self, json_data: dict) -> List:
         """从JSON数据加载关节数据"""

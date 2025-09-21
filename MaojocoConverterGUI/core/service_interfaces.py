@@ -23,9 +23,10 @@ from enum import Enum
 from dataclasses import dataclass
 
 from .domain_types import (
-    Vector3D, Transform4D, JointType, ComponentInfo, JointInfo,
+    Vector3D, Transform4D,
     ExportData, ProjectInfo, StageConfig, LoadResult, MeshQuality,
-    CameraPosition, TransformStatistics, STLModel
+    CameraPosition, TransformStatistics, STLModel,
+    JointType, ComponentInfo, JointInfo
 )
 
 
@@ -71,6 +72,7 @@ class StageExecutionResult:
     output_data: Optional[ExportData] = None    # 输出数据
     error_message: Optional[str] = None  # 错误信息
     warnings: List[str] = None           # 警告信息列表
+    data_processed: Optional[Dict[str, Any]] = None  # 处理的数据统计
 
     def __post_init__(self):
         if self.warnings is None:

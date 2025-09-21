@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import time
 from concurrent.futures import ThreadPoolExecutor, Future
+import networkx as nx
 
 from PySide6.QtCore import QObject, Signal
 
@@ -32,20 +33,22 @@ from .domain_types import (
     Vector3D, Transform4D,
     ProjectContext, Body4DCoordinates, JointGlobalCoordinates,
     KinematicTree, KinematicBody, KinematicJoint, KinematicNode,
-    ConvertedData
+    ConvertedData, JointPairwiseRelationship, CycleInfo, AssemblyTreeInfo,
+    JointType, ComponentInfo, JointInfo, RelativeTransform
 )
 from .service_interfaces import (
     IDataLoadingService, IVisualizationService, 
     IStageManagementService, ITransformService,
     LoadMode, VisualizationConfig, StageExecutionResult, LoadingProgress,
-    JointType, ComponentInfo, JointInfo, RelativeTransform
+    JointType, ComponentInfo, JointInfo
 )
 from .transform_service import TransformService
 from .project_data_service import ProjectDataService
 from .stl_model_manager import STLModelManager
+from .algorithm_service import RelationshipAnalysisService, CoordinateTransformService
 
 
-class WorkflowState(Enum):
+class WorkflowStatus(Enum):
     """工作流状态枚举"""
     IDLE = "idle"                    # 空闲状态
     LOADING = "loading"              # 加载中
@@ -73,7 +76,7 @@ class WorkflowState:
     stage_results: Dict[str, StageExecutionResult] = field(default_factory=dict)
     
     # 工作流状态
-    current_workflow_state: WorkflowState = WorkflowState.IDLE
+    current_workflow_state: WorkflowStatus = WorkflowStatus.IDLE
     current_stage: Optional[str] = None
     execution_history: List[StageExecutionResult] = field(default_factory=list)
     
@@ -87,7 +90,7 @@ class WorkflowState:
         self.project_info = None
         self.stage_configs.clear()
         self.stage_results.clear()
-        self.current_workflow_state = WorkflowState.IDLE
+        self.current_workflow_state = WorkflowStatus.IDLE
         self.current_stage = None
         self.execution_history.clear()
         self.start_time = None
@@ -107,6 +110,11 @@ class WorkflowState:
     def loaded_models(self) -> List[STLModel]:
         """获取已加载的模型"""
         return self.context.loaded_models
+    
+    @loaded_models.setter
+    def loaded_models(self, value: List[STLModel]):
+        """设置已加载的模型"""
+        self.context.loaded_models = value
     
     @property
     def raw_export_data(self) -> Optional[ExportData]:
@@ -196,6 +204,10 @@ class ProjectWorkflowManager(QObject):
         self._stage_management_service: Optional[IStageManagementService] = None
         self._transform_service: Optional[ITransformService] = None
         
+        # 算法服务实例
+        self._relationship_analysis_service: Optional[RelationshipAnalysisService] = None
+        self._coordinate_transform_service: Optional[CoordinateTransformService] = None
+        
         # 线程池用于异步操作
         self._executor = ThreadPoolExecutor(max_workers=2)
         self._current_operation: Optional[Future] = None
@@ -225,6 +237,10 @@ class ProjectWorkflowManager(QObject):
             
             # 初始化STL模型管理器
             self._stl_model_manager = STLModelManager()
+            
+            # 初始化算法服务
+            self._relationship_analysis_service = RelationshipAnalysisService(self._state.context)
+            self._coordinate_transform_service = CoordinateTransformService()
             
             self.status_changed.emit("核心服务初始化完成")
             
@@ -256,13 +272,13 @@ class ProjectWorkflowManager(QObject):
         """获取项目上下文数据"""
         return self._state.context
     
-    def get_workflow_state(self) -> WorkflowState:
+    def get_workflow_state(self) -> WorkflowStatus:
         """获取工作流状态"""
         return self._state.current_workflow_state
     
     def is_busy(self) -> bool:
         """检查是否正在执行操作"""
-        return (self._state.current_workflow_state in [WorkflowState.LOADING, WorkflowState.PROCESSING] 
+        return (self._state.current_workflow_state in [WorkflowStatus.LOADING, WorkflowStatus.PROCESSING] 
                 and self._current_operation is not None 
                 and not self._current_operation.done())
     
@@ -313,10 +329,13 @@ class ProjectWorkflowManager(QObject):
                 message="系统正在执行其他操作，请稍后再试"
             )
         
-        # 更新状态
-        self._state.reset()
+        # 更新状态 - 保留阶段执行结果，只重置项目相关状态
+        self._state.context.reset()
         self._state.project_directory = directory_path
-        self._state.current_workflow_state = WorkflowState.LOADING
+        self._state.project_info = None
+        self._state.raw_export_data = None
+        self._state.loaded_models = []
+        self._state.current_workflow_state = WorkflowStatus.LOADING
         self._state.start_time = time.time()
         
         self.loading_started.emit()
@@ -341,12 +360,12 @@ class ProjectWorkflowManager(QObject):
                 
                 if result.success:
                     # 更新状态
-                    self._state.raw_export_data = result.project_info
+                    self._state.raw_export_data = result.export_data or result.project_info
                     self._state.loaded_models = result.models
                     self._state.project_info = result.project_info
                     
                     # 更新上下文数据
-                    self._state.context.export_data = result.project_info
+                    self._state.context.export_data = result.export_data or result.project_info
                     self._state.context.loaded_models = result.models
                     
                     # 发送信号
@@ -357,14 +376,14 @@ class ProjectWorkflowManager(QObject):
                     self._update_visualization_with_loaded_models()
                     
                 else:
-                    self._state.current_workflow_state = WorkflowState.ERROR
+                    self._state.current_workflow_state = WorkflowStatus.ERROR
                     self.error_occurred.emit(f"项目加载失败: {result.message}")
                 
                 return result
             
         except Exception as e:
             error_msg = f"加载项目时发生异常: {str(e)}"
-            self._state.current_workflow_state = WorkflowState.ERROR
+            self._state.current_workflow_state = WorkflowStatus.ERROR
             self.error_occurred.emit(error_msg)
             return LoadResult(
                 success=False,
@@ -375,7 +394,7 @@ class ProjectWorkflowManager(QObject):
         finally:
             self._state.end_time = time.time()
             self.loading_finished.emit()
-            self._state.current_workflow_state = WorkflowState.IDLE
+            self._state.current_workflow_state = WorkflowStatus.IDLE
     
     def _update_visualization_with_loaded_models(self):
         """使用加载的模型更新可视化"""
@@ -427,7 +446,7 @@ class ProjectWorkflowManager(QObject):
         
         # 更新状态
         self._state.current_stage = stage_name
-        self._state.current_workflow_state = WorkflowState.PROCESSING
+        self._state.current_workflow_state = WorkflowStatus.PROCESSING
         
         self.stage_started.emit(stage_name)
         self.status_changed.emit(f"开始执行阶段: {stage_name}")
@@ -484,7 +503,7 @@ class ProjectWorkflowManager(QObject):
         
         finally:
             self._state.current_stage = None
-            self._state.current_workflow_state = WorkflowState.IDLE
+            self._state.current_workflow_state = WorkflowStatus.IDLE
     
     def _validate_stage_dependencies(self, stage_name: str) -> List[str]:
         """验证阶段依赖关系"""
@@ -622,63 +641,162 @@ class ProjectWorkflowManager(QObject):
                 error_message=error_msg
             )
         
-        # 处理刚体坐标
-        export_data = self._state.context.export_data
-        for component in export_data.components:
-            if component.world_transform:
-                body_coord = Body4DCoordinates(
-                    name=component.name,
-                    occurrence_name=component.occurrence_name,
-                    full_path_name=component.full_path_name,
-                    component_id=str(component.component_id),
-                    transform=component.world_transform,
-                    stl_file=component.stl_file,
-                    bodies_count=component.bodies_count,
-                    has_children=component.has_children
-                )
-                self._state.context.body_4d_coordinates[component.name] = body_coord
+        # 检查算法服务
+        if not self._relationship_analysis_service:
+            return StageExecutionResult(
+                stage_name='relationship_analysis',
+                success=False,
+                execution_time=time.time() - start_time,
+                error_message="关系分析服务未初始化"
+            )
         
-        # 处理关节坐标
-        for joint in export_data.joints:
-            if joint.geometry.geometry_one_transform:
-                joint_coord = JointGlobalCoordinates(
-                    position=joint.geometry.geometry_one_transform.get_translation(),
-                    quaternion=joint.geometry.geometry_one_transform.to_quaternion(),
-                    joint_name=joint.name,
-                    joint_type=joint.joint_type
-                )
-                self._state.context.joint_global_coordinates[joint.name] = joint_coord
-        
-        # 构建运动学树（简化版本）
-        self._build_kinematic_tree()
-        
-        return StageExecutionResult(
-            stage_name='relationship_analysis',
-            success=True,
-            execution_time=time.time() - start_time
-        )
+        try:
+            # 更新算法服务的项目上下文
+            self._relationship_analysis_service.ctx = self._state.context
+            
+            # 处理刚体坐标
+            export_data = self._state.context.export_data
+            for component in export_data.components:
+                if component.world_transform:
+                    body_coord = Body4DCoordinates(
+                        name=component.name,
+                        occurrence_name=component.occurrence_name,
+                        full_path_name=component.full_path_name,
+                        component_id=str(component.component_id),
+                        transform=component.world_transform,
+                        stl_file=component.stl_file,
+                        bodies_count=component.bodies_count,
+                        has_children=component.has_children
+                    )
+                    self._state.context.body_4d_coordinates[component.name] = body_coord
+            
+            # 处理关节坐标
+            for joint in export_data.joints:
+                if joint.geometry.geometry_one_transform:
+                    joint_coord = JointGlobalCoordinates(
+                        position=joint.geometry.geometry_one_transform.get_translation(),
+                        quaternion=joint.geometry.geometry_one_transform.to_quaternion(),
+                        joint_name=joint.name,
+                        joint_type=joint.joint_type
+                    )
+                    self._state.context.joint_global_coordinates[joint.name] = joint_coord
+            
+            # 执行关系分析算法
+            self.stage_progress.emit('relationship_analysis', 20, '分析关节两两关系')
+            self._relationship_analysis_service.analyze_joint_pairwise_relationships()
+            
+            self.stage_progress.emit('relationship_analysis', 40, '构建装配关系图')
+            self._relationship_analysis_service.build_assembly_graph()
+            
+            self.stage_progress.emit('relationship_analysis', 60, '检测环结构')
+            detected_cycles = self._relationship_analysis_service.detect_cycles()
+            
+            self.stage_progress.emit('relationship_analysis', 80, '生成装配树')
+            assembly_trees = self._relationship_analysis_service.generate_assembly_trees()
+            
+            # 构建运动学树
+            self.stage_progress.emit('relationship_analysis', 90, '构建运动学树')
+            kinematic_tree = self._relationship_analysis_service.build_kinematic_tree()
+            
+            # 更新上下文数据
+            self._state.context.kinematic_tree = kinematic_tree
+            
+            self.status_changed.emit(f"关系分析完成: 检测到{len(detected_cycles)}个环, 生成了{len(assembly_trees)}个装配树")
+            
+            return StageExecutionResult(
+                stage_name='relationship_analysis',
+                success=True,
+                execution_time=time.time() - start_time,
+                data_processed={
+                    'detected_cycles': len(detected_cycles),
+                    'assembly_trees': len(assembly_trees),
+                    'kinematic_tree_built': kinematic_tree is not None
+                }
+            )
+            
+        except Exception as e:
+            error_msg = f"关系分析失败: {str(e)}"
+            self._state.context.add_validation_error(error_msg)
+            return StageExecutionResult(
+                stage_name='relationship_analysis',
+                success=False,
+                execution_time=time.time() - start_time,
+                error_message=error_msg
+            )
     
     def _execute_unit_conversion_stage(self) -> StageExecutionResult:
         """执行单位转换阶段"""
         start_time = time.time()
         
-        # 检查变换服务
-        if not self._transform_service:
+        # 检查坐标变换服务
+        if not self._coordinate_transform_service:
             return StageExecutionResult(
                 stage_name='unit_conversion',
                 success=False,
                 execution_time=time.time() - start_time,
-                error_message="变换服务未初始化"
+                error_message="坐标变换服务未初始化"
             )
         
-        # TODO: 实现单位转换逻辑
-        # 这里可以添加毫米到米的转换、坐标系变换等
-        
-        return StageExecutionResult(
-            stage_name='unit_conversion',
-            success=True,
-            execution_time=time.time() - start_time
-        )
+        try:
+            # 执行单位转换
+            converted_count = 0
+            
+            # 转换刚体坐标（毫米转米）
+            for _, body_coord in self._state.context.body_4d_coordinates.items():
+                if body_coord.transform:
+                    converted_transform = self._coordinate_transform_service.convert_millimeters_to_meters(body_coord.transform)
+                    body_coord.transform = converted_transform
+                    converted_count += 1
+            
+            # 转换关节坐标（毫米转米）
+            for _, joint_coord in self._state.context.joint_global_coordinates.items():
+                converted_position = self._coordinate_transform_service.convert_vector_mm_to_m(joint_coord.position)
+                joint_coord.position = converted_position
+                converted_count += 1
+            
+            # 如果存在运动学树，也进行转换
+            if self._state.context.kinematic_tree:
+                kinematic_tree = self._state.context.kinematic_tree
+                
+                # 转换刚体的世界坐标
+                for _, body in kinematic_tree.bodies.items():
+                    if body.world_transform:
+                        converted_transform = self._coordinate_transform_service.convert_millimeters_to_meters(body.world_transform)
+                        body.world_transform = converted_transform
+                        
+                        # 更新位置向量
+                        body.position = converted_transform.get_translation()
+                
+                # 转换关节位置
+                for _, joint in kinematic_tree.joints.items():
+                    converted_position = self._coordinate_transform_service.convert_vector_mm_to_m(joint.position)
+                    joint.position = converted_position
+                
+                # 转换相对变换
+                for _, rel_transform in kinematic_tree.relative_transforms.items():
+                    converted_rel_transform = self._coordinate_transform_service.convert_millimeters_to_meters(rel_transform.transform)
+                    rel_transform.transform = converted_rel_transform
+            
+            self.status_changed.emit(f"单位转换完成: 转换了{converted_count}个坐标")
+            
+            return StageExecutionResult(
+                stage_name='unit_conversion',
+                success=True,
+                execution_time=time.time() - start_time,
+                data_processed={
+                    'converted_coordinates': converted_count
+                }
+            )
+            
+        except Exception as e:
+            error_msg = f"单位转换失败: {str(e)}"
+            self._state.context.add_validation_error(error_msg)
+            return StageExecutionResult(
+                stage_name='unit_conversion',
+                success=False,
+                execution_time=time.time() - start_time,
+                error_message=error_msg
+            )
     
     def _execute_model_generation_stage(self) -> StageExecutionResult:
         """执行模型生成阶段"""
@@ -769,69 +887,145 @@ class ProjectWorkflowManager(QObject):
         """获取执行历史"""
         return self._state.execution_history.copy()
     
-    def _build_kinematic_tree(self):
-        """构建运动学树"""
-        if not self._state.context.export_data:
+    def get_detected_cycles(self) -> List['CycleInfo']:
+        """获取检测到的环结构"""
+        return self._state.context.detected_cycles.copy()
+    
+    def get_assembly_trees(self) -> List['AssemblyTreeInfo']:
+        """获取装配树信息"""
+        return self._state.context.assembly_trees.copy()
+    
+    def break_joint_in_cycle(self, cycle_id: int, joint_name: str) -> bool:
+        """断开环中的指定关节
+        
+        Args:
+            cycle_id: 环ID
+            joint_name: 要断开的关节名称
+            
+        Returns:
+            bool: 是否成功断开
+        """
+        if not self._relationship_analysis_service:
+            self.error_occurred.emit("关系分析服务未初始化")
+            return False
+        
+        try:
+            # 查找指定的环
+            cycle_info = None
+            for cycle in self._state.context.detected_cycles:
+                if cycle.cycle_id == cycle_id:
+                    cycle_info = cycle
+                    break
+            
+            if not cycle_info:
+                self.error_occurred.emit(f"未找到环ID: {cycle_id}")
+                return False
+            
+            # 验证关节是否在环中
+            if joint_name not in cycle_info.joints:
+                self.error_occurred.emit(f"关节 {joint_name} 不在环 {cycle_id} 中")
+                return False
+            
+            # 获取关节信息
+            joint_info = None
+            for joint in self._state.context.export_data.joints:
+                if joint.name == joint_name:
+                    joint_info = joint
+                    break
+            
+            if not joint_info:
+                self.error_occurred.emit(f"未找到关节信息: {joint_name}")
+                return False
+            
+            # 记录断开的关节信息
+            from .domain_types import BrokenJointInfo
+            broken_joint = BrokenJointInfo(
+                joint_name=joint_name,
+                component1=joint_info.connection.occurrence_one_component or "",
+                component2=joint_info.connection.occurrence_two_component or "",
+                joint_type=joint_info.joint_type,
+                reason="cycle_breaking"
+            )
+            self._state.context.broken_joints.append(broken_joint)
+            
+            # 重新生成装配树（排除该关节）
+            self.status_changed.emit(f"断开关节: {joint_name}")
+            self._relationship_analysis_service.generate_assembly_trees()
+            
+            # 重新构建运动学树
+            kinematic_tree = self._relationship_analysis_service.build_kinematic_tree()
+            self._state.context.kinematic_tree = kinematic_tree
+            
+            self.status_changed.emit(f"环 {cycle_id} 中的关节 {joint_name} 已断开")
+            return True
+            
+        except Exception as e:
+            self.error_occurred.emit(f"断开关节失败: {str(e)}")
+            return False
+    
+    def set_root_node_strategy(self, strategy: str, manual_root: Optional[str] = None):
+        """设置根节点选择策略
+        
+        Args:
+            strategy: 策略类型 ("center", "max_degree", "manual")
+            manual_root: 手动指定的根节点（当strategy为"manual"时使用）
+        """
+        if not self._relationship_analysis_service:
+            self.error_occurred.emit("关系分析服务未初始化")
             return
         
-        export_data = self._state.context.export_data
-        
-        # 创建运动学树
-        kinematic_tree = KinematicTree(
-            roots=[],
-            nodes={},
-            joints={},
-            bodies={},
-            relative_transforms={}
-        )
-        
-        # 创建刚体
-        for component in export_data.components:
-            body = KinematicBody(
-                body_id=str(component.component_id),
-                name=component.name,
-                component_id=str(component.component_id),
-                occurrence_name=component.occurrence_name,
-                world_transform=component.world_transform or Transform4D.identity(),
-                stl_file=component.stl_file,
-                bodies_count=component.bodies_count
-            )
-            kinematic_tree.bodies[body.body_id] = body
-        
-        # 创建关节
-        for joint in export_data.joints:
-            if joint.connection.occurrence_one_component and joint.connection.occurrence_two_component:
-                kinematic_joint = KinematicJoint(
-                    joint_id=joint.name,
-                    name=joint.name,
-                    joint_type=joint.joint_type,
-                    parent_body=joint.connection.occurrence_one_component,
-                    child_body=joint.connection.occurrence_two_component,
-                    position=joint.geometry.geometry_one_transform.get_translation() if joint.geometry.geometry_one_transform else Vector3D.zero(),
-                    axis=None,
-                    limits=None,
-                    is_suppressed=joint.is_suppressed,
-                    is_active=joint.is_light_bulb_on
-                )
-                kinematic_tree.joints[joint.name] = kinematic_joint
-        
-        # 构建节点关系（简化版本，假设第一个组件为根）
-        if export_data.components:
-            root_component = export_data.components[0]
-            kinematic_tree.roots.append(str(root_component.component_id))
+        try:
+            # 验证策略
+            valid_strategies = ["center", "max_degree", "manual"]
+            if strategy not in valid_strategies:
+                self.error_occurred.emit(f"无效的根节点策略: {strategy}")
+                return
             
-            # 为每个组件创建节点
-            for i, component in enumerate(export_data.components):
-                node = KinematicNode(
-                    body_id=str(component.component_id),
-                    parent_body=str(export_data.components[0].component_id) if i > 0 else None,
-                    children=[],
-                    joint=None,
-                    level=0 if i == 0 else 1
-                )
-                kinematic_tree.nodes[str(component.component_id)] = node
+            # 如果是手动策略，验证指定的根节点
+            if strategy == "manual" and not manual_root:
+                self.error_occurred.emit("手动策略需要指定根节点")
+                return
+            
+            if strategy == "manual" and manual_root:
+                # 验证根节点是否存在
+                if not self._state.context.assembly_graph:
+                    self.error_occurred.emit("装配图不存在，无法验证根节点")
+                    return
+                
+                if manual_root not in self._state.context.assembly_graph.nodes():
+                    self.error_occurred.emit(f"指定的根节点不存在: {manual_root}")
+                    return
+            
+            # 重新生成装配树
+            self.status_changed.emit(f"设置根节点策略: {strategy}")
+            self._relationship_analysis_service.generate_assembly_trees(strategy)
+            
+            # 重新构建运动学树
+            kinematic_tree = self._relationship_analysis_service.build_kinematic_tree()
+            self._state.context.kinematic_tree = kinematic_tree
+            
+            self.status_changed.emit(f"根节点策略已更新: {strategy}")
+            
+        except Exception as e:
+            self.error_occurred.emit(f"设置根节点策略失败: {str(e)}")
+    
+    def get_joint_pairwise_relationships(self) -> Dict[str, JointPairwiseRelationship]:
+        """获取关节两两关系"""
+        return self._state.context.joint_pairwise_relationships.copy()
+    
+    def get_assembly_graph_info(self) -> Dict[str, Any]:
+        """获取装配图信息"""
+        if not self._state.context.assembly_graph:
+            return {}
         
-        self._state.context.kinematic_tree = kinematic_tree
+        graph = self._state.context.assembly_graph
+        return {
+            'node_count': graph.number_of_nodes(),
+            'edge_count': graph.number_of_edges(),
+            'is_connected': nx.is_connected(graph) if graph else False,
+            'connected_components': list(nx.connected_components(graph)) if graph else []
+        }
+    
     
     def cleanup(self):
         """清理资源"""
