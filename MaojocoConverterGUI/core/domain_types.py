@@ -283,6 +283,42 @@ class Transform4D:
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 1.0]
         ])
+    
+    def to_quaternion(self) -> Quaternion:
+        """将旋转矩阵转换为四元数"""
+        # 提取3x3旋转矩阵
+        rotation_matrix = self.get_rotation_matrix()
+        
+        # 转换为四元数（简化实现）
+        trace = rotation_matrix[0][0] + rotation_matrix[1][1] + rotation_matrix[2][2]
+        
+        if trace > 0:
+            s = 0.5 / (trace ** 0.5)
+            w = 0.25 / s
+            x = (rotation_matrix[2][1] - rotation_matrix[1][2]) * s
+            y = (rotation_matrix[0][2] - rotation_matrix[2][0]) * s
+            z = (rotation_matrix[1][0] - rotation_matrix[0][1]) * s
+        else:
+            if rotation_matrix[0][0] > rotation_matrix[1][1] and rotation_matrix[0][0] > rotation_matrix[2][2]:
+                s = 2.0 * (1.0 + rotation_matrix[0][0] - rotation_matrix[1][1] - rotation_matrix[2][2]) ** 0.5
+                w = (rotation_matrix[2][1] - rotation_matrix[1][2]) / s
+                x = 0.25 * s
+                y = (rotation_matrix[0][1] + rotation_matrix[1][0]) / s
+                z = (rotation_matrix[0][2] + rotation_matrix[2][0]) / s
+            elif rotation_matrix[1][1] > rotation_matrix[2][2]:
+                s = 2.0 * (1.0 + rotation_matrix[1][1] - rotation_matrix[0][0] - rotation_matrix[2][2]) ** 0.5
+                w = (rotation_matrix[0][2] - rotation_matrix[2][0]) / s
+                x = (rotation_matrix[0][1] + rotation_matrix[1][0]) / s
+                y = 0.25 * s
+                z = (rotation_matrix[1][2] + rotation_matrix[2][1]) / s
+            else:
+                s = 2.0 * (1.0 + rotation_matrix[2][2] - rotation_matrix[0][0] - rotation_matrix[1][1]) ** 0.5
+                w = (rotation_matrix[1][0] - rotation_matrix[0][1]) / s
+                x = (rotation_matrix[0][2] + rotation_matrix[2][0]) / s
+                y = (rotation_matrix[1][2] + rotation_matrix[2][1]) / s
+                z = 0.25 * s
+        
+        return Quaternion(w, x, y, z).normalize()
 
 
 # 序列化工具函数
@@ -826,3 +862,249 @@ class STLModel:
     face_count: int
     is_transformed: bool = False
     transform_matrix: Optional[Transform4D] = None
+
+
+@dataclass
+class Body4DCoordinates:
+    """Body 4D坐标表达"""
+    name: str
+    occurrence_name: str
+    full_path_name: str
+    component_id: str
+    transform: Transform4D
+    stl_file: Optional[str] = None
+    bodies_count: int = 1
+    has_children: bool = False
+    
+    @property
+    def position(self) -> Vector3D:
+        """获取位置向量"""
+        return self.transform.get_translation()
+    
+    @property
+    def rotation(self) -> List[List[float]]:
+        """获取旋转矩阵"""
+        return self.transform.get_rotation_matrix()
+
+
+@dataclass
+class JointGlobalCoordinates:
+    """关节全局坐标"""
+    position: Vector3D
+    quaternion: Quaternion
+    joint_name: str
+    joint_type: JointType
+
+
+@dataclass
+class KinematicJoint:
+    """运动学关节"""
+    joint_id: str
+    name: str
+    joint_type: JointType
+    parent_body: str
+    child_body: str
+    position: Vector3D
+    axis: Optional[Vector3D] = None
+    limits: Optional[Dict[str, float]] = None
+    is_suppressed: bool = False
+    is_active: bool = True
+
+
+@dataclass
+class KinematicBody:
+    """运动学刚体"""
+    body_id: str
+    name: str
+    component_id: str
+    occurrence_name: str
+    world_transform: Transform4D
+    stl_file: Optional[str]
+    bodies_count: int
+    mass: float = 1.0
+    inertia: List[float] = field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    parent: Optional[str] = None
+    original_units: str = "mm"
+    converted_units: str = "mm"
+    
+    @property
+    def position(self) -> Vector3D:
+        """获取位置向量"""
+        return self.world_transform.get_translation()
+    
+    @property
+    def rotation(self) -> List[List[float]]:
+        """获取旋转矩阵"""
+        return self.world_transform.get_rotation_matrix()
+    
+    @property
+    def quaternion(self) -> Quaternion:
+        """获取旋转四元数"""
+        return self.world_transform.to_quaternion()
+
+
+@dataclass
+class KinematicNode:
+    """运动学节点"""
+    body_id: str
+    parent_body: Optional[str]
+    children: List[str]
+    joint: Optional[str]
+    level: int
+
+
+@dataclass
+class RelativeTransform:
+    """相对变换"""
+    parent: Optional[str]
+    transform: Transform4D
+    original_units: str = "mm"
+    converted_units: str = "mm"
+
+
+@dataclass
+class KinematicTree:
+    """MuJoCo 运动学树"""
+    roots: List[str]
+    nodes: Dict[str, KinematicNode]
+    joints: Dict[str, KinematicJoint]
+    bodies: Dict[str, KinematicBody]
+    relative_transforms: Dict[str, RelativeTransform]
+    
+    def get_root_bodies(self) -> List[KinematicBody]:
+        """获取根刚体列表"""
+        return [self.bodies[root_id] for root_id in self.roots if root_id in self.bodies]
+    
+    def get_body_children(self, body_id: str) -> List[KinematicBody]:
+        """获取刚体的子刚体列表"""
+        if body_id not in self.nodes:
+            return []
+        node = self.nodes[body_id]
+        return [self.bodies[child_id] for child_id in node.children if child_id in self.bodies]
+    
+    def get_body_joint(self, body_id: str) -> Optional[KinematicJoint]:
+        """获取刚体对应的关节"""
+        if body_id not in self.nodes:
+            return None
+        node = self.nodes[body_id]
+        if node.joint and node.joint in self.joints:
+            return self.joints[node.joint]
+        return None
+
+
+@dataclass
+class ConvertedData:
+    """转换后的数据"""
+    body_coordinates: Dict[str, Body4DCoordinates]
+    joint_coordinates: Dict[str, JointGlobalCoordinates]
+    kinematic_tree: Optional[KinematicTree] = None
+    filename_mapping: Optional[Dict[str, str]] = None
+    conversion_info: Optional[Dict[str, str]] = None
+    
+    def get_body_count(self) -> int:
+        """获取刚体数量"""
+        return len(self.body_coordinates)
+    
+    def get_joint_count(self) -> int:
+        """获取关节数量"""
+        return len(self.joint_coordinates)
+
+
+@dataclass
+class ProjectContext:
+    """项目上下文数据
+    
+    为ProjectWorkflowManager提供统一的数据容器，
+    包含工作流各阶段所需的上下文信息。
+    
+    所有字段都有明确的类型定义，避免使用Any类型。
+    """
+    project_directory: Optional[Path] = None
+    export_data: Optional[ExportData] = None
+    loaded_models: List[STLModel] = field(default_factory=list)
+    
+    # 处理过程中的数据
+    body_4d_coordinates: Dict[str, Body4DCoordinates] = field(default_factory=dict)
+    joint_global_coordinates: Dict[str, JointGlobalCoordinates] = field(default_factory=dict)
+    kinematic_tree: Optional[KinematicTree] = None
+    
+    # 转换结果
+    converted_data: Optional[ConvertedData] = None
+    xml_content: Optional[str] = None
+    
+    # 元数据和配置
+    processing_options: Dict[str, str] = field(default_factory=dict)
+    validation_errors: List[str] = field(default_factory=list)
+    warning_messages: List[str] = field(default_factory=list)
+    
+    def reset(self):
+        """重置上下文数据"""
+        self.project_directory = None
+        self.export_data = None
+        self.loaded_models.clear()
+        self.body_4d_coordinates.clear()
+        self.joint_global_coordinates.clear()
+        self.kinematic_tree = None
+        self.converted_data = None
+        self.xml_content = None
+        self.processing_options.clear()
+        self.validation_errors.clear()
+        self.warning_messages.clear()
+    
+    def get_model_count(self) -> int:
+        """获取已加载的模型数量"""
+        return len(self.loaded_models)
+    
+    def get_component_count(self) -> int:
+        """获取组件数量"""
+        if self.export_data:
+            return len(self.export_data.components)
+        return 0
+    
+    def get_joint_count(self) -> int:
+        """获取关节数量"""
+        if self.export_data:
+            return len(self.export_data.joints)
+        return 0
+    
+    def get_processing_status(self) -> Dict[str, int]:
+        """获取处理状态统计"""
+        return {
+            'models_loaded': len(self.loaded_models),
+            'bodies_processed': len(self.body_4d_coordinates),
+            'joints_processed': len(self.joint_global_coordinates),
+            'has_kinematic_tree': self.kinematic_tree is not None,
+            'has_converted_data': self.converted_data is not None,
+            'has_xml_output': self.xml_content is not None,
+            'validation_errors': len(self.validation_errors),
+            'warnings': len(self.warning_messages)
+        }
+    
+    def add_validation_error(self, error: str):
+        """添加验证错误"""
+        self.validation_errors.append(error)
+    
+    def add_warning(self, warning: str):
+        """添加警告信息"""
+        self.warning_messages.append(warning)
+    
+    def is_valid(self) -> bool:
+        """检查上下文数据是否有效"""
+        return len(self.validation_errors) == 0
+    
+    def get_summary(self) -> str:
+        """获取上下文数据摘要"""
+        status = self.get_processing_status()
+        return (
+            f"项目上下文摘要:\n"
+            f"  模型数量: {status['models_loaded']}\n"
+            f"  组件数量: {self.get_component_count()}\n"
+            f"  关节数量: {self.get_joint_count()}\n"
+            f"  已处理刚体: {status['bodies_processed']}\n"
+            f"  已处理关节: {status['joints_processed']}\n"
+            f"  运动学树: {'已构建' if status['has_kinematic_tree'] else '未构建'}\n"
+            f"  转换数据: {'已生成' if status['has_converted_data'] else '未生成'}\n"
+            f"  XML输出: {'已生成' if status['has_xml_output'] else '未生成'}\n"
+            f"  验证错误: {status['validation_errors']}\n"
+            f"  警告信息: {status['warnings']}"
+        )
