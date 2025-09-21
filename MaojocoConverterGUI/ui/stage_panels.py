@@ -219,17 +219,6 @@ class DataLoadingPanel(QWidget):
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(10)
         
-        # 加载结果信息
-        result_group = QGroupBox("项目信息")
-        result_layout = QVBoxLayout()
-        
-        self.result_label = QLabel("等待项目加载...")
-        self.result_label.setWordWrap(True)
-        result_layout.addWidget(self.result_label)
-        
-        result_group.setLayout(result_layout)
-        layout.addWidget(result_group)
-        
         # 实体列表组件 - 使用选项卡形式（实体列表 + 关节列表）
         self._model_view_tab_widget = ModelViewTabWidget()
         layout.addWidget(self._model_view_tab_widget)
@@ -247,24 +236,12 @@ class DataLoadingPanel(QWidget):
         self._current_result = result
         
         if result.success:
-            # 更新结果信息
-            self.result_label.setText(
-                f"✅ {result.message}\n"
-                f"成功加载 {len(result.models)} 个模型"
-            )
-            self.result_label.setStyleSheet("color: #388e3c;")
-            
-            # 项目详情信息已移除，避免重复显示
-            
             # 加载实体列表数据
             if result.project_info and result.project_info.project_directory:
                 project_path = Path(result.project_info.project_directory)
                 self._model_view_tab_widget.load_project_data(project_path)
             
         else:
-            self.result_label.setText(f"❌ 加载失败：{result.message}")
-            self.result_label.setStyleSheet("color: #d32f2f;")
-            
             # 清空实体列表
             self._model_view_tab_widget.clear_data()
     
