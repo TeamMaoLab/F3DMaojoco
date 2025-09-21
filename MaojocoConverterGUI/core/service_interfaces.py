@@ -24,7 +24,8 @@ from dataclasses import dataclass
 
 from .domain_types import (
     Vector3D, Transform4D, JointType, ComponentInfo, JointInfo,
-    ExportData, ProjectInfo, StageConfig, LoadResult, MeshQuality
+    ExportData, ProjectInfo, StageConfig, LoadResult, MeshQuality,
+    CameraPosition, TransformStatistics, STLModel
 )
 
 
@@ -43,7 +44,7 @@ class LoadingProgress:
     step_name: str                   # 当前步骤名称
     progress_percentage: float       # 进度百分比 (0-100)
     message: str                     # 进度消息
-    data_loaded: Optional[Any] = None # 已加载数据
+    data_loaded: Optional[ExportData] = None # 已加载数据
 
 
 @dataclass
@@ -67,7 +68,7 @@ class StageExecutionResult:
     stage_name: str                       # 阶段名称
     success: bool                         # 执行是否成功
     execution_time: float                # 执行时间（秒）
-    output_data: Optional[Any] = None    # 输出数据
+    output_data: Optional[ExportData] = None    # 输出数据
     error_message: Optional[str] = None  # 错误信息
     warnings: List[str] = None           # 警告信息列表
 
@@ -111,14 +112,14 @@ class IDataLoadingService(ABC):
         pass
     
     @abstractmethod
-    def load_stl_files(self, stl_paths: List[Path]) -> List[Any]:
+    def load_stl_files(self, stl_paths: List[Path]) -> List[STLModel]:
         """加载STL文件
         
         Args:
             stl_paths: STL文件路径列表
             
         Returns:
-            List[Any]: STL模型对象列表
+            List[STLModel]: STL模型对象列表
             
         Raises:
             STLLoadingError: STL加载失败
@@ -208,7 +209,7 @@ class IVisualizationService(ABC):
         pass
     
     @abstractmethod
-    def add_stl_model(self, model_data: Any, name: str, transform: Optional[Transform4D] = None) -> bool:
+    def add_stl_model(self, model_data: STLModel, name: str, transform: Optional[Transform4D] = None) -> bool:
         """添加STL模型
         
         Args:
@@ -298,11 +299,11 @@ class IVisualizationService(ABC):
         pass
     
     @abstractmethod
-    def get_camera_position(self) -> Dict[str, Vector3D]:
+    def get_camera_position(self) -> CameraPosition:
         """获取相机位置
         
         Returns:
-            Dict[str, Vector3D]: 包含position, focal_point, view_up的字典
+            CameraPosition: 相机位置信息
         """
         pass
     
@@ -421,7 +422,7 @@ class IStageManagementService(ABC):
     def execute_stage(
         self, 
         stage_name: str, 
-        input_data: Optional[Any] = None,
+        input_data: Optional[ExportData] = None,
         progress_callback: Optional[Callable[[LoadingProgress], None]] = None
     ) -> StageExecutionResult:
         """执行指定阶段
@@ -439,7 +440,7 @@ class IStageManagementService(ABC):
     @abstractmethod
     def execute_all_stages(
         self, 
-        initial_data: Optional[Any] = None,
+        initial_data: Optional[ExportData] = None,
         progress_callback: Optional[Callable[[LoadingProgress], None]] = None
     ) -> List[StageExecutionResult]:
         """执行所有阶段
@@ -636,11 +637,11 @@ class ITransformService(ABC):
         pass
     
     @abstractmethod
-    def get_transform_units_info(self) -> Dict[str, str]:
+    def get_transform_units_info(self) -> str:
         """获取变换单位信息
         
         Returns:
-            Dict[str, str]: 单位信息字典
+            str: 单位信息描述
         """
         pass
 

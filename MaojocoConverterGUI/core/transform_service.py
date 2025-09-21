@@ -4,15 +4,18 @@
 统一的服务接口，协调各个逻辑组件完成STL文件的坐标变换和加载。
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from pathlib import Path
 from enum import Enum
 from dataclasses import dataclass
 
 from utils.logger import logger
-from .project_data_loader import ProjectDataLoader, ProjectMetadata
-from .coordinate_transformer import CoordinateTransformer
-from .stl_model_manager import STLModelManager, ModelData
+from core.project_data_loader import ProjectDataLoader, ProjectMetadata
+from core.coordinate_transformer import CoordinateTransformer
+from core.stl_model_manager import STLModelManager, ModelData
+from core.domain_types import (
+    TransformStatistics, LoadResult, ProjectInfo
+)
 
 
 class LoadMode(Enum):
@@ -22,15 +25,7 @@ class LoadMode(Enum):
     PLAIN = "plain"  # 普通加载
 
 
-@dataclass
-class LoadResult:
-    """加载结果"""
-    success: bool
-    models: List[ModelData]
-    message: str
-    project_info: Optional[Dict[str, Any]] = None
-    load_mode: LoadMode = LoadMode.AUTO
-    error_details: Optional[str] = None
+# 使用 domain_types.py 中的 LoadResult，避免重复定义
 
 
 class TransformService:
@@ -133,28 +128,36 @@ class TransformService:
         else:
             return LoadMode.PLAIN
     
-    def _get_project_info(self, load_mode: LoadMode) -> Dict[str, Any]:
-        """获取项目信息"""
-        metadata = self._data_loader.get_metadata()
-        stats = self._model_manager.get_model_statistics()
+    def _get_project_info(self, load_mode: LoadMode) -> ProjectInfo:
+        """获取项目信息
         
-        info = {
-            "project_directory": str(self._current_project),
-            "load_mode": load_mode.value,
-            "has_transform_data": self._data_loader.has_transform_data(),
-            "model_statistics": stats
-        }
+        Args:
+            load_mode: 当前加载模式，用于记录项目状态
+        """
+        metadata = self._data_loader.get_metadata()
         
         if metadata:
-            info.update({
-                "export_time": metadata.export_time,
-                "geometry_unit": metadata.geometry_unit,
-                "position_unit": metadata.position_unit,
-                "component_count": metadata.component_count,
-                "joint_count": metadata.joint_count
-            })
-        
-        return info
+            return ProjectInfo(
+                project_directory=str(self._current_project),
+                export_time=metadata.export_time,
+                geometry_unit=metadata.geometry_unit,
+                position_unit=metadata.position_unit,
+                component_count=metadata.component_count,
+                joint_count=metadata.joint_count,
+                format_version="1.0",
+                has_transform_data=self._data_loader.has_transform_data()
+            )
+        else:
+            return ProjectInfo(
+                project_directory=str(self._current_project),
+                export_time="",
+                geometry_unit="millimeters",
+                position_unit="millimeters",
+                component_count=0,
+                joint_count=0,
+                format_version="1.0",
+                has_transform_data=self._data_loader.has_transform_data()
+            )
     
     def reload_current_project(self) -> LoadResult:
         """重新加载当前项目"""
@@ -212,10 +215,14 @@ class TransformService:
         
         return issues
     
-    def get_transform_statistics(self) -> Dict[str, Any]:
+    def get_transform_statistics(self) -> TransformStatistics:
         """获取变换统计信息"""
         if not self._data_loader.has_transform_data():
-            return {"has_transform_data": False}
+            return TransformStatistics(
+                has_transform_data=False,
+                total_transforms=0,
+                max_translation_distance=0.0
+            )
         
         components = self._data_loader.get_components()
         transforms = []
@@ -238,7 +245,7 @@ class TransformService:
         self._current_load_mode = LoadMode.AUTO
         logger.info("变换服务数据已清除")
     
-    def get_current_project_info(self) -> Optional[Dict[str, Any]]:
+    def get_current_project_info(self) -> Optional[ProjectInfo]:
         """获取当前项目信息"""
         if not self._current_project:
             return None

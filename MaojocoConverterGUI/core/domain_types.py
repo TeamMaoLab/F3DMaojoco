@@ -70,6 +70,7 @@ BoundingBox (轴对齐包围盒)
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 from enum import Enum
+from pathlib import Path
 import json
 import time
 import math
@@ -599,6 +600,22 @@ class ExportData:
 
 
 @dataclass
+class CameraPosition:
+    """相机位置信息"""
+    position: Vector3D
+    focal_point: Vector3D
+    view_up: Vector3D
+
+
+@dataclass
+class TransformStatistics:
+    """变换统计信息"""
+    has_transform_data: bool
+    total_transforms: int
+    max_translation_distance: float
+
+
+@dataclass
 class ProjectInfo:
     """项目信息
     
@@ -674,7 +691,7 @@ class StageConfig:
 class LoadResult:
     """加载结果"""
     success: bool
-    models: List[Any]
+    models: List['STLModel']  # 前向引用
     message: str
     project_info: Optional[ProjectInfo] = None
     load_mode: Optional[str] = None
@@ -792,4 +809,20 @@ class BoundingBox:
         max_y = max(point.y for point in points)
         max_z = max(point.z for point in points)
         
-        return cls(Vector3D(min_x, min_y, min_z), Vector3D(max_x, max_y, max_z))
+        return cls(
+            Vector3D(min_x, min_y, min_z),
+            Vector3D(max_x, max_y, max_z)
+        )
+
+
+@dataclass 
+class STLModel:
+    """STL模型数据"""
+    name: str
+    mesh_data: bytes  # STL文件的二进制数据
+    file_path: Path
+    bounding_box: BoundingBox
+    vertex_count: int
+    face_count: int
+    is_transformed: bool = False
+    transform_matrix: Optional[Transform4D] = None
