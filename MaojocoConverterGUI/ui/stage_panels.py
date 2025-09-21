@@ -31,6 +31,7 @@ from ..core.project_data_service import ProjectDataService, ProjectInfo
 from ..core.stl_model_manager import ModelData
 from .component_list import ComponentListWidget
 from .joint_list import ModelViewTabWidget
+from .relationship_panel import RelationshipAnalysisPanel
 
 
 @dataclass
@@ -409,9 +410,22 @@ class StagePanelsContainer(QWidget):
             self._on_tab_changed
         )
         
-        # 创建其他简单面板
+        # Create relationship analysis panel (full functionality)
+        self._panels['relationship_analysis'] = RelationshipAnalysisPanel(
+            self._transform_service, self._data_service
+        )
+        
+        # Connect relationship analysis panel signals
+        relationship_panel = self._panels['relationship_analysis']
+        relationship_panel.component_selected.connect(
+            lambda name: self.component_selected.emit(name, True)
+        )
+        relationship_panel.joint_selected.connect(
+            lambda name: self.joint_selected.emit(name, True)
+        )
+        
+        # Create other simple panels
         other_stages = [
-            ("relationship_analysis", "关系分析"),
             ("unit_conversion", "单位转换"),
             ("model_generation", "模型生成"),
             ("actuator_generation", "执行器生成")
@@ -461,17 +475,24 @@ class StagePanelsContainer(QWidget):
         """
         return self._current_stage
     
-    def on_project_loaded(self, result: LoadResult):
+    def on_project_loaded(self, result: LoadResult, quick_start: bool = False):
         """项目加载完成处理
         
         Args:
             result: 加载结果
+            quick_start: 是否为快速启动模式
         """
         logger.info(f"项目加载完成，切换到数据加载阶段")
         
         # 更新数据加载面板
         data_panel = self._panels['data_loading']
         data_panel.update_load_result(result)
+        
+        # 更新关系分析面板
+        if result.success and result.project_info:
+            relationship_panel = self._panels['relationship_analysis']
+            project_path = Path(result.project_info.project_directory)
+            relationship_panel.load_project_data(project_path, result, quick_start)
         
         # 切换到数据加载面板
         self.switch_to_stage('data_loading')

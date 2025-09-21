@@ -36,9 +36,13 @@ def parse_arguments() -> argparse.Namespace:
   # 基本运行
   %(prog)s
   
-  # 快速启动，指定项目目录
+  # 快速启动，指定项目目录（进入stage2）
   %(prog)s --directory /path/to/project
   %(prog)s -d TmpFinger
+  
+  # 直接进入关系分析阶段（stage3）
+  %(prog)s --directory /path/to/project --relationship
+  %(prog)s -d TmpFinger -r
   
   # 显示帮助
   %(prog)s --help
@@ -49,6 +53,12 @@ def parse_arguments() -> argparse.Namespace:
         "--directory", "-d",
         type=str,
         help="指定项目目录路径，快速启动项目"
+    )
+    
+    parser.add_argument(
+        "--relationship", "-r",
+        action="store_true",
+        help="直接进入关系分析阶段（需要同时指定 -d 参数）"
     )
     
     parser.add_argument(
@@ -95,13 +105,20 @@ def main() -> None:
                     logger.success(f"项目加载成功: {result.message}")
                     
                     # 直接跳转到模型预览阶段（这会自动处理模型显示）
-                    main_window.stage_panels.on_project_loaded(result)
+                    main_window.stage_panels.on_project_loaded(result, quick_start=True)
+                    
+                    # 如果指定了 -r 参数，进一步切换到关系分析阶段
+                    if args.relationship:
+                        logger.info("关系分析模式：直接进入关系分析阶段")
+                        main_window.stage_panels.switch_to_stage('relationship_analysis')
                     
                     logger.info("快速启动设置完成")
                 else:
                     logger.error(f"项目加载失败: {result.message}")
             else:
                 logger.warning(f"指定目录不存在: {directory_path}，使用正常启动模式")
+        elif args.relationship:
+            logger.warning("关系分析模式需要同时指定项目目录 (-d 参数)，使用正常启动模式")
         
         # 运行应用程序
         gui_app.run()
