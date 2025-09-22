@@ -26,9 +26,12 @@ from PySide6.QtCore import Signal, Qt
 
 # 本地模块
 from ..utils.logger import logger
-from ..core.transform_service import TransformService, LoadResult, LoadMode
-from ..core.project_data_service import ProjectDataService, ProjectInfo
+from ..core.project_workflow_manager import ProjectWorkflowManager
+from ..core.domain_types import LoadResult
+from ..core.project_workflow_manager import WorkflowState
+from ..core.service_interfaces import LoadMode
 from ..core.stl_model_manager import ModelData
+from .ui_workflow_adapter import UIWorkflowAdapter
 from .component_list import ComponentListWidget
 from .joint_list import ModelViewTabWidget
 from .relationship_panel import RelationshipAnalysisPanel
@@ -51,18 +54,18 @@ class InitializationPanel(QWidget):
     project_validated = Signal(bool, str)    # 项目验证结果
     loading_started = Signal()               # 开始加载
     
-    def __init__(self, transform_service: TransformService, 
-                 data_service: ProjectDataService, parent=None):
+    def __init__(self, workflow_manager: ProjectWorkflowManager, 
+                 workflow_adapter: UIWorkflowAdapter, parent=None):
         """初始化面板
         
         Args:
-            transform_service: 变换服务
-            data_service: 数据服务
+            workflow_manager: 工作流管理器
+            workflow_adapter: 工作流适配器
             parent: 父组件
         """
         super().__init__(parent)
-        self._transform_service = transform_service
-        self._data_service = data_service
+        self._workflow_manager = workflow_manager
+        self._workflow_adapter = workflow_adapter
         self._current_project: Optional[Path] = None
         self._setup_ui()
     
@@ -141,7 +144,7 @@ class InitializationPanel(QWidget):
             return
         
         try:
-            errors = self._data_service.validate_project_structure(self._current_project)
+            errors = self._workflow_manager._data_loading_service.validate_project_structure(self._current_project)
             
             if errors:
                 error_msg = f"发现 {len(errors)} 个问题：\n" + "\n".join(errors)
@@ -171,10 +174,8 @@ class InitializationPanel(QWidget):
         self.loading_started.emit()
         
         try:
-            # 使用TransformService加载项目
-            result = self._transform_service.load_project(
-                self._current_project, LoadMode.AUTO
-            )
+            # 使用工作流管理器加载项目
+            result = self._workflow_manager.load_project(self._current_project)
             
             if result.success:
                 logger.success(f"项目加载成功：{result.message}")
@@ -182,10 +183,14 @@ class InitializationPanel(QWidget):
                 self.status_label.setStyleSheet("color: #388e3c; font-size: 12px;")
                 
                 # 通知父组件加载完成
-                if self.parent() and hasattr(self.parent(), 'on_project_loaded'):
-                    parent_method = getattr(self.parent(), 'on_project_loaded')
-                    if callable(parent_method):
-                        parent_method(result)
+                try:
+                    parent = self.parent()
+                    if parent and hasattr(parent, 'on_project_loaded'):
+                        parent_method = getattr(parent, 'on_project_loaded')
+                        if callable(parent_method):
+                            parent_method(result)
+                except Exception as e:
+                    logger.warning(f"通知父组件项目加载完成失败: {e}")
                     
             else:
                 logger.error(f"项目加载失败：{result.message}")
@@ -201,15 +206,15 @@ class InitializationPanel(QWidget):
 class DataLoadingPanel(QWidget):
     """模型预览面板 - 简化版本"""
     
-    def __init__(self, transform_service: TransformService, parent=None):
+    def __init__(self, workflow_manager: ProjectWorkflowManager, parent=None):
         """初始化模型预览面板
         
         Args:
-            transform_service: 变换服务
+            workflow_manager: 工作流管理器
             parent: 父组件
         """
         super().__init__(parent)
-        self._transform_service = transform_service
+        self._workflow_manager = workflow_manager
         self._current_result: Optional[LoadResult] = None
         self._component_list: Optional[ComponentListWidget] = None
         self._setup_ui()
@@ -357,26 +362,29 @@ class StagePanelsContainer(QWidget):
     joint_selected = Signal(str, bool)     # 关节选择信号
     components_highlight = Signal(object, str)  # 组件高亮信号
     
-    def __init__(self, transform_service: TransformService, 
-                 data_service: ProjectDataService, parent=None):
+    def __init__(self, workflow_manager: ProjectWorkflowManager, 
+                 workflow_adapter: UIWorkflowAdapter, parent=None):
         """初始化阶段面板容器
         
         Args:
-            transform_service: 变换服务
-            data_service: 数据服务
+            workflow_manager: 工作流管理器
+            workflow_adapter: 工作流适配器
             parent: 父组件
         """
         super().__init__(parent)
-        self._transform_service = transform_service
-        self._data_service = data_service
+        self._workflow_manager = workflow_manager
+        self._workflow_adapter = workflow_adapter
         self._current_stage = "initialization"
         self._panels = {}
         self._setup_ui()
         
-        # 连接数据服务信号
-        self._data_service.scan_completed.connect(self._on_scan_completed)
-        self._data_service.loading_completed.connect(self._on_loading_completed)
-        self._data_service.error_occurred.connect(self._on_error_occurred)
+        # 连接工作流适配器信号
+        self._workflow_adapter.workflow_state_changed.connect(self._on_workflow_state_changed)
+        self._workflow_adapter.project_loaded.connect(self._on_project_loaded)
+        self._workflow_adapter.components_updated.connect(self._on_components_updated)
+        self._workflow_adapter.joints_updated.connect(self._on_joints_updated)
+        self._workflow_adapter.error_occurred.connect(self._on_error_occurred)
+        self._workflow_adapter.info_message.connect(self._on_info_message)
     
     def _setup_ui(self):
         """设置UI界面"""
@@ -386,9 +394,9 @@ class StagePanelsContainer(QWidget):
         
         # 创建阶段面板
         self._panels['initialization'] = InitializationPanel(
-            self._transform_service, self._data_service
+            self._workflow_manager, self._workflow_adapter
         )
-        self._panels['data_loading'] = DataLoadingPanel(self._transform_service)
+        self._panels['data_loading'] = DataLoadingPanel(self._workflow_manager)
         
         # 连接组件选择信号
         self._panels['data_loading']._model_view_tab_widget.component_selected.connect(
@@ -412,7 +420,7 @@ class StagePanelsContainer(QWidget):
         
         # Create relationship analysis panel (full functionality)
         self._panels['relationship_analysis'] = RelationshipAnalysisPanel(
-            self._transform_service, self._data_service
+            self._workflow_manager, self._workflow_adapter
         )
         
         # Connect relationship analysis panel signals
@@ -500,36 +508,91 @@ class StagePanelsContainer(QWidget):
         # 发送项目加载完成信号
         self.project_loaded.emit(result)
     
-    def _on_scan_completed(self, json_data: dict, project_info: ProjectInfo):
-        """扫描完成处理
-        
-        Args:
-            json_data: JSON数据
-            project_info: 项目信息
-        """
-        logger.info(f"项目扫描完成：{project_info.component_count} 个组件")
-        # 可以在这里处理JSON数据（如果需要的话）
-        _ = json_data  # 避免未使用参数警告
-    
-    def _on_loading_completed(self, successful_files: list, failed_files: list):
-        """加载完成处理
-        
-        Args:
-            successful_files: 成功文件列表
-            failed_files: 失败文件列表
-        """
-        logger.info(f"异步加载完成：{len(successful_files)} 个文件成功")
-        
-        if failed_files:
-            logger.warning(f"{len(failed_files)} 个文件加载失败")
-    
     def _on_error_occurred(self, error_msg: str):
         """错误处理
         
         Args:
             error_msg: 错误信息
         """
-        logger.error(f"异步加载错误：{error_msg}")
+        logger.error(f"工作流错误：{error_msg}")
+    
+    def _on_workflow_state_changed(self, state: WorkflowState):
+        """工作流状态变化处理
+        
+        Args:
+            state: 工作流状态
+        """
+        logger.info(f"工作流状态变化: {state.current_stage} - {state.status.value}")
+        self._current_stage = state.current_stage
+        
+        # 更新当前激活的面板
+        self.switch_to_stage(state.current_stage)
+    
+    def _on_project_loaded(self, result: LoadResult):
+        """项目加载完成处理
+        
+        Args:
+            result: 加载结果
+        """
+        logger.info(f"项目加载完成: {result.message}")
+        
+        if result.success:
+            # 切换到数据加载阶段
+            self.switch_to_stage('data_loading')
+            
+            # 更新数据加载面板的数据
+            try:
+                if 'data_loading' in self._panels:
+                    data_panel = self._panels['data_loading']
+                    if hasattr(data_panel, 'on_project_loaded'):
+                        data_panel.on_project_loaded(result)
+            except Exception as e:
+                logger.warning(f"更新数据加载面板失败: {e}")
+            
+            # 发送项目加载完成信号
+            self.project_loaded.emit(result)
+    
+    def _on_components_updated(self, components: list):
+        """组件列表更新处理
+        
+        Args:
+            components: 组件列表
+        """
+        logger.info(f"组件列表更新: {len(components)} 个组件")
+        
+        # 更新数据加载面板的组件列表
+        try:
+            if 'data_loading' in self._panels:
+                data_panel = self._panels['data_loading']
+                if hasattr(data_panel, '_model_view_tab_widget'):
+                    data_panel._model_view_tab_widget.update_components(components)
+        except Exception as e:
+            logger.warning(f"更新组件列表失败: {e}")
+    
+    def _on_joints_updated(self, joints: list):
+        """关节列表更新处理
+        
+        Args:
+            joints: 关节列表
+        """
+        logger.info(f"关节列表更新: {len(joints)} 个关节")
+        
+        # 更新数据加载面板的关节列表
+        try:
+            if 'data_loading' in self._panels:
+                data_panel = self._panels['data_loading']
+                if hasattr(data_panel, '_model_view_tab_widget'):
+                    data_panel._model_view_tab_widget.update_joints(joints)
+        except Exception as e:
+            logger.warning(f"更新关节列表失败: {e}")
+    
+    def _on_info_message(self, message: str):
+        """信息消息处理
+        
+        Args:
+            message: 信息消息
+        """
+        logger.info(f"工作流信息: {message}")
     
     def _on_tab_changed(self, index: int):
         """选项卡切换处理

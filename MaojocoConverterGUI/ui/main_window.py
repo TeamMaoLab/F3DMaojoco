@@ -1,8 +1,9 @@
 """
-简化的主窗口 - 直接调用Core服务
+工作流增强的主窗口
 
-重构原有的main_window.py，去除过度复杂的中间层，实现UI层直接调用Core服务。
-遵循2层架构：GUI层 → Core层。
+使用ProjectWorkflowManager统一管理所有业务逻辑，
+通过UIWorkflowAdapter提供清晰的信号接口。
+实现现代化的架构：UI层 → 适配器层 → 工作流层。
 """
 
 # 标准库
@@ -11,33 +12,35 @@ from typing import Optional
 # 第三方库
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-    QLabel, QPushButton, QFrame, QSplitter
+    QLabel, QFrame, QSplitter
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 
 # 本地模块
 from ..utils.logger import logger
-from ..core.transform_service import TransformService, LoadResult
-from ..core.project_data_service import ProjectDataService
+from ..core.project_workflow_manager import ProjectWorkflowManager
+from ..core.domain_types import LoadResult
 from .stage_panels import StagePanelsContainer
 from .visualization_widget import VisualizationWidget
+from .ui_workflow_adapter import UIWorkflowAdapter
 
 
 class MainWindowSimplified(QMainWindow):
-    """简化的主窗口
+    """工作流增强的主窗口
     
-    直接调用Core服务，去除不必要的中间层。
-    实现清晰的2层架构：GUI层 → Core层。
+    使用ProjectWorkflowManager统一管理所有业务逻辑，
+    通过UIWorkflowAdapter提供清晰的信号接口。
+    实现现代化的架构：UI层 → 适配器层 → 工作流层。
     """
     
     def __init__(self):
         """初始化主窗口"""
         super().__init__()
         
-        # 初始化Core服务
-        self._transform_service = TransformService()
-        self._data_service = ProjectDataService()
+        # 初始化工作流管理器和适配器
+        self._workflow_manager = ProjectWorkflowManager()
+        self._workflow_adapter = UIWorkflowAdapter(self._workflow_manager)
         
         # 快速启动结果
         self.quick_start_result: Optional[LoadResult] = None
@@ -46,7 +49,7 @@ class MainWindowSimplified(QMainWindow):
         self._setup_window()
         self._connect_signals()
         
-        logger.success("简化主窗口初始化完成")
+        logger.success("工作流主窗口初始化完成")
     
     def _setup_ui(self):
         """设置UI布局"""
@@ -90,8 +93,17 @@ class MainWindowSimplified(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         
-        # 简化的3D可视化组件（包含自己的控制栏）
-        self.viz_widget = VisualizationWidget(self._transform_service)
+        # 工作流增强的3D可视化组件（包含自己的控制栏）
+        self.viz_widget = VisualizationWidget(self._workflow_manager)
+        
+        # 将可视化服务设置到工作流管理器
+        try:
+            viz_service = self.viz_widget.get_visualization_service()
+            self._workflow_manager.set_visualization_service(viz_service)
+        except AttributeError:
+            # 如果可视化服务接口不可用，跳过设置
+            logger.warning("可视化服务接口不可用，跳过设置")
+        
         layout.addWidget(self.viz_widget)
         
         return panel
@@ -114,9 +126,9 @@ class MainWindowSimplified(QMainWindow):
         line.setFrameShadow(QFrame.Sunken)
         layout.addWidget(line)
         
-        # 简化的阶段面板容器
+        # 工作流增强的阶段面板容器
         self.stage_panels = StagePanelsContainer(
-            self._transform_service, self._data_service
+            self._workflow_manager, self._workflow_adapter
         )
         layout.addWidget(self.stage_panels)
         
@@ -137,12 +149,16 @@ class MainWindowSimplified(QMainWindow):
         self.stage_panels.component_selected.connect(self._on_component_selected)
         
         # 关节选择信号
-        if hasattr(self.stage_panels, 'joint_selected'):
+        try:
             self.stage_panels.joint_selected.connect(self._on_joint_selected)
+        except AttributeError:
+            logger.warning("joint_selected 信号不可用")
         
         # 组件高亮信号（用于关节选择时的实体高亮）
-        if hasattr(self.stage_panels, 'components_highlight'):
+        try:
             self.stage_panels.components_highlight.connect(self._on_components_highlight)
+        except AttributeError:
+            logger.warning("components_highlight 信号不可用")
     
     def _on_stage_changed(self, stage_name: str):
         """阶段切换处理"""
@@ -174,10 +190,14 @@ class MainWindowSimplified(QMainWindow):
     def _on_project_loaded(self, result: LoadResult):
         """项目加载完成处理"""
         logger.info(f"项目加载完成: {result.message}")
+        logger.info(f"LoadResult success: {result.success}, models数量: {len(result.models)}")
         
         # 在3D视图中显示加载的模型
         if result.success and result.models:
+            logger.info(f"开始显示 {len(result.models)} 个模型到3D视图")
             self.viz_widget.display_models_from_result(result)
+        else:
+            logger.warning(f"没有模型需要显示: success={result.success}, models={len(result.models)}")
     
     def _setup_window(self):
         """设置窗口属性"""
@@ -198,13 +218,13 @@ class MainWindowSimplified(QMainWindow):
         
         logger.info("简化主窗口属性设置完成")
     
-    def get_transform_service(self) -> TransformService:
-        """获取TransformService实例"""
-        return self._transform_service
+    def get_workflow_manager(self) -> ProjectWorkflowManager:
+        """获取ProjectWorkflowManager实例"""
+        return self._workflow_manager
     
-    def get_data_service(self) -> ProjectDataService:
-        """获取ProjectDataService实例"""
-        return self._data_service
+    def get_workflow_adapter(self) -> UIWorkflowAdapter:
+        """获取UIWorkflowAdapter实例"""
+        return self._workflow_adapter
     
     def _on_component_selected(self, component_name: str, selected: bool):
         """组件选择处理
@@ -323,12 +343,9 @@ class MainWindowSimplified(QMainWindow):
         if self.viz_widget:
             self.viz_widget.cleanup()
         
-        if self._data_service:
-            self._data_service.stop_loading()
-        
-        # 清理TransformService数据
-        if self._transform_service:
-            self._transform_service.clear_data()
+        # 清理工作流管理器资源
+        if hasattr(self, '_workflow_manager') and self._workflow_manager:
+            self._workflow_manager.cleanup()
         
         super().closeEvent(event)
         logger.info("简化主窗口已安全关闭")

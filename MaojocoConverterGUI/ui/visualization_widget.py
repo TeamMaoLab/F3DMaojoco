@@ -11,6 +11,7 @@ from pathlib import Path
 
 # 第三方库
 import pyvista as pv
+import numpy as np
 from pyvistaqt import QtInteractor
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel
 from PySide6.QtCore import Signal, Qt, QTimer
@@ -18,8 +19,12 @@ from PySide6.QtGui import QFont
 
 # 本地模块
 from ..utils.logger import logger
-from ..core.transform_service import TransformService, LoadResult
+from ..core.project_workflow_manager import ProjectWorkflowManager
+from ..core.domain_types import LoadResult, STLModel, Transform4D
 from ..core.stl_model_manager import ModelData
+import pyvista as pv
+import tempfile
+from pathlib import Path
 
 
 class VisualizationWidget(QWidget):
@@ -32,22 +37,157 @@ class VisualizationWidget(QWidget):
     model_loaded = Signal(str)      # 模型加载完成信号
     error_occurred = Signal(str)    # 错误信号
     
-    def __init__(self, transform_service: TransformService, parent=None):
+    def __init__(self, workflow_manager: ProjectWorkflowManager, parent=None):
         """初始化可视化组件
         
         Args:
-            transform_service: 变换服务
+            workflow_manager: 工作流管理器
             parent: 父组件
         """
         super().__init__(parent)
-        self._transform_service = transform_service
+        self._workflow_manager = workflow_manager
         self._plotter: Optional[QtInteractor] = None
         self._current_models: List[ModelData] = []
         self._model_colors: Dict[str, str] = {}  # 模型颜色映射
         self._actor_map: Dict[str, object] = {}  # 模型名称到actor的映射
         self._initial_text_label: Optional[QLabel] = None
         self._initial_text_timer: Optional[QTimer] = None
+        self._loaded_model_hashes: set = set()  # 用于跟踪已加载的模型，避免重复加载
         self._setup_ui()
+    
+    def _convert_stl_model_to_model_data(self, stl_model: STLModel) -> Optional[ModelData]:
+        """将STLModel转换为ModelData
+        
+        Args:
+            stl_model: STL模型数据
+            
+        Returns:
+            ModelData: 可视化模型数据，转换失败返回None
+        """
+        try:
+            # 从二进制数据创建临时文件
+            with tempfile.NamedTemporaryFile(suffix='.stl', delete=False) as temp_file:
+                temp_file.write(stl_model.mesh_data)
+                temp_file_path = Path(temp_file.name)
+            
+            # 使用PyVista读取STL文件
+            mesh = pv.read(temp_file_path)
+            
+            # 清理临时文件
+            temp_file_path.unlink()
+            
+            # 应用坐标变换（关键修复）
+            if stl_model.is_transformed and stl_model.transform_matrix:
+                logger.info(f"应用坐标变换到模型: {stl_model.name}")
+                mesh = self._apply_transform_to_mesh(mesh, stl_model.transform_matrix)
+            
+            # 创建ModelData对象
+            model_data = ModelData(
+                mesh=mesh,
+                name=stl_model.name,
+                color='gray',  # 默认颜色
+                component_id=0,  # 使用默认ID
+                is_transformed=stl_model.is_transformed,
+                original_bounds=mesh.bounds if hasattr(mesh, 'bounds') else None
+            )
+            
+            logger.info(f"成功转换STL模型: {stl_model.name} -> {mesh.n_points}个顶点, {mesh.n_cells}个面, 变换状态: {stl_model.is_transformed}")
+            return model_data
+            
+        except Exception as e:
+            logger.error(f"转换STL模型失败: {stl_model.name}, 错误: {e}")
+            # 清理临时文件（如果存在）
+            if 'temp_file_path' in locals():
+                try:
+                    temp_file_path.unlink()
+                except:
+                    pass
+            return None
+    
+    def _apply_transform_to_mesh(self, mesh: pv.PolyData, transform_matrix: Transform4D) -> pv.PolyData:
+        """应用坐标变换到网格
+        
+        Args:
+            mesh: 原始网格
+            transform_matrix: 变换矩阵
+            
+        Returns:
+            pv.PolyData: 变换后的网格
+        """
+        try:
+            if not transform_matrix or not hasattr(transform_matrix, 'matrix'):
+                logger.warning(f"变换矩阵无效，跳过变换应用")
+                return mesh
+            
+            # 获取变换矩阵数据
+            matrix_data = transform_matrix.matrix
+            if not matrix_data or len(matrix_data) != 4 or any(len(row) != 4 for row in matrix_data):
+                logger.warning(f"变换矩阵格式无效，跳过变换应用")
+                return mesh
+            
+            # 记录变换前的边界
+            original_bounds = mesh.bounds
+            logger.debug(f"应用变换前边界: {original_bounds}")
+            
+            # 添加调试日志验证变换矩阵数据
+            logger.info(f"变换矩阵数据: {matrix_data}")
+            logger.info(f"变换矩阵类型: {type(matrix_data)}")
+            
+            # 提取平移向量用于调试
+            translation = [matrix_data[0][3], matrix_data[1][3], matrix_data[2][3]]
+            logger.info(f"平移向量: {translation}")
+            
+            # 提取旋转矩阵用于调试
+            rotation_matrix = [row[:3] for row in matrix_data[:3]]
+            logger.info(f"旋转矩阵: {rotation_matrix}")
+            
+            # 提取平移和旋转部分
+            # Transform4D矩阵格式:
+            # [ [R00, R01, R02, Tx],
+            #   [R10, R11, R12, Ty], 
+            #   [R20, R21, R22, Tz],
+            #   [0,   0,   0,   1] ]
+            
+            # 获取所有点
+            points = mesh.points
+            if len(points) == 0:
+                logger.warning(f"网格没有顶点数据，跳过变换")
+                return mesh
+            
+            # 应用变换：对于每个点 p' = R * p + T
+            transformed_points = []
+            for point in points:
+                # 确保点是3D坐标
+                if len(point) >= 3:
+                    x, y, z = point[0], point[1], point[2]
+                    
+                    # 应用旋转和平移
+                    new_x = matrix_data[0][0] * x + matrix_data[0][1] * y + matrix_data[0][2] * z + matrix_data[0][3]
+                    new_y = matrix_data[1][0] * x + matrix_data[1][1] * y + matrix_data[1][2] * z + matrix_data[1][3]
+                    new_z = matrix_data[2][0] * x + matrix_data[2][1] * y + matrix_data[2][2] * z + matrix_data[2][3]
+                    
+                    transformed_points.append([new_x, new_y, new_z])
+                else:
+                    # 保持原始点不变
+                    transformed_points.append(point)
+            
+            # 创建新的网格
+            transformed_mesh = mesh.copy()
+            transformed_mesh.points = np.array(transformed_points)
+            
+            # 记录变换后的边界
+            new_bounds = transformed_mesh.bounds
+            logger.debug(f"应用变换后边界: {new_bounds}")
+            
+            # 计算变换统计信息
+            translation = [matrix_data[0][3], matrix_data[1][3], matrix_data[2][3]]
+            logger.info(f"成功应用坐标变换到网格: 平移={translation}, 顶点数={len(points)}")
+            
+            return transformed_mesh
+            
+        except Exception as e:
+            logger.error(f"应用坐标变换失败: {e}")
+            return mesh
     
     def _setup_ui(self):
         """设置UI界面"""
@@ -141,8 +281,54 @@ class VisualizationWidget(QWidget):
             self.error_occurred.emit(f"加载失败：{result.message}")
             return
         
+        # 生成结果哈希值，检查是否已经加载过相同的结果
+        result_hash = self._generate_result_hash(result)
+        if result_hash in self._loaded_model_hashes:
+            logger.info(f"检测到重复加载，跳过: {result_hash}")
+            return
+        
         logger.info(f"显示 {len(result.models)} 个模型")
-        self.display_models(result.models)
+        
+        # 检查模型类型并转换
+        models_to_display = []
+        for model in result.models:
+            if isinstance(model, ModelData):
+                # 已经是ModelData类型，直接使用
+                models_to_display.append(model)
+            elif hasattr(model, 'mesh_data') and hasattr(model, 'name'):
+                # 这是STLModel类型，需要转换
+                converted_model = self._convert_stl_model_to_model_data(model)
+                if converted_model:
+                    models_to_display.append(converted_model)
+            else:
+                logger.warning(f"未知模型类型: {type(model)}, 跳过")
+        
+        logger.info(f"成功转换 {len(models_to_display)} 个模型用于显示")
+        
+        # 记录已加载的结果
+        self._loaded_model_hashes.add(result_hash)
+        
+        self.display_models(models_to_display)
+    
+    def _generate_result_hash(self, result: LoadResult) -> str:
+        """生成加载结果的哈希值，用于检测重复加载
+        
+        Args:
+            result: 加载结果
+            
+        Returns:
+            str: 哈希值
+        """
+        import hashlib
+        
+        # 基于模型数量和名称生成哈希
+        model_names = [model.name for model in result.models if hasattr(model, 'name')]
+        model_names_str = ",".join(sorted(model_names))
+        
+        # 添加时间戳避免哈希碰撞
+        content = f"{len(result.models)}:{model_names_str}:{result.message}"
+        
+        return hashlib.md5(content.encode()).hexdigest()
     
     def display_models(self, models: List[ModelData]):
         """显示模型数据列表
@@ -651,6 +837,30 @@ class VisualizationWidget(QWidget):
             Dict[str, str]: 模型名称到颜色的映射
         """
         return self._model_colors.copy()
+    
+    def clear_all_models(self) -> None:
+        """清除所有模型"""
+        try:
+            if self._plotter:
+                self._plotter.clear()
+                self._plotter.add_axes()  # 重新添加坐标轴
+            self._current_models.clear()
+            self._model_colors.clear()
+            self._actor_map.clear()
+            self._loaded_model_hashes.clear()  # 清除已加载模型记录
+            logger.info("已清除所有模型")
+        except Exception as e:
+            logger.error(f"清除模型失败: {e}")
+    
+    def get_visualization_service(self):
+        """获取可视化服务接口
+        
+        让VisualizationWidget能够作为IVisualizationService被ProjectWorkflowManager使用
+        
+        Returns:
+            self: 返回自身作为可视化服务
+        """
+        return self
     
     def cleanup(self):
         """清理资源"""

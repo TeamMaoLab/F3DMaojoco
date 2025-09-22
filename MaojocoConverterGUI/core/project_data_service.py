@@ -11,7 +11,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from PySide6.QtCore import QObject, Signal, QThread, QTimer
 
-from core.domain_types import ExportData, ProjectInfo, ComponentInfo, create_default_metadata, LoadResult
+from core.domain_types import ExportData, ProjectInfo, ComponentInfo, create_default_metadata, LoadResult, STLModel, BoundingBox, Vector3D
 from utils.logger import logger
 
 
@@ -329,7 +329,7 @@ class ProjectDataService(QObject):
             errors.append(f"验证项目结构时发生错误: {str(e)}")
             return errors
     
-    def load_stl_files(self, stl_paths: List[Path]) -> List:
+    def load_stl_files(self, stl_paths: List[Path]) -> List[STLModel]:
         """加载STL文件 - 实现IDataLoadingService接口
         
         Args:
@@ -338,9 +338,44 @@ class ProjectDataService(QObject):
         Returns:
             List[STLModel]: STL模型对象列表
         """
-        # TODO: 实现STL文件加载
-        logger.warning("STL文件加载功能尚未实现")
-        return []
+        stl_models = []
+        
+        for stl_path in stl_paths:
+            try:
+                if not stl_path.exists():
+                    logger.warning(f"STL文件不存在: {stl_path}")
+                    continue
+                
+                # 读取STL文件二进制数据
+                with open(stl_path, 'rb') as f:
+                    mesh_data = f.read()
+                
+                # 创建边界框
+                bounds = BoundingBox(
+                    Vector3D(0.0, 0.0, 0.0),
+                    Vector3D(0.0, 0.0, 0.0)
+                )
+                
+                # 创建STLModel对象
+                stl_model = STLModel(
+                    name=stl_path.stem,
+                    mesh_data=mesh_data,
+                    file_path=stl_path,
+                    bounding_box=bounds,
+                    vertex_count=0,  # 暂时设为0，后续可以根据需要解析STL获取实际顶点数
+                    face_count=0,    # 暂时设为0，后续可以根据需要解析STL获取实际面数
+                    is_transformed=False
+                )
+                
+                stl_models.append(stl_model)
+                logger.debug(f"成功加载STL文件: {stl_path}")
+                
+            except Exception as e:
+                logger.error(f"加载STL文件失败 {stl_path}: {e}")
+                continue
+        
+        logger.success(f"成功加载 {len(stl_models)} 个STL文件")
+        return stl_models
     
     def load_component_data(self, project_dir: Path) -> List:
         """加载零部件数据 - 实现IDataLoadingService接口
@@ -544,10 +579,13 @@ class ProjectDataService(QObject):
             # 扫描项目信息
             project_info = self.scan_project(directory_path)
             
+            # 加载STL模型
+            stl_models = self._load_stl_models_from_project(directory_path, export_data)
+            
             # 返回加载结果
             return LoadResult(
                 success=True,
-                models=[],  # STL模型加载暂时留空
+                models=stl_models,
                 message="项目加载成功",
                 project_info=project_info,
                 export_data=export_data,
@@ -561,6 +599,68 @@ class ProjectDataService(QObject):
                 message=f"项目加载失败: {str(e)}",
                 error_details=str(e)
             )
+    
+    def _load_stl_models_from_project(self, directory_path: Path, export_data) -> List[STLModel]:
+        """从项目加载STL模型
+        
+        Args:
+            directory_path: 项目目录路径
+            export_data: 导出数据
+            
+        Returns:
+            List[STLModel]: STL模型列表
+        """
+        stl_models = []
+        
+        try:
+            # 遍历所有组件
+            for component in export_data.components:
+                if not component.stl_file:
+                    logger.warning(f"组件 {component.name} 没有STL文件路径")
+                    continue
+                
+                # 构建STL文件完整路径
+                stl_path = directory_path / component.stl_file
+                if not stl_path.exists():
+                    logger.warning(f"STL文件不存在: {stl_path}")
+                    continue
+                
+                try:
+                    # 读取STL文件二进制数据
+                    with open(stl_path, 'rb') as f:
+                        mesh_data = f.read()
+                    
+                    # 创建边界框
+                    bounds = BoundingBox(
+                        Vector3D(0.0, 0.0, 0.0),
+                        Vector3D(0.0, 0.0, 0.0)
+                    )
+                    
+                    # 创建STLModel对象
+                    stl_model = STLModel(
+                        name=component.name,
+                        mesh_data=mesh_data,
+                        file_path=stl_path,
+                        bounding_box=bounds,
+                        vertex_count=0,  # 暂时设为0，后续可以根据需要解析STL获取实际顶点数
+                        face_count=0,    # 暂时设为0，后续可以根据需要解析STL获取实际面数
+                        is_transformed=component.world_transform is not None,
+                        transform_matrix=component.world_transform
+                    )
+                    
+                    stl_models.append(stl_model)
+                    logger.debug(f"成功加载STL模型: {component.name}")
+                    
+                except Exception as e:
+                    logger.error(f"加载STL文件失败 {stl_path}: {e}")
+                    continue
+            
+            logger.success(f"成功加载 {len(stl_models)} 个STL模型")
+            return stl_models
+            
+        except Exception as e:
+            logger.error(f"加载STL模型过程中发生错误: {e}")
+            return []
     
     def _load_joints(self, json_data: dict) -> List:
         """从JSON数据加载关节数据"""

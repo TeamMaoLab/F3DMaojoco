@@ -38,14 +38,14 @@ from .domain_types import (
 )
 from .service_interfaces import (
     IDataLoadingService, IVisualizationService, 
-    IStageManagementService, ITransformService,
+    IStageManagementService,
     LoadMode, VisualizationConfig, StageExecutionResult, LoadingProgress,
     JointType, ComponentInfo, JointInfo
 )
-from .transform_service import TransformService
 from .project_data_service import ProjectDataService
 from .stl_model_manager import STLModelManager
 from .algorithm_service import RelationshipAnalysisService, CoordinateTransformService
+from utils.logger import logger
 
 
 class WorkflowStatus(Enum):
@@ -171,9 +171,13 @@ class ProjectWorkflowManager(QObject):
     
     # 阶段执行信号
     stage_started = Signal(str)  # stage_name
+    stage_execution_started = Signal(str)  # stage_name
     stage_progress = Signal(str, int, str)  # stage_name, progress, message
+    stage_execution_progress = Signal(str, int, str)  # stage_name, progress, message
     stage_completed = Signal(StageExecutionResult)
+    stage_execution_completed = Signal(str, bool)  # stage_name, success
     stage_failed = Signal(str, str)  # stage_name, error_message
+    stage_execution_failed = Signal(str, str)  # stage_name, error_message
     
     # 工作流信号
     workflow_started = Signal()
@@ -183,13 +187,22 @@ class ProjectWorkflowManager(QObject):
     workflow_failed = Signal(str)
     
     # 状态变更信号
+    state_changed = Signal(object)  # WorkflowState
     status_changed = Signal(str)  # status_message
     error_occurred = Signal(str)  # error_message
     warning_occurred = Signal(str)  # warning_message
     
     # 数据变更信号
     data_updated = Signal(str, Any)  # data_type, data
+    project_data_updated = Signal(object)  # ExportData
     visualization_updated = Signal()
+    
+    # 关系分析信号
+    relationship_analysis_completed = Signal()
+    
+    # 状态信息信号
+    info_message = Signal(str)
+    warning_occurred = Signal(str)
     
     def __init__(self):
         """初始化工作流管理器"""
@@ -202,7 +215,6 @@ class ProjectWorkflowManager(QObject):
         self._data_loading_service: Optional[IDataLoadingService] = None
         self._visualization_service: Optional[IVisualizationService] = None
         self._stage_management_service: Optional[IStageManagementService] = None
-        self._transform_service: Optional[ITransformService] = None
         
         # 算法服务实例
         self._relationship_analysis_service: Optional[RelationshipAnalysisService] = None
@@ -232,10 +244,7 @@ class ProjectWorkflowManager(QObject):
             # 初始化数据加载服务
             self._data_loading_service = ProjectDataService()
             
-            # 初始化变换服务
-            self._transform_service = TransformService()
-            
-            # 初始化STL模型管理器
+            # 初始化STL模型管理器（处理模型变换）
             self._stl_model_manager = STLModelManager()
             
             # 初始化算法服务
@@ -297,10 +306,6 @@ class ProjectWorkflowManager(QObject):
         self._stage_management_service = service
         self.status_changed.emit("阶段管理服务已设置")
     
-    def set_transform_service(self, service: ITransformService):
-        """设置变换服务"""
-        self._transform_service = service
-        self.status_changed.emit("变换服务已设置")
     
     def set_stage_config(self, stage_name: str, config: Dict[str, Any]):
         """设置阶段配置"""
@@ -368,12 +373,29 @@ class ProjectWorkflowManager(QObject):
                     self._state.context.export_data = result.export_data or result.project_info
                     self._state.context.loaded_models = result.models
                     
-                    # 发送信号
+                    # 更新工作流状态
+                    self._state.current_workflow_state = WorkflowStatus.COMPLETED
+                    
+                    # 发送信号（包含模型数据）
                     self.project_loaded.emit(result)
                     self.status_changed.emit("项目加载成功")
                     
-                    # 更新可视化
-                    self._update_visualization_with_loaded_models()
+                    # 注意：不再在这里直接调用可视化更新，避免重复加载
+                    # 可视化更新将由信号处理器（main_window）负责调用
+                    
+                    # 返回结果（包含models）
+                    enhanced_result = LoadResult(
+                        success=result.success,
+                        models=result.models,  # 传递实际的模型数据
+                        message=result.message,
+                        project_info=result.project_info,
+                        export_data=result.export_data,
+                        load_mode=mode.value if mode else None
+                    )
+                    
+                    logger.success(f"项目加载成功：{len(result.models)} 个模型")
+                    logger.info(f"LoadResult包含 {len(enhanced_result.models)} 个模型")
+                    return enhanced_result
                     
                 else:
                     self._state.current_workflow_state = WorkflowStatus.ERROR
@@ -402,16 +424,17 @@ class ProjectWorkflowManager(QObject):
             return
         
         try:
-            # 清除现有模型
-            self._visualization_service.clear_all_models()
+            # 创建LoadResult并使用现有的显示方法
+            result = LoadResult(
+                success=True,
+                models=self._state.loaded_models,
+                message="更新可视化",
+                project_info=self._state.project_info,
+                export_data=self._state.raw_export_data
+            )
             
-            # 添加新模型
-            for model in self._state.loaded_models:
-                transform = model.transform_matrix if model.is_transformed else None
-                self._visualization_service.add_stl_model(model, model.name, transform)
-            
-            # 调整视角
-            self._visualization_service.fit_view_to_models()
+            # 使用VisualizationWidget的display_models_from_result方法
+            self._visualization_service.display_models_from_result(result)
             
             # 发送信号
             self.visualization_updated.emit()

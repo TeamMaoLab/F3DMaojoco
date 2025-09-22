@@ -98,8 +98,8 @@ def main() -> None:
                 logger.info(f"快速启动模式：使用目录 {directory_path}")
                 
                 # 预加载项目数据
-                transform_service = main_window.get_transform_service()
-                result = transform_service.load_project(directory_path)
+                workflow_manager = main_window.get_workflow_manager()
+                result = workflow_manager.load_project(directory_path)
                 
                 if result.success:
                     logger.success(f"项目加载成功: {result.message}")

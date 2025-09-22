@@ -94,10 +94,22 @@ class STLModelManager:
                 # 应用坐标变换
                 is_transformed = False
                 if component.world_transform:
+                    # 添加调试日志验证变换矩阵数据
+                    logger.debug(f"组件 {component.name} 的变换矩阵: {component.world_transform}")
+                    logger.debug(f"变换矩阵类型: {type(component.world_transform)}")
+                    
                     transform = self._transformer.create_transform_from_components(
                         component.world_transform
                     )
                     if transform:
+                        # 记录变换统计信息
+                        translation = self._transformer.get_translation_vector(transform)
+                        logger.debug(f"组件 {component.name} 的平移向量: {translation}")
+                        
+                        # 应用变换前记录原始边界
+                        original_bounds = mesh.bounds
+                        logger.debug(f"组件 {component.name} 变换前边界: {original_bounds}")
+                        
                         points = mesh.points
                         transformed_points = self._transformer.apply_transform_to_points(
                             points, transform
@@ -105,7 +117,12 @@ class STLModelManager:
                         mesh.points = transformed_points
                         is_transformed = True
                         
-                        logger.debug(f"应用坐标变换到组件: {component.name}")
+                        # 记录变换后边界
+                        new_bounds = mesh.bounds
+                        logger.debug(f"组件 {component.name} 变换后边界: {new_bounds}")
+                        logger.info(f"成功应用坐标变换到组件: {component.name}, 平移: {translation}")
+                    else:
+                        logger.warning(f"无法为组件 {component.name} 创建变换矩阵")
                 
                 # 选择颜色
                 color = self._color_palette[i % len(self._color_palette)]

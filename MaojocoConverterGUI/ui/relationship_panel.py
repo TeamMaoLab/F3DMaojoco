@@ -20,9 +20,9 @@ from PySide6.QtCore import Signal, Qt, QTimer
 from PySide6.QtGui import QColor, QFont
 
 from ..utils.logger import logger
-from ..core.transform_service import TransformService, LoadResult
-from ..core.project_data_service import ProjectDataService, ProjectInfo
-from ..core.domain_types import JointInfo, ComponentInfo, JointType
+from ..core.project_workflow_manager import ProjectWorkflowManager
+from ..core.domain_types import JointInfo, ComponentInfo, JointType, LoadResult, JointConnection, JointGeometry
+from .ui_workflow_adapter import UIWorkflowAdapter
 
 
 @dataclass
@@ -55,19 +55,19 @@ class RelationshipAnalysisPanel(QWidget):
     component_selected = Signal(str)           # 组件选择信号
     joint_selected = Signal(str)              # 关节选择信号
     
-    def __init__(self, transform_service: TransformService, 
-                 data_service: ProjectDataService, parent=None):
+    def __init__(self, workflow_manager: ProjectWorkflowManager, 
+                 workflow_adapter: UIWorkflowAdapter, parent=None):
         """
         初始化关系分析面板
         
         Args:
-            transform_service: 变换服务
-            data_service: 数据服务
+            workflow_manager: 工作流管理器
+            workflow_adapter: 工作流适配器
             parent: 父组件
         """
         super().__init__(parent)
-        self._transform_service = transform_service
-        self._data_service = data_service
+        self._workflow_manager = workflow_manager
+        self._workflow_adapter = workflow_adapter
         
         # 数据存储
         self._current_project: Optional[Path] = None
@@ -339,16 +339,18 @@ class RelationshipAnalysisPanel(QWidget):
         self._current_project = project_path
         self._quick_start_mode = quick_start
         
-        # 从数据服务获取组件和关节数据
-        if hasattr(self._data_service, 'get_components'):
-            raw_components = self._data_service.get_components()
-            # 转换为ComponentInfo对象
-            self._components = self._convert_to_component_info(raw_components)
-        
-        if hasattr(self._data_service, 'get_joints'):
-            raw_joints = self._data_service.get_joints()
-            # 转换为JointInfo对象
-            self._joints = self._convert_to_joint_info(raw_joints)
+        # 从工作流管理器获取组件和关节数据
+        try:
+            state = self._workflow_manager.get_state()
+            if state.raw_export_data:
+                # 转换为ComponentInfo对象
+                self._components = self._convert_to_component_info(state.raw_export_data.components)
+                # 转换为JointInfo对象
+                self._joints = self._convert_to_joint_info(state.raw_export_data.joints)
+        except Exception as e:
+            logger.error(f"获取项目数据失败: {e}")
+            self._components = []
+            self._joints = []
         
         # 更新UI状态
         self._update_ui_for_project_loaded()
@@ -377,6 +379,11 @@ class RelationshipAnalysisPanel(QWidget):
         """将原始关节数据转换为JointInfo对象"""
         joints = []
         for raw_joint in raw_joints:
+            # 如果已经是JointInfo对象，直接使用
+            if isinstance(raw_joint, JointInfo):
+                joints.append(raw_joint)
+                continue
+                
             # 创建JointConnection对象
             connection = JointConnection(
                 occurrence_one_name=getattr(raw_joint, 'occurrence_one_name', None),
@@ -393,10 +400,23 @@ class RelationshipAnalysisPanel(QWidget):
                 geometry_two_transform=getattr(raw_joint, 'geometry_two_transform', None)
             )
             
+            # 安全地获取关节类型
+            joint_type_value = getattr(raw_joint, 'joint_type', 'rigid')
+            if isinstance(joint_type_value, JointType):
+                # 如果已经是JointType枚举，直接使用
+                joint_type = joint_type_value
+            else:
+                # 如果是字符串，转换为JointType枚举
+                try:
+                    joint_type = JointType(joint_type_value)
+                except ValueError:
+                    logger.warning(f"无效的关节类型: {joint_type_value}，使用默认值 RIGID")
+                    joint_type = JointType.RIGID
+            
             # 创建JointInfo对象
             joint = JointInfo(
                 name=getattr(raw_joint, 'name', ''),
-                joint_type=JointType(getattr(raw_joint, 'joint_type', 'rigid')),
+                joint_type=joint_type,
                 connection=connection,
                 geometry=geometry,
                 is_suppressed=getattr(raw_joint, 'is_suppressed', False),
