@@ -48,6 +48,7 @@
     let currentHighlight = null;  // 当前高亮的零件名
     let bodyVisibility = {};      // 刚体名 -> bool(是否显示)，初始全 true
     let isolatedBody = null;      // 当前孤立的刚体名（null=无孤立）
+    let currentJointAngles = null; // 树关节角度 {刚体名: 角度}
 
     // 零件 -> 其旋转关节点A（零件绕此点转）。来自机构分析。
     const partJointMap = {
@@ -252,6 +253,7 @@
         // 构建运动学树数据并渲染树结构列表
         currentTreeData = buildTreeData(data);
         renderTreeList(currentTreeData);
+        renderJointSliders(currentTreeData);
     }
 
     /**
@@ -422,6 +424,65 @@
             });
         });
         updateTreeItemStyles();
+    }
+
+    // 渲染树关节旋转滑块（验证用：每个树关节一个滑块，拖动看相对旋转）
+    function renderJointSliders(treeData) {
+        const container = document.getElementById('jointSliders');
+        const bodies = treeData.bodies;
+        // 关节角度状态
+        if (!currentJointAngles) {
+            currentJointAngles = {};
+            for (const b of bodies) currentJointAngles[b.name] = 0;
+        }
+        container.innerHTML = bodies.map(b => {
+            const parentLabel = b.parent ? `(${b.parent}→${b.name})` : `(机架→${b.name})`;
+            const jw = b.jointWorld;
+            const jwStr = jw ? `P=(${jw[0].toFixed(1)},${jw[1].toFixed(1)},${jw[2].toFixed(1)})` : '';
+            return `<div style="margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:#aaa;margin-bottom:2px;">
+                    <span>[${b.joint}] ${parentLabel}</span>
+                    <span class="angle-val" data-body="${b.name}">0°</span>
+                </div>
+                <input type="range" min="-180" max="180" value="0" step="1" class="joint-slider"
+                       data-body="${b.name}" style="width:100%;">
+                <div style="font-size:10px;color:#666;">${jwStr}</div>
+            </div>`;
+        }).join('') + `<div style="margin-top:6px;"><button id="resetJointsBtn" style="background:#3a3d41;border:none;color:#ccc;cursor:pointer;font-size:11px;padding:4px 10px;border-radius:3px;">复位所有关节</button></div>`;
+
+        // 滑块事件
+        container.querySelectorAll('.joint-slider').forEach(sl => {
+            sl.addEventListener('input', () => {
+                const name = sl.dataset.body;
+                currentJointAngles[name] = parseFloat(sl.value);
+                container.querySelector(`.angle-val[data-body="${name}"]`).textContent = sl.value + '°';
+                applyAllJointRotations();
+            });
+        });
+        // 复位按钮
+        document.getElementById('resetJointsBtn').addEventListener('click', () => {
+            for (const b of bodies) currentJointAngles[b.name] = 0;
+            container.querySelectorAll('.joint-slider').forEach(sl => {
+                sl.value = 0;
+                container.querySelector(`.angle-val[data-body="${sl.dataset.body}"]`).textContent = '0°';
+            });
+            applyAllJointRotations();
+        });
+    }
+
+    // 应用所有树关节旋转（按树深度顺序）
+    function applyAllJointRotations() {
+        if (!currentTreeData) return;
+        const bodies = currentTreeData.bodies;
+        // 构造 bodyRotations 数组传给 viewer
+        const bodyRotations = bodies.map(b => ({
+            name: b.name,
+            parent: b.parent,
+            jointWorld: b.jointWorld,
+            angle: currentJointAngles[b.name] || 0,
+            parts: b.parts,
+        }));
+        viewer.applyJointRotations(bodyRotations);
     }
 
     function renderComponentList(components) {

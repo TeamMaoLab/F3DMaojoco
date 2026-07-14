@@ -229,6 +229,77 @@ class ExportViewer {
     }
 
     /**
+     * 应用树关节旋转（核心运动学方法）
+     *
+     * 原理: 子坐标系相对父坐标系，绕关节点旋转。
+     *   每个刚体的世界变换 = 父刚体变换 × 绕关节点旋转
+     *   按树深度从根到叶顺序应用，子节点继承父节点的累积变换。
+     *
+     * @param {Array} bodyRotations - [{name, parent, jointWorld:[x,y,z], angle(度), parts:[occurrence名]}]
+     *   jointWorld: 关节点在【父刚体局部坐标系】下的坐标（用于相对旋转）
+     *   但初始位姿下所有零件原点在(0,0,0)且无旋转，父局部=世界，所以 jointWorld 用世界坐标即可
+     */
+    applyJointRotations(bodyRotations) {
+        // 1. 先复位所有零件到初始姿态
+        for (const mesh of this.componentMeshes) {
+            if (mesh.userData.initMatrix) {
+                mesh.matrix.copy(mesh.userData.initMatrix);
+            }
+        }
+
+        // 2. 按树深度排序（父先处理）
+        //    计算每个刚体的累积变换矩阵
+        const cumTransforms = {};  // bodyName -> THREE.Matrix4 (累积变换)
+
+        // 找根节点（parent=null）先处理
+        function getDepth(b) {
+            if (!b.parent) return 0;
+            const p = bodyRotations.find(x => x.name === b.parent);
+            return p ? getDepth(p) + 1 : 0;
+        }
+        const sorted = [...bodyRotations].sort((a, b) => getDepth(a) - getDepth(b));
+
+        // 3. 逐个刚体：计算累积变换，应用到其所有零件
+        for (const body of sorted) {
+            let cumMatrix;
+            if (!body.parent) {
+                // 根节点：绕世界坐标系的关节点转
+                cumMatrix = this._rotationAroundPoint(body.angle, body.jointWorld);
+            } else {
+                // 子节点：父累积变换 × (绕父局部坐标系的关节点转)
+                const parentCum = cumTransforms[body.parent] || new THREE.Matrix4();
+                // 关节点世界坐标 → 父局部坐标（用父 initMatrix 的逆）
+                // 但初始位姿下父局部=世界，且父已经转了，所以关节点在父当前局部 = 父initMatrix逆 × jointWorld
+                // 简化：因为所有零件初始都在原点无旋转，jointWorld 在父局部 = jointWorld
+                const localRot = this._rotationAroundPoint(body.angle, body.jointWorld);
+                cumMatrix = new THREE.Matrix4().multiplyMatrices(parentCum, localRot);
+            }
+            cumTransforms[body.name] = cumMatrix;
+
+            // 应用到该刚体的所有零件
+            for (const partName of body.parts) {
+                const mesh = this.componentMeshes.find(m => m.userData.name === partName);
+                if (!mesh || !mesh.userData.initMatrix) continue;
+                const M = new THREE.Matrix4().multiplyMatrices(cumMatrix, mesh.userData.initMatrix);
+                mesh.matrix.copy(M);
+                mesh.matrixWorldNeedsUpdate = true;
+            }
+        }
+    }
+
+    /** 构造"绕指定点转指定角度(度,绕Y轴)"的变换矩阵: T(p) × Ry(θ) × T(-p) */
+    _rotationAroundPoint(angleDeg, point) {
+        const theta = angleDeg * Math.PI / 180;
+        const Ry = new THREE.Matrix4().makeRotationY(theta);
+        const T_back = new THREE.Matrix4().makeTranslation(-point[0], -point[1], -point[2]);
+        const T_fwd = new THREE.Matrix4().makeTranslation(point[0], point[1], point[2]);
+        const M = new THREE.Matrix4();
+        M.multiplyMatrices(T_fwd, Ry);
+        M.multiply(T_back);
+        return M;
+    }
+
+    /**
      * 高亮一个刚体的所有零件：变亮黄色 + 在第一个零件(主零件)显示坐标系框架
      * @param {Array|null} partNames - 零件 occurrence_name 列表，null 表示取消高亮
      */
