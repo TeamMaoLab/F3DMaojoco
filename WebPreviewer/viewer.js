@@ -166,12 +166,66 @@ class ExportViewer {
             shininess: 30
         });
         const mesh = new THREE.Mesh(geometry, material);
-        mesh.applyMatrix4(this._matrixFromJson(matrix4x4));
-        mesh.userData = { name: displayName, color: color.css };
+        // 不 bake 矩阵到几何，改用 mesh.matrix 驱动（便于姿态更新时只改矩阵，无需克隆几何）
+        const initMatrix = this._matrixFromJson(matrix4x4);
+        mesh.matrix.copy(initMatrix);
+        mesh.matrixAutoUpdate = false;
+        mesh.matrixWorldNeedsUpdate = true;
+        mesh.userData = {
+            name: displayName,
+            color: color.css,
+            initMatrix: initMatrix.clone(), // 保存初始矩阵，applyPose 基于此叠加旋转
+        };
         this.scene.add(mesh);
         this.componentMeshes.push(mesh);
         this.allObjects.push(mesh);
         return mesh;
+    }
+
+    /**
+     * 应用姿态：根据求解结果更新所有运动零件的矩阵
+     * @param {Object} partRotations - {零件名: 旋转角(度,绕Y轴)}
+     * @param {Object} jointPositions - {关节名: [x,z]} 新位置
+     * @param {Object} jointInitPositions - {关节名: [x,z]} 初始位置（用于算旋转中心）
+     * @param {Object} partJointMap - {零件名: 关节点A名} 每个零件绕哪个关节点转
+     */
+    applyPose(partRotations, jointPositions, jointInitPositions, partJointMap) {
+        for (const mesh of this.componentMeshes) {
+            const name = mesh.userData.name;
+            const rotDeg = partRotations[name];
+            if (rotDeg === undefined) continue; // 静止零件不动
+            const jointA = partJointMap[name];
+            if (!jointA) continue;
+
+            const initMatrix = mesh.userData.initMatrix;
+            const A_init = jointInitPositions[jointA];
+            const A_new = jointPositions[jointA];
+            if (!A_init || !A_new) continue;
+
+            // M_new = T(A_new) × Ry(θ) × T(-A_init) × M_init
+            // A 是世界坐标 [x,z]，Y 分量取 0（平面机构）
+            const theta = rotDeg * Math.PI / 180;
+            const Ry = new THREE.Matrix4().makeRotationY(theta);
+            const T_back = new THREE.Matrix4().makeTranslation(-A_init[0], 0, -A_init[1]);
+            const T_fwd = new THREE.Matrix4().makeTranslation(A_new[0], 0, A_new[1]);
+
+            const M = new THREE.Matrix4();
+            M.multiplyMatrices(T_fwd, Ry);
+            M.multiply(T_back);
+            M.multiply(initMatrix);
+            mesh.matrix.copy(M);
+            mesh.matrixWorldNeedsUpdate = true;
+        }
+    }
+
+    /** 复位所有零件到初始姿态 */
+    resetPose() {
+        for (const mesh of this.componentMeshes) {
+            if (mesh.userData.initMatrix) {
+                mesh.matrix.copy(mesh.userData.initMatrix);
+                mesh.matrixWorldNeedsUpdate = true;
+            }
+        }
     }
 
     /**

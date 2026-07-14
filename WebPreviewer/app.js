@@ -44,6 +44,17 @@
     let currentMechData = null;   // 加载模型后提取的机构数据
     let currentHeatmap = null;    // 计算完成的热力图数据
     let currentAngles = null;     // 角度序列
+    let currentJointInit = null;  // 初始关节位置（XZ）
+
+    // 零件 -> 其旋转关节点A（零件绕此点转）。来自机构分析。
+    const partJointMap = {
+        '膝盖动力发生器:1':  '旋转 1',
+        '膝盖传动1:1':       '旋转 6',
+        '膝盖转动:1':        '旋转 7',
+        '膝盖传动2:1':       '旋转 4',
+        '大腿主动力发生器:1': '旋转 2',
+        '小腿:1':            '旋转 3',
+    };
 
     // ---- 文件选择 ----
     openBtn.addEventListener('click', () => dirInput.click());
@@ -198,6 +209,8 @@
 
         // 提取机构数据，启用工作空间按钮
         currentMechData = window.FKSolver.extractMechanism(data);
+        // 保存初始关节位置（XZ 平面）和零件-关节映射，供 applyPose 用
+        currentJointInit = currentMechData.joints;
         workspaceBtn.disabled = false;
     }
 
@@ -336,9 +349,9 @@
         }
     }
 
-    // 点击热力图查看该角度组合的求解结果
+    // 点击热力图 → 3D 腿摆到该角度组合的姿态
     heatmapCanvas.addEventListener('click', (e) => {
-        if (!currentHeatmap || !currentAngles) return;
+        if (!currentHeatmap || !currentAngles || !currentMechData) return;
         const rect = heatmapCanvas.getBoundingClientRect();
         const x = (e.clientX - rect.left) / rect.width;
         const y = (e.clientY - rect.top) / rect.height;
@@ -350,12 +363,24 @@
         const result = window.FKSolver.solveFK(t1, t2, currentMechData);
         if (result.ok) {
             const limOk = window.FKSolver.checkLimits(result, currentMechData);
-            let info = `θ1=${t1}° θ2=${t2}°\n状态: ${limOk ? '有解·极限内' : '有解·超极限'}\n`;
-            for (const k in result.angles) info += `${k}: ${result.angles[k].toFixed(1)}°\n`;
-            alert(info);
+            viewer.applyPose(result.partRotations, result.jointPositions, currentJointInit, partJointMap);
+            showStatus(`θ1=${t1}° θ2=${t2}° → ${limOk ? '✅有解·极限内' : '⚠️有解·超极限'}`, false);
         } else {
-            alert(`θ1=${t1}° θ2=${t2}°\n无解: ${result.reason}`);
+            viewer.resetPose();
+            showStatus(`θ1=${t1}° θ2=${t2}° → ❌无解: ${result.reason}（已复位）`, true);
         }
+    });
+
+    // 鼠标在热力图上移动时显示当前角度
+    heatmapCanvas.addEventListener('mousemove', (e) => {
+        if (!currentAngles) return;
+        const rect = heatmapCanvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+        const N = currentAngles.length;
+        const j = Math.min(N - 1, Math.max(0, Math.floor(x * N)));
+        const i = Math.min(N - 1, Math.max(0, Math.floor(y * N)));
+        heatmapCanvas.title = `θ1=${currentAngles[i]}° θ2=${currentAngles[j]}°`;
     });
 
     // 初始建坐标轴（即使没加载数据也能看到）

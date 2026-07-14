@@ -142,9 +142,30 @@ function solveFK(theta1Deg, theta2Deg, mech) {
         }
     }
 
+    // 计算每个运动零件绕 Y 轴的旋转角（度）
+    // 零件姿态由其两端关节点 A->B 的方向确定：旋转角 = 新方向角 - 初始方向角
+    // 这些角度用于更新 Three.js mesh 的变换矩阵
+    function partAngle(JA_init, JB_init, JA_new, JB_new) {
+        const a0 = angleOf([JB_init[0] - JA_init[0], JB_init[1] - JA_init[1]]);
+        const a1 = angleOf([JB_new[0] - JA_new[0], JB_new[1] - JA_new[1]]);
+        let d = (a1 - a0) * 180 / Math.PI;
+        while (d > 180) d -= 360;
+        while (d < -180) d += 360;
+        return d;
+    }
+    const partRotations = {
+        '膝盖动力发生器:1':  partAngle(J1, J6, J1n, J6n),
+        '膝盖传动1:1':       partAngle(J6, J7, J6n, J7n),
+        '膝盖转动:1':        partAngle(J7, J4, J7n, J4n),
+        '膝盖传动2:1':       partAngle(J4, J5, J4n, J5n),
+        '大腿主动力发生器:1': partAngle(J2, J3, J2n, J3n),
+        '小腿:1':            partAngle(J3, J5, J3n, J5n),
+    };
+
     return {
         ok: true,
         angles,
+        partRotations,
         jointPositions: { '旋转 1': J1n, '旋转 2': J2n, '旋转 3': J3n, '旋转 4': J4n, '旋转 5': J5n, '旋转 6': J6n, '旋转 7': J7n },
         reason: 'OK'
     };
