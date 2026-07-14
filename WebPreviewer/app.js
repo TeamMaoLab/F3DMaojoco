@@ -18,9 +18,7 @@
     const dropzone = document.getElementById('dropzone');
     const loadingEl = document.getElementById('loading');
     const statusEl = document.getElementById('status');
-    const summaryEl = document.getElementById('summary');
     const componentListEl = document.getElementById('componentList');
-    const jointListEl = document.getElementById('jointList');
 
     const viewer = new ExportViewer(document.getElementById('viewport'));
 
@@ -45,6 +43,11 @@
     let currentHeatmap = null;    // 计算完成的热力图数据
     let currentAngles = null;     // 角度序列
     let currentJointInit = null;  // 初始关节位置（XZ）
+    let currentTreeData = null;   // 运动学树数据
+    let treeVisible = false;      // 树结构可视化开关
+    let currentHighlight = null;  // 当前高亮的零件名
+    let bodyVisibility = {};      // 刚体名 -> bool(是否显示)，初始全 true
+    let isolatedBody = null;      // 当前孤立的刚体名（null=无孤立）
 
     // 零件 -> 其旋转关节点A（零件绕此点转）。来自机构分析。
     const partJointMap = {
@@ -109,6 +112,42 @@
             showStatus('❌ 加载失败：' + err.message, true);
         }
     }
+
+    // ---- 直接从 exports/export1 加载（fetch 方式，无需选目录）----
+    const EXPORT1_BASE = '../exports/export1/';
+    async function loadFromExport1() {
+        try {
+            hideStatus();
+            showLoading('正在加载 exports/export1…');
+            const resp = await fetch(EXPORT1_BASE + 'component_positions.json');
+            if (!resp.ok) throw new Error('fetch component_positions.json 失败: ' + resp.status);
+            const data = await resp.json();
+            // 构造 fake fileMap：stlPath → { arrayBuffer: () => fetch(...).then(r=>r.arrayBuffer()) }
+            const fileMap = new Map();
+            fileMap.get = function(key) {
+                if (!key) return undefined;
+                // key 可能是 "stl_files/xxx.stl" 或纯文件名
+                const path = key.startsWith('stl_files/') ? key : 'stl_files/' + key;
+                return {
+                    arrayBuffer: async () => {
+                        const r = await fetch(EXPORT1_BASE + path);
+                        if (!r.ok) throw new Error('STL 加载失败: ' + path);
+                        return r.arrayBuffer();
+                    }
+                };
+            };
+            await renderData(data, fileMap);
+            dropzone.classList.add('hide');
+            hideLoading();
+        } catch (err) {
+            console.error(err);
+            hideLoading();
+            showStatus('❌ 加载 exports/export1 失败：' + err.message + '（需通过 http.server 访问，不能直接双击打开）', true);
+        }
+    }
+
+    // 页面启动时自动加载 export1
+    loadFromExport1();
 
     // ---- 渲染 ----
     async function renderData(data, fileMap) {
@@ -195,9 +234,7 @@
         viewer.fitCamera();
 
         // 8. 更新 UI
-        renderSummary(meta, components.length, joints.length, loadedCount, failedComponents.length, skippedContainerCount);
         renderComponentList(components);
-        renderJointList(joints);
 
         if (failedComponents.length > 0) {
             showStatus(`⚠️ ${failedComponents.length} 个零件加载失败（STL 缺失或解析错误），详见控制台。`, false);
@@ -209,24 +246,182 @@
 
         // 提取机构数据，启用工作空间按钮
         currentMechData = window.FKSolver.extractMechanism(data);
-        // 保存初始关节位置（XZ 平面）和零件-关节映射，供 applyPose 用
         currentJointInit = currentMechData.joints;
         workspaceBtn.disabled = false;
+
+        // 构建运动学树数据并渲染树结构列表
+        currentTreeData = buildTreeData(data);
+        renderTreeList(currentTreeData);
     }
 
-    // ---- UI 渲染 ----
-    function renderSummary(meta, compCount, jointCount, loaded, failed, skippedContainers) {
-        const rows = [
-            ['导出时间', meta.export_time || '-'],
-            ['几何单位', meta.geometry_unit || '-'],
-            ['格式版本', meta.format_version || '-'],
-            ['零件总数', compCount],
-            ['关节总数', jointCount],
-            ['成功加载', loaded],
-            ['跳过容器', skippedContainers],
-            ['加载失败', failed],
+    /**
+     * 运动学树（硬编码，针对舵机四足单腿 export1）
+     *
+     * 树结构:
+     *   机架 →[旋转1]→ 膝盖动力发生器 →[旋转6]→ 膝盖传动1 →[旋转7]→ 膝盖转动 →[旋转4]→ 膝盖传动2
+     *   机架 →[旋转2]→ 大腿刚体(4零件) →[旋转3]→ 小腿
+     *
+     * 闭环约束（断开的边，用 equality 约束补回）:
+     *   旋转2' : 膝盖转动 ↔ 大腿刚体（在 J2 点重合）
+     *   旋转5  : 膝盖传动2 ↔ 小腿（在 J5 点重合）
+     *
+     * 刚体分组（Fusion Rigid Group，导出脚本未读，手动指定）:
+     *   大腿刚体 = 大腿主动力发生器 + 小腿保持架 + 髋关节保持架 + 大腿盖板
+     */
+    function buildTreeData(data) {
+        // 关节世界坐标
+        const jointWorld = {};
+        for (const j of data.joints) {
+            const g = j.geometry || {};
+            const t = g.geometry_one_transform || g.geometry_two_transform;
+            if (t) {
+                const m = t.matrix;
+                jointWorld[j.name] = [m[0][3], m[1][3], m[2][3]];
+            }
+        }
+        // 运动学树：[刚体名, 父刚体名(或null=机架), 树关节名, [零件occurrence列表]]
+        // 第一个零件是主零件（连着关节）
+        const treeBodies = [
+            ['膝盖动力发生器', null,             '旋转 1', ['膝盖动力发生器:1']],
+            ['膝盖传动1',      '膝盖动力发生器', '旋转 6', ['膝盖传动1:1']],
+            ['膝盖转动',       '膝盖传动1',      '旋转 7', ['膝盖转动:1']],
+            ['膝盖传动2',      '膝盖转动',       '旋转 4', ['膝盖传动2:1']],
+            ['大腿刚体',       null,             '旋转 2', ['大腿主动力发生器:1', '小腿保持架:1', '髋关节保持架:1', '大腿盖板:1']],
+            ['小腿',           '大腿刚体',       '旋转 3', ['小腿:1']],
         ];
-        summaryEl.innerHTML = '<dl>' + rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('') + '</dl>';
+        // 闭环约束（断开的关节边）
+        const loopConstraints = [
+            { joint: '旋转 2', body1: '膝盖转动', body2: '大腿刚体', desc: '膝盖转动↔大腿刚体 在J2重合' },
+            { joint: '旋转 5', body1: '膝盖传动2', body2: '小腿',   desc: '膝盖传动2↔小腿 在J5重合' },
+        ];
+        return {
+            bodies: treeBodies.map(([name, parent, joint, parts]) => ({
+                name: name,
+                parent: parent,
+                joint: joint,
+                jointWorld: jointWorld[joint] || null,
+                parts: parts,
+                partCount: parts.length,
+            })),
+            loopConstraints: loopConstraints,
+        };
+    }
+    // 统一应用可见性到 3D（根据 bodyVisibility 状态更新所有 mesh）
+    function applyVisibility() {
+        for (const mesh of viewer.componentMeshes) {
+            const name = mesh.userData.name;
+            // 找该零件属于哪个刚体
+            let visible = true;
+            for (const body of currentTreeData.bodies) {
+                if (body.parts.includes(name)) {
+                    visible = bodyVisibility[body.name] !== false;
+                    break;
+                }
+            }
+            mesh.visible = visible;
+        }
+    }
+
+    // 更新树列表的视觉状态（隐藏项灰掉、孤立项标记）
+    function updateTreeItemStyles() {
+        const treeListEl = document.getElementById('treeList');
+        treeListEl.querySelectorAll('.tree-item').forEach(el => {
+            const name = el.dataset.body;
+            const visible = bodyVisibility[name] !== false;
+            el.style.opacity = visible ? '1' : '0.4';
+            el.style.textDecoration = visible ? '' : 'line-through';
+            const isoBtn = el.querySelector('.btn-iso');
+            if (isoBtn) isoBtn.textContent = isolatedBody === name ? '●' : '◎';
+        });
+    }
+
+    // 渲染运动学树（缩进列表，可点击高亮，带孤立/隐藏按钮）
+    function renderTreeList(treeData) {
+        const treeListEl = document.getElementById('treeList');
+        // 过滤掉舵机刚体（机架，不参与运动学树展示）
+        const bodies = treeData.bodies.filter(b => !b.name.includes('servo'));
+        // 初始化可见性
+        if (Object.keys(bodyVisibility).length === 0) {
+            for (const b of bodies) bodyVisibility[b.name] = true;
+        }
+        // 计算深度
+        const depthMap = new Map();
+        function getDepth(b) {
+            if (depthMap.has(b.name)) return depthMap.get(b.name);
+            const d = b.parent ? (getDepth(bodies.find(x => x.name === b.parent)) || 0) + 1 : 0;
+            depthMap.set(b.name, d);
+            return d;
+        }
+        treeListEl.innerHTML = bodies.map(b => {
+            const d = getDepth(b);
+            const indent = '　'.repeat(d);
+            const parentLabel = b.parent ? ` ← ${b.parent}` : ' ← 机架';
+            const jointLabel = b.joint ? `[${b.joint}]` : '';
+            const partsLabel = b.parts.length > 1 ? ` (${b.parts.length}零件)` : '';
+            return `<div class="tree-item" data-body="${b.name}" style="padding:4px 8px;cursor:pointer;font-size:12px;border-radius:3px;display:flex;align-items:center;gap:6px;">
+                <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${indent}${b.name}${partsLabel} <span style="color:#888;font-size:11px">${jointLabel}${parentLabel}</span></span>
+                <button class="btn-iso" data-body="${b.name}" title="孤立显示" style="background:none;border:1px solid #555;color:#aaa;cursor:pointer;font-size:11px;padding:1px 5px;border-radius:2px;">◎</button>
+                <button class="btn-hide" data-body="${b.name}" title="隐藏" style="background:none;border:1px solid #555;color:#aaa;cursor:pointer;font-size:11px;padding:1px 5px;border-radius:2px;">✕</button>
+            </div>`;
+        }).join('');
+        // 闭环约束（断开的关节边）
+        const loops = treeData.loopConstraints || [];
+        if (loops.length > 0) {
+            treeListEl.innerHTML += `<div style="padding:4px 8px;margin-top:6px;border-top:1px solid #3c3c3c;font-size:11px;color:#888;">闭环约束（断开的边）:</div>`;
+            for (const lc of loops) {
+                treeListEl.innerHTML += `<div style="padding:3px 8px;font-size:11px;color:#e8c44a;">⟳ [${lc.joint}] ${lc.body1} ↔ ${lc.body2}</div>`;
+            }
+        }
+
+        // 点击行 = 高亮
+        treeListEl.querySelectorAll('.tree-item').forEach(el => {
+            el.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') return;  // 按钮点击不触发高亮
+                const bodyName = el.dataset.body;
+                if (currentHighlight === bodyName) {
+                    currentHighlight = null;
+                    viewer.highlightBody(null);
+                    treeListEl.querySelectorAll('.tree-item').forEach(x => x.style.background = '');
+                } else {
+                    currentHighlight = bodyName;
+                    treeListEl.querySelectorAll('.tree-item').forEach(x => x.style.background = '');
+                    el.style.background = '#3a3d41';
+                    const body = bodies.find(b => b.name === bodyName);
+                    viewer.highlightBody(body ? body.parts : null);
+                }
+            });
+        });
+        // 孤立按钮
+        treeListEl.querySelectorAll('.btn-iso').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const name = btn.dataset.body;
+                if (isolatedBody === name) {
+                    // 取消孤立，恢复全部显示
+                    isolatedBody = null;
+                    for (const b of bodies) bodyVisibility[b.name] = true;
+                } else {
+                    // 孤立：只显示这个
+                    isolatedBody = name;
+                    for (const b of bodies) bodyVisibility[b.name] = (b.name === name);
+                }
+                applyVisibility();
+                updateTreeItemStyles();
+            });
+        });
+        // 隐藏按钮
+        treeListEl.querySelectorAll('.btn-hide').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const name = btn.dataset.body;
+                // 取消孤立状态（隐藏时孤立无意义）
+                isolatedBody = null;
+                bodyVisibility[name] = !(bodyVisibility[name] !== false);
+                applyVisibility();
+                updateTreeItemStyles();
+            });
+        });
+        updateTreeItemStyles();
     }
 
     function renderComponentList(components) {
@@ -238,54 +433,27 @@
             const name = comp.occurrence_name || comp.name || '未命名';
             const isContainer = comp.has_children && (comp.bodies_count === 0 || comp.bodies_count === '0');
             if (isContainer) {
-                // 装配体容器：未渲染（合并几何已由子零件体现）
                 return `<div class="item" style="opacity:0.5">
                     <span class="swatch" style="background:#666"></span>
                     <span class="name" title="${name}（装配体，已跳过）">${name}</span>
                     <span class="meta">装配体</span>
                 </div>`;
             }
-            const color = colorCssForName(name);
             const stl = comp.stl_file ? comp.stl_file.split('/').pop() : '无STL';
             return `<div class="item">
-                <span class="swatch" style="background:${color}"></span>
+                <input type="checkbox" checked data-part="${name}" class="stl-toggle">
                 <span class="name" title="${name}">${name}</span>
                 <span class="meta" title="${comp.stl_file || ''}">${stl}</span>
             </div>`;
         }).join('');
-    }
-
-    function renderJointList(joints) {
-        if (joints.length === 0) {
-            jointListEl.innerHTML = '<div style="color:#666;font-size:12px">无关节</div>';
-            return;
-        }
-        jointListEl.innerHTML = joints.map(j => {
-            const hasLimits = !!j.limits && !!j.limits.revolute_limits;
-            const limits = hasLimits ? j.limits.revolute_limits.rotation_limits : null;
-            const range = limits
-                ? `[${(limits.minimum_value).toFixed(0)}°, ${(limits.maximum_value).toFixed(0)}°]`
-                : '无限制';
-            const type = j.joint_type || '?';
-            return `<div class="item joint">
-                <span class="swatch"></span>
-                <span class="name" title="${j.name}">${j.name}</span>
-                <span class="meta">${type} · ${range}</span>
-            </div>`;
-        }).join('');
-    }
-
-    // 与 viewer.js 的 _colorForName 保持一致的 CSS 版本
-    function colorCssForName(name) {
-        const palette = [
-            '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f',
-            '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'
-        ];
-        let h = 0;
-        for (let i = 0; i < name.length; i++) {
-            h = ((h << 5) - h + name.charCodeAt(i)) | 0;
-        }
-        return palette[Math.abs(h) % palette.length];
+        // 显示/隐藏开关
+        componentListEl.querySelectorAll('.stl-toggle').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const name = cb.dataset.part;
+                const mesh = viewer.componentMeshes.find(m => m.userData.name === name);
+                if (mesh) mesh.visible = cb.checked;
+            });
+        });
     }
 
     // ---- 控件事件 ----
@@ -299,6 +467,22 @@
         viewer.setBackgroundColor(bgSelect.value);
     });
     fitBtn.addEventListener('click', () => viewer.fitCamera());
+
+    // 全部显示 / 全部隐藏
+    document.getElementById('showAllBtn').addEventListener('click', () => {
+        isolatedBody = null;
+        for (const b of currentTreeData.bodies) bodyVisibility[b.name] = true;
+        applyVisibility();
+        updateTreeItemStyles();
+    });
+    document.getElementById('hideAllBtn').addEventListener('click', () => {
+        isolatedBody = null;
+        for (const b of currentTreeData.bodies) {
+            if (!b.name.includes('servo')) bodyVisibility[b.name] = false;
+        }
+        applyVisibility();
+        updateTreeItemStyles();
+    });
 
     // ---- 工作空间热力图 ----
     workspaceBtn.addEventListener('click', () => {

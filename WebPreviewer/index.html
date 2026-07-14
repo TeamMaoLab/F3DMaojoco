@@ -160,17 +160,19 @@
             </div>
         </div>
         <div id="panel">
-            <div class="panel-section">
-                <h2>场景摘要</h2>
-                <div class="content" id="summary"><div style="color:#666;font-size:12px">未加载数据</div></div>
+            <div class="panel-section list">
+                <h2 style="display:flex;align-items:center;justify-content:space-between;">
+                    <span>运动学树</span>
+                    <span style="font-weight:normal;display:flex;gap:4px;">
+                        <button id="showAllBtn" style="background:#3a3d41;border:none;color:#ccc;cursor:pointer;font-size:11px;padding:2px 8px;border-radius:3px;">全部显示</button>
+                        <button id="hideAllBtn" style="background:#3a3d41;border:none;color:#ccc;cursor:pointer;font-size:11px;padding:2px 8px;border-radius:3px;">全部隐藏</button>
+                    </span>
+                </h2>
+                <div class="content" id="treeList"><div style="color:#666;font-size:12px">未加载</div></div>
             </div>
             <div class="panel-section list">
-                <h2>零部件</h2>
+                <h2>STL 零件</h2>
                 <div class="content" id="componentList"></div>
-            </div>
-            <div class="panel-section list">
-                <h2>关节</h2>
-                <div class="content" id="jointList"></div>
             </div>
         </div>
     </div>

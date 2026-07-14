@@ -158,11 +158,11 @@ class ExportViewer {
      * @param {string} displayName - 显示名（occurrence_name）
      */
     addComponent(stlKey, geometry, matrix4x4, displayName) {
-        const color = this._colorForName(displayName);
+        // 统一灰白半透明材质
         const material = new THREE.MeshPhongMaterial({
-            color: color.hex,
+            color: 0xcccccc,
             transparent: true,
-            opacity: 0.85,
+            opacity: 0.6,
             shininess: 30
         });
         const mesh = new THREE.Mesh(geometry, material);
@@ -173,7 +173,7 @@ class ExportViewer {
         mesh.matrixWorldNeedsUpdate = true;
         mesh.userData = {
             name: displayName,
-            color: color.css,
+            color: '#cccccc',
             initMatrix: initMatrix.clone(), // 保存初始矩阵，applyPose 基于此叠加旋转
         };
         this.scene.add(mesh);
@@ -226,6 +226,73 @@ class ExportViewer {
                 mesh.matrixWorldNeedsUpdate = true;
             }
         }
+    }
+
+    /**
+     * 高亮一个刚体的所有零件：变亮黄色 + 在第一个零件(主零件)显示坐标系框架
+     * @param {Array|null} partNames - 零件 occurrence_name 列表，null 表示取消高亮
+     */
+    highlightBody(partNames) {
+        // 清除之前的高亮
+        for (const mesh of this.componentMeshes) {
+            if (mesh.userData.highlighted) {
+                mesh.material.color.setHex(0xcccccc);
+                mesh.material.opacity = 0.6;
+                mesh.userData.highlighted = false;
+            }
+        }
+        // 清除之前的坐标系框架
+        if (this._coordFrame) {
+            this.scene.remove(this._coordFrame);
+            this._coordFrame = null;
+        }
+        if (!partNames || partNames.length === 0) return;
+
+        // 高亮该刚体的所有零件
+        for (const name of partNames) {
+            const mesh = this.componentMeshes.find(m => m.userData.name === name);
+            if (!mesh) continue;
+            mesh.material.color.setHex(0xffdd00);
+            mesh.material.opacity = 0.9;
+            mesh.userData.highlighted = true;
+        }
+
+        // 在主零件（第一个）原点显示坐标系框架（XYZ轴+三面）
+        const mainMesh = this.componentMeshes.find(m => m.userData.name === partNames[0]);
+        if (!mainMesh) return;
+        const frame = new THREE.Group();
+        const size = 8; // 框架尺寸 mm
+
+        // 三根轴
+        const makeAxis = (dir, color) => {
+            const geo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0,0,0), dir.clone().multiplyScalar(size)
+            ]);
+            return new THREE.Line(geo, new THREE.LineBasicMaterial({ color, linewidth: 3 }));
+        };
+        frame.add(makeAxis(new THREE.Vector3(1,0,0), 0xff0000)); // X 红
+        frame.add(makeAxis(new THREE.Vector3(0,1,0), 0x00cc00)); // Y 绿
+        frame.add(makeAxis(new THREE.Vector3(0,0,1), 0x0066ff)); // Z 蓝
+
+        // 三个半透明面
+        const planeGeo = new THREE.PlaneGeometry(size, size);
+        const pXY = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ color: 0x0066ff, transparent: true, opacity: 0.15, side: THREE.DoubleSide }));
+        frame.add(pXY);
+        const pYZ = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.15, side: THREE.DoubleSide }));
+        pYZ.rotation.y = Math.PI / 2;
+        frame.add(pYZ);
+        const pXZ = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ color: 0x00cc00, transparent: true, opacity: 0.15, side: THREE.DoubleSide }));
+        pXZ.rotation.x = -Math.PI / 2;
+        frame.add(pXZ);
+
+        // 定位到主零件原点，朝向跟随其 initMatrix
+        const partPos = new THREE.Vector3().setFromMatrixPosition(mainMesh.userData.initMatrix);
+        frame.position.copy(partPos);
+        const partQuat = new THREE.Quaternion().setFromRotationMatrix(mainMesh.userData.initMatrix);
+        frame.quaternion.copy(partQuat);
+
+        this._coordFrame = frame;
+        this.scene.add(frame);
     }
 
     /**
