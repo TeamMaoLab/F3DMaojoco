@@ -33,6 +33,18 @@
     function showLoading(msg) { loadingEl.textContent = msg; loadingEl.classList.add('show'); }
     function hideLoading() { loadingEl.classList.remove('show'); }
 
+    // 工作空间热力图相关
+    const workspaceBtn = document.getElementById('workspaceBtn');
+    const heatmapPanel = document.getElementById('heatmapPanel');
+    const hpCloseBtn = document.getElementById('hpCloseBtn');
+    const hpFill = document.getElementById('hpFill');
+    const hpText = document.getElementById('hpText');
+    const hpStats = document.getElementById('hpStats');
+    const heatmapCanvas = document.getElementById('heatmapCanvas');
+    let currentMechData = null;   // 加载模型后提取的机构数据
+    let currentHeatmap = null;    // 计算完成的热力图数据
+    let currentAngles = null;     // 角度序列
+
     // ---- 文件选择 ----
     openBtn.addEventListener('click', () => dirInput.click());
 
@@ -183,6 +195,10 @@
             showStatus(`已跳过 ${skippedContainerCount} 个装配体容器（合并几何，避免与子零件重复渲染）。`, false);
             setTimeout(hideStatus, 4000);
         }
+
+        // 提取机构数据，启用工作空间按钮
+        currentMechData = window.FKSolver.extractMechanism(data);
+        workspaceBtn.disabled = false;
     }
 
     // ---- UI 渲染 ----
@@ -270,6 +286,77 @@
         viewer.setBackgroundColor(bgSelect.value);
     });
     fitBtn.addEventListener('click', () => viewer.fitCamera());
+
+    // ---- 工作空间热力图 ----
+    workspaceBtn.addEventListener('click', () => {
+        if (!currentMechData) return;
+        heatmapPanel.classList.add('show');
+        runHeatmapScan();
+    });
+    hpCloseBtn.addEventListener('click', () => heatmapPanel.classList.remove('show'));
+
+    function runHeatmapScan() {
+        hpText.textContent = '启动计算…';
+        hpFill.style.width = '0%';
+        hpStats.textContent = '';
+
+        const worker = new Worker('heatmap-worker.js');
+        worker.onmessage = (e) => {
+            const msg = e.data;
+            if (msg.type === 'progress') {
+                const pct = (msg.done / msg.total * 100).toFixed(0);
+                hpFill.style.width = pct + '%';
+                hpText.textContent = `${msg.done}/${msg.total} (${pct}%)`;
+            } else if (msg.type === 'done') {
+                currentHeatmap = msg.heatmap;
+                currentAngles = msg.angles;
+                drawHeatmap(msg.heatmap, msg.angles);
+                const s = msg.stats;
+                hpText.textContent = '完成';
+                hpFill.style.width = '100%';
+                hpStats.textContent = `无解 ${s.noSolution} · 超极限 ${s.solvable - s.inLimits} · 极限内 ${s.inLimits} / 共 ${s.total}`;
+                worker.terminate();
+            }
+        };
+        worker.postMessage({ mechData: currentMechData, rangeMin: -90, rangeMax: 90, step: 2 });
+    }
+
+    function drawHeatmap(heatmap, angles) {
+        const ctx = heatmapCanvas.getContext('2d');
+        const N = angles.length;
+        const cellW = heatmapCanvas.width / N;
+        const cellH = heatmapCanvas.height / N;
+        // 颜色: 0=无解(深), 1=超极限(红), 2=极限内(绿)
+        const colors = ['#222222', '#e74c3c', '#27ae60'];
+        for (let i = 0; i < N; i++) {
+            for (let j = 0; j < N; j++) {
+                ctx.fillStyle = colors[heatmap[i][j]] || '#222';
+                ctx.fillRect(j * cellW, i * cellH, Math.ceil(cellW), Math.ceil(cellH));
+            }
+        }
+    }
+
+    // 点击热力图查看该角度组合的求解结果
+    heatmapCanvas.addEventListener('click', (e) => {
+        if (!currentHeatmap || !currentAngles) return;
+        const rect = heatmapCanvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+        const N = currentAngles.length;
+        const j = Math.min(N - 1, Math.floor(x * N));
+        const i = Math.min(N - 1, Math.floor(y * N));
+        const t1 = currentAngles[i];
+        const t2 = currentAngles[j];
+        const result = window.FKSolver.solveFK(t1, t2, currentMechData);
+        if (result.ok) {
+            const limOk = window.FKSolver.checkLimits(result, currentMechData);
+            let info = `θ1=${t1}° θ2=${t2}°\n状态: ${limOk ? '有解·极限内' : '有解·超极限'}\n`;
+            for (const k in result.angles) info += `${k}: ${result.angles[k].toFixed(1)}°\n`;
+            alert(info);
+        } else {
+            alert(`θ1=${t1}° θ2=${t2}°\n无解: ${result.reason}`);
+        }
+    });
 
     // 初始建坐标轴（即使没加载数据也能看到）
     viewer.buildAxes();

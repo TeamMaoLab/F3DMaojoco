@@ -82,6 +82,27 @@
             font-size: 14px; display: none;
         }
         #loading.show { display: block; }
+
+        /* 工作空间热力图面板 */
+        #heatmapPanel {
+            position: absolute; top: 12px; right: 12px; width: 380px;
+            background: rgba(30,30,30,0.95); border: 1px solid #3c3c3c; border-radius: 6px;
+            padding: 12px; display: none; z-index: 10;
+        }
+        #heatmapPanel.show { display: block; }
+        .hp-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+        .hp-close { background: none; border: none; color: #888; cursor: pointer; font-size: 16px; }
+        .hp-close:hover { color: #fff; }
+        .hp-progress { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .hp-bar { flex: 1; height: 8px; background: #3c3c3c; border-radius: 4px; overflow: hidden; }
+        .hp-fill { height: 100%; background: #4ec9b0; width: 0; transition: width 0.1s; }
+        .hp-text { font-size: 11px; color: #888; white-space: nowrap; }
+        .hp-canvas-wrap { display: flex; justify-content: center; }
+        #heatmapCanvas { border: 1px solid #3c3c3c; background: #222; cursor: crosshair; image-rendering: pixelated; }
+        .hp-legend { display: flex; gap: 12px; justify-content: center; margin-top: 8px; font-size: 11px; color: #ccc; }
+        .hp-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 4px; vertical-align: middle; border-radius: 2px; }
+        .hp-stats { margin-top: 6px; font-size: 11px; color: #888; text-align: center; }
+        #workspaceBtn:disabled { opacity: 0.4; }
     </style>
 </head>
 <body>
@@ -107,6 +128,7 @@
             </select>
         </div>
         <button class="btn secondary" id="fitBtn">🔭 适配视角</button>
+        <button class="btn" id="workspaceBtn" disabled>🎯 求解工作空间</button>
     </div>
 
     <div id="main">
@@ -117,6 +139,25 @@
             </div>
             <div id="loading">加载中…</div>
             <div id="status"></div>
+            <div id="heatmapPanel">
+                <div class="hp-header">
+                    <span>工作空间可解性热力图</span>
+                    <button class="hp-close" id="hpCloseBtn">✕</button>
+                </div>
+                <div class="hp-progress" id="hpProgress">
+                    <div class="hp-bar"><div class="hp-fill" id="hpFill"></div></div>
+                    <span class="hp-text" id="hpText">等待计算…</span>
+                </div>
+                <div class="hp-canvas-wrap">
+                    <canvas id="heatmapCanvas" width="360" height="360"></canvas>
+                </div>
+                <div class="hp-legend">
+                    <span><i style="background:#222"></i>无解</span>
+                    <span><i style="background:#e74c3c"></i>有解·超极限</span>
+                    <span><i style="background:#27ae60"></i>有解·极限内</span>
+                </div>
+                <div class="hp-stats" id="hpStats"></div>
+            </div>
         </div>
         <div id="panel">
             <div class="panel-section">
@@ -167,6 +208,7 @@
                 return;
             }
             // 加载应用脚本
+            await loadScript('solver.js');
             await loadScript('viewer.js');
             await loadScript('app.js');
         })();
