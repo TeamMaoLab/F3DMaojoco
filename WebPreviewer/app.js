@@ -49,6 +49,7 @@
     let bodyVisibility = {};      // 刚体名 -> bool(是否显示)，初始全 true
     let isolatedBody = null;      // 当前孤立的刚体名（null=无孤立）
     let currentJointAngles = null; // 树关节角度 {刚体名: 角度}
+    let constraintMode = false;   // false=手动模式, true=约束模式(只拖θ1θ2)
 
     // 零件 -> 其旋转关节点A（零件绕此点转）。来自机构分析。
     const partJointMap = {
@@ -426,63 +427,160 @@
         updateTreeItemStyles();
     }
 
-    // 渲染树关节旋转滑块（验证用：每个树关节一个滑块，拖动看相对旋转）
+    // 渲染树关节旋转滑块
+    // 手动模式: 6个滑块独立拖（验证相对旋转，但会断开闭环）
+    // 约束模式: 只拖θ1(膝盖舵机)θ2(大腿舵机), 被动角由 solveFK 自动求解, 闭环约束生效
     function renderJointSliders(treeData) {
         const container = document.getElementById('jointSliders');
         const bodies = treeData.bodies;
-        // 关节角度状态
         if (!currentJointAngles) {
             currentJointAngles = {};
             for (const b of bodies) currentJointAngles[b.name] = 0;
         }
+        // 约束模式下哪些滑块可用（只有主动关节）
+        const isActive = (b) => !constraintMode || b.name === '膝盖动力发生器' || b.name === '大腿刚体';
+
         container.innerHTML = bodies.map(b => {
             const parentLabel = b.parent ? `(${b.parent}→${b.name})` : `(机架→${b.name})`;
             const jw = b.jointWorld;
             const jwStr = jw ? `P=(${jw[0].toFixed(1)},${jw[1].toFixed(1)},${jw[2].toFixed(1)})` : '';
-            return `<div style="margin-bottom:8px;">
+            const active = isActive(b);
+            const isDriven = constraintMode && !active;  // 被动关节（约束模式下属自动求解）
+            const drivenTag = isDriven ? ' <span style="color:#e8c44a;">[自动]</span>' : '';
+            const activeTag = (constraintMode && active) ? ' <span style="color:#4ec9b0;">[主动]</span>' : '';
+            return `<div style="margin-bottom:8px;opacity:${active||isDriven?1:1};">
                 <div style="display:flex;justify-content:space-between;font-size:11px;color:#aaa;margin-bottom:2px;">
-                    <span>[${b.joint}] ${parentLabel}</span>
+                    <span>[${b.joint}] ${parentLabel}${activeTag}${drivenTag}</span>
                     <span class="angle-val" data-body="${b.name}">0°</span>
                 </div>
                 <input type="range" min="-180" max="180" value="0" step="1" class="joint-slider"
-                       data-body="${b.name}" style="width:100%;">
+                       data-body="${b.name}" style="width:100%;" ${active?'':'disabled'}>
                 <div style="font-size:10px;color:#666;">${jwStr}</div>
             </div>`;
-        }).join('') + `<div style="margin-top:6px;"><button id="resetJointsBtn" style="background:#3a3d41;border:none;color:#ccc;cursor:pointer;font-size:11px;padding:4px 10px;border-radius:3px;">复位所有关节</button></div>`;
+        }).join('') + `<div style="margin-top:6px;font-size:11px;color:#888;">${constraintMode?'约束模式: 拖θ1/θ2, 被动角自动求解, 闭环生效':'手动模式: 各滑块独立, 闭环会断开'}</div>
+        <div style="margin-top:4px;"><button id="resetJointsBtn" style="background:#3a3d41;border:none;color:#ccc;cursor:pointer;font-size:11px;padding:4px 10px;border-radius:3px;">复位</button></div>`;
 
-        // 滑块事件
         container.querySelectorAll('.joint-slider').forEach(sl => {
             sl.addEventListener('input', () => {
                 const name = sl.dataset.body;
                 currentJointAngles[name] = parseFloat(sl.value);
-                container.querySelector(`.angle-val[data-body="${name}"]`).textContent = sl.value + '°';
+                if (constraintMode) {
+                    // 约束模式: 重新求解被动角
+                    solveAndUpdatePassive();
+                }
+                updateSliderDisplay();
                 applyAllJointRotations();
             });
         });
-        // 复位按钮
         document.getElementById('resetJointsBtn').addEventListener('click', () => {
             for (const b of bodies) currentJointAngles[b.name] = 0;
-            container.querySelectorAll('.joint-slider').forEach(sl => {
-                sl.value = 0;
-                container.querySelector(`.angle-val[data-body="${sl.dataset.body}"]`).textContent = '0°';
-            });
+            updateSliderDisplay();
             applyAllJointRotations();
+        });
+        updateSliderDisplay();
+    }
+
+    // 更新所有滑块和角度显示（约束模式下被动滑块显示求解值）
+    function updateSliderDisplay() {
+        const container = document.getElementById('jointSliders');
+        if (!container) return;
+        container.querySelectorAll('.joint-slider').forEach(sl => {
+            const name = sl.dataset.body;
+            const val = currentJointAngles[name] || 0;
+            const valEl = container.querySelector(`.angle-val[data-body="${name}"]`);
+            if (sl.disabled) {
+                // 被动关节: 滑块位置和文字都更新（但不能拖）
+                sl.value = Math.round(val);
+            }
+            if (valEl) valEl.textContent = val.toFixed(0) + '°';
         });
     }
 
-    // 应用所有树关节旋转（按树深度顺序）
+    // 约束模式: 用 solveFK 求解被动角，转换成树关节相对角
+    function solveAndUpdatePassive() {
+        if (!currentMechData) return;
+        const t1 = currentJointAngles['膝盖动力发生器'] || 0;  // θ1 = 旋转1
+        const t2 = currentJointAngles['大腿刚体'] || 0;        // θ2 = 旋转2
+        const result = window.FKSolver.solveFK(t1, t2, currentMechData);
+        if (!result.ok) {
+            showStatus(`θ1=${t1}° θ2=${t2}° → 无解: ${result.reason}`, true);
+            return;
+        }
+        hideStatus();
+        // solver 的 angles 是世界角，转换成树关节相对角
+        // solver angles: '旋转 1'..'旋转 7'
+        const sa = result.angles;
+        // 树关节相对角 = 子世界角 - 父世界角
+        // 膝盖动力(父=机架): 相对 = θ1
+        // 膝盖传动1(父=膝盖动力): 相对 = solver6 - θ1
+        // 膝盖转动(父=膝盖传动1): 相对 = solver7 - solver6
+        // 膝盖传动2(父=膝盖转动): 相对 = solver4 - solver7
+        // 大腿刚体(父=机架): 相对 = θ2
+        // 小腿(父=大腿刚体): 相对 = solver3 - θ2
+        currentJointAngles['膝盖动力发生器'] = t1;
+        currentJointAngles['膝盖传动1'] = sa['旋转 6'] - t1;
+        currentJointAngles['膝盖转动'] = sa['旋转 7'] - sa['旋转 6'];
+        currentJointAngles['膝盖传动2'] = sa['旋转 4'] - sa['旋转 7'];
+        currentJointAngles['大腿刚体'] = t2;
+        currentJointAngles['小腿'] = sa['旋转 3'] - t2;
+    }
+
+    // 应用所有树关节旋转
+    // 约束模式: 用 solver 的关节点新位置直接摆零件（闭链可靠）
+    // 手动模式: 用相对角累积旋转（会断开闭环）
     function applyAllJointRotations() {
         if (!currentTreeData) return;
         const bodies = currentTreeData.bodies;
-        // 构造 bodyRotations 数组传给 viewer
-        const bodyRotations = bodies.map(b => ({
-            name: b.name,
-            parent: b.parent,
-            jointWorld: b.jointWorld,
-            angle: currentJointAngles[b.name] || 0,
-            parts: b.parts,
-        }));
-        viewer.applyJointRotations(bodyRotations);
+        if (constraintMode) {
+            // 约束模式：用 applyJointPositions
+            const t1 = currentJointAngles['膝盖动力发生器'] || 0;
+            const t2 = currentJointAngles['大腿刚体'] || 0;
+            const result = window.FKSolver.solveFK(t1, t2, currentMechData);
+            if (!result.ok) { viewer.resetPose(); return; }
+            // solver 给的 jointPositions 是 [x,z]（2D），补 Y（初始值）
+            const initPos = {};
+            for (const jn in currentJointInit) {
+                const jw = currentTreeData.bodies.flatMap(b => b.jointWorld ? [] : []).length; // placeholder
+            }
+            // 从原始数据取初始 3D 关节位置（含 Y）
+            const jw3d = {};
+            for (const b of bodies) {
+                if (b.jointWorld) jw3d[b.joint] = b.jointWorld;
+            }
+            // solver 的 jointPositions 键名是 '旋转 1' 等，值是 [x,z]
+            const newPos = {};
+            for (const jn in result.jointPositions) {
+                const p2 = result.jointPositions[jn];
+                const init3 = jw3d[jn];
+                newPos[jn] = [p2[0], init3 ? init3[1] : 0, p2[1]];
+            }
+            const initPos3d = {};
+            for (const jn in jw3d) initPos3d[jn] = jw3d[jn];
+            // 刚体定义：每个刚体由哪两个关节点确定姿态
+            const bodyDefs = [
+                { name: '膝盖动力发生器', parts: bodies.find(b=>b.name==='膝盖动力发生器').parts, jA: '旋转 1', jB: '旋转 6' },
+                { name: '膝盖传动1',      parts: bodies.find(b=>b.name==='膝盖传动1').parts,      jA: '旋转 6', jB: '旋转 7' },
+                { name: '膝盖转动',       parts: bodies.find(b=>b.name==='膝盖转动').parts,       jA: '旋转 7', jB: '旋转 4' },
+                { name: '膝盖传动2',      parts: bodies.find(b=>b.name==='膝盖传动2').parts,      jA: '旋转 4', jB: '旋转 5' },
+                { name: '大腿刚体',       parts: bodies.find(b=>b.name==='大腿刚体').parts,       jA: '旋转 2', jB: '旋转 3' },
+                { name: '小腿',           parts: bodies.find(b=>b.name==='小腿').parts,           jA: '旋转 3', jB: '旋转 5' },
+            ];
+            viewer.applyJointPositions(newPos, initPos3d, bodyDefs);
+            // 同步更新被动角的显示
+            const sa = result.angles;
+            currentJointAngles['膝盖传动1'] = sa['旋转 6'] - t1;
+            currentJointAngles['膝盖转动'] = sa['旋转 7'] - sa['旋转 6'];
+            currentJointAngles['膝盖传动2'] = sa['旋转 4'] - sa['旋转 7'];
+            currentJointAngles['小腿'] = sa['旋转 3'] - t2;
+            updateSliderDisplay();
+        } else {
+            // 手动模式：用相对角累积
+            const bodyRotations = bodies.map(b => ({
+                name: b.name, parent: b.parent, jointWorld: b.jointWorld,
+                angle: currentJointAngles[b.name] || 0, parts: b.parts,
+            }));
+            viewer.applyJointRotations(bodyRotations);
+        }
     }
 
     function renderComponentList(components) {
@@ -543,6 +641,29 @@
         }
         applyVisibility();
         updateTreeItemStyles();
+    });
+
+    // 模式切换：手动 / 约束
+    document.getElementById('modeManualBtn').addEventListener('click', () => {
+        constraintMode = false;
+        document.getElementById('modeManualBtn').style.background = '#0e639c';
+        document.getElementById('modeManualBtn').style.color = '#fff';
+        document.getElementById('modeConstraintBtn').style.background = '#3a3d41';
+        document.getElementById('modeConstraintBtn').style.color = '#ccc';
+        if (currentTreeData) renderJointSliders(currentTreeData);
+        applyAllJointRotations();
+    });
+    document.getElementById('modeConstraintBtn').addEventListener('click', () => {
+        constraintMode = true;
+        document.getElementById('modeConstraintBtn').style.background = '#0e639c';
+        document.getElementById('modeConstraintBtn').style.color = '#fff';
+        document.getElementById('modeManualBtn').style.background = '#3a3d41';
+        document.getElementById('modeManualBtn').style.color = '#ccc';
+        // 切换到约束模式时先复位，再求解一次
+        for (const b of currentTreeData.bodies) currentJointAngles[b.name] = 0;
+        solveAndUpdatePassive();
+        if (currentTreeData) renderJointSliders(currentTreeData);
+        applyAllJointRotations();
     });
 
     // ---- 工作空间热力图 ----

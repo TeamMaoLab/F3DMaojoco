@@ -287,6 +287,57 @@ class ExportViewer {
         }
     }
 
+    /**
+     * 用关节点新位置直接确定刚体姿态（闭链最可靠方式）
+     *
+     * 原理: 每个刚体由两个关节点确定姿态（连杆方向）。
+     *   初始方向 = atan2(JB_init.z - JA_init.z, JB_init.x - JA_init.x) (XZ平面)
+     *   新方向   = atan2(JB_new.z  - JA_new.z,  JB_new.x  - JA_new.x)
+     *   旋转角   = 新方向 - 初始方向 (绕Y轴)
+     *   平移     = JA_new - 旋转(JA_init)  (= JA_new, 因为零件原点在0时简化)
+     *
+     * 大腿刚体的4个零件共享同一刚体变换（由J2→J3方向确定）。
+     *
+     * @param {Object} newPositions - {关节名: [x,y,z]} 新世界坐标
+     * @param {Object} initPositions - {关节名: [x,y,z]} 初始世界坐标
+     * @param {Array} bodyDefs - [{name, parts:[occurrence], jA:关节名, jB:关节名}]
+     *   jA/jB: 确定该刚体姿态的两个关节点
+     */
+    applyJointPositions(newPositions, initPositions, bodyDefs) {
+        for (const body of bodyDefs) {
+            const JAInit = initPositions[body.jA];
+            const JBInit = initPositions[body.jB];
+            const JANew = newPositions[body.jA];
+            const JBNew = newPositions[body.jB];
+            if (!JAInit || !JBInit || !JANew || !JBNew) continue;
+
+            // 初始方向和新方向（XZ 平面，绕 Y 轴）
+            const a0 = Math.atan2(JBInit[2] - JAInit[2], JBInit[0] - JAInit[0]);
+            const a1 = Math.atan2(JBNew[2] - JANew[2], JBNew[0] - JANew[0]);
+            let theta = a1 - a0;
+            while (theta > Math.PI) theta -= 2 * Math.PI;
+            while (theta < -Math.PI) theta += 2 * Math.PI;
+
+            // 刚体变换: 先绕 JA_init 转 theta, 再平移使 JA_init 到 JA_new
+            // M = T(JA_new) · Ry(theta) · T(-JA_init)
+            const Ry = new THREE.Matrix4().makeRotationY(theta);
+            const T_back = new THREE.Matrix4().makeTranslation(-JAInit[0], -JAInit[1], -JAInit[2]);
+            const T_fwd = new THREE.Matrix4().makeTranslation(JANew[0], JANew[1], JANew[2]);
+            const bodyM = new THREE.Matrix4();
+            bodyM.multiplyMatrices(T_fwd, Ry);
+            bodyM.multiply(T_back);
+
+            // 应用到该刚体的所有零件
+            for (const partName of body.parts) {
+                const mesh = this.componentMeshes.find(m => m.userData.name === partName);
+                if (!mesh || !mesh.userData.initMatrix) continue;
+                const M = new THREE.Matrix4().multiplyMatrices(bodyM, mesh.userData.initMatrix);
+                mesh.matrix.copy(M);
+                mesh.matrixWorldNeedsUpdate = true;
+            }
+        }
+    }
+
     /** 构造"绕指定点转指定角度(度,绕Y轴)"的变换矩阵: T(p) × Ry(θ) × T(-p) */
     _rotationAroundPoint(angleDeg, point) {
         const theta = angleDeg * Math.PI / 180;
