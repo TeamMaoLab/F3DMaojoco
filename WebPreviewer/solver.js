@@ -76,7 +76,131 @@ function circleIntersect(c1, r1, c2, r2) {
 function angleOf(v) { return Math.atan2(v[1], v[0]); }
 
 /**
- * 求解正向运动学
+ * 联立求解双闭环 FK（给定 θ1/θ2，牛顿迭代解 4 个被动角使两闭环同时闭合）
+ *
+ * 与 solveFK（分步圆交点）不同，此版本联立求解，正确处理闭环耦合。
+ * 返回关节点新位置（XZ 平面），供 applyJointPositions 用。
+ *
+ * @param {number} theta1Deg - 主动角1（度）
+ * @param {number} theta2Deg - 主动角2（度）
+ * @param {Object} mech - extractMechanism 返回的机构数据
+ * @param {Array} x0 - [θ3,θ4,θ6,θ7] 初始猜测（弧度），用于连续追踪避免跳分支
+ * @returns {Object} { ok, jointPositions:{关节名:[x,z]}, angles:{...度}, err, passive }
+ */
+function solveFKCoupled(theta1Deg, theta2Deg, mech, x0) {
+    const J = mech.joints;
+    const th1 = theta1Deg * Math.PI / 180;
+    const th2 = theta2Deg * Math.PI / 180;
+
+    function rot(p, ang, center) {
+        const c = Math.cos(ang), s = Math.sin(ang);
+        const dx = p[0] - center[0], dz = p[1] - center[1];
+        return [center[0] + c * dx - s * dz, center[1] + s * dx + c * dz];
+    }
+
+    function computePos(th3, th4, th6, th7) {
+        const J1 = J['旋转 1'], J2 = J['旋转 2'], J3 = J['旋转 3'], J4 = J['旋转 4'],
+              J5 = J['旋转 5'], J6 = J['旋转 6'], J7 = J['旋转 7'];
+        // 膝盖链累积: th1(J1) -> th6(J6) -> th7(J7) -> th4(J4)
+        let J2_rotor = rot(rot(rot(J2, th7, J7), th6, J6), th1, J1);
+        let J5_link2 = rot(rot(rot(rot(J5, th4, J4), th7, J7), th6, J6), th1, J1);
+        // 大腿链: th2(J2) -> th3(J3)
+        let J2_thigh = J2;
+        let J5_shin = rot(rot(J5, th3, J3), th2, J2);
+        return { J2_rotor, J2_thigh, J5_link2, J5_shin };
+    }
+
+    function constraints(th3, th4, th6, th7) {
+        const p = computePos(th3, th4, th6, th7);
+        return [
+            p.J2_rotor[0] - p.J2_thigh[0],
+            p.J2_rotor[1] - p.J2_thigh[1],
+            p.J5_link2[0] - p.J5_shin[0],
+            p.J5_link2[1] - p.J5_shin[1],
+        ];
+    }
+
+    // 牛顿迭代
+    let x = x0 ? x0.slice() : [0, 0, 0, 0.01];
+    const eps = 1e-6;
+    let err = 1e9;
+    for (let it = 0; it < 100; it++) {
+        const f = constraints(x[0], x[1], x[2], x[3]);
+        err = Math.hypot(f[0], f[1], f[2], f[3]);
+        if (err < 1e-9) break;
+        // 数值雅可比 4x4
+        const Jac = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+        for (let j = 0; j < 4; j++) {
+            const dx = [0,0,0,0]; dx[j] = eps;
+            const f2 = constraints(x[0]+dx[0], x[1]+dx[1], x[2]+dx[2], x[3]+dx[3]);
+            for (let i = 0; i < 4; i++) Jac[i][j] = (f2[i] - f[i]) / eps;
+        }
+        // 解 Jac * dx = f, 更新 x -= dx (高斯消元)
+        const sol = solveLinear(Jac, f);
+        if (!sol) return { ok: false, reason: '雅可比奇异' };
+        for (let i = 0; i < 4; i++) x[i] -= sol[i];
+    }
+    if (err > 0.01) return { ok: false, reason: '不收敛, err=' + err.toFixed(4) };
+
+    // 计算所有关节点新位置
+    const th3=x[0], th4=x[1], th6=x[2], th7=x[3];
+    const p = computePos(th3, th4, th6, th7);
+    // 算各关节点完整位置
+    const J1=J['旋转 1'],J6=J['旋转 6'],J7=J['旋转 7'],J4=J['旋转 4'],J3=J['旋转 3'],J2=J['旋转 2'],J5=J['旋转 5'];
+    const J1n = J1.slice();
+    const J6n = rot(J6, th1, J1);
+    const J7n = rot(rot(J7, th6, J6), th1, J1);
+    const J4n = rot(rot(rot(J4, th7, J7), th6, J6), th1, J1);
+    const J5n = p.J5_link2;  // = 膝盖传动2上的J5 = 小腿上的J5 (闭环闭合)
+    const J2n = J2.slice();  // J2是大腿旋转中心,不动
+    const J3n = rot(J3, th2, J2);
+
+    return {
+        ok: true,
+        err: err,
+        passive: { th3, th4, th6, th7 },
+        jointPositions: {
+            '旋转 1': J1n, '旋转 2': J2n, '旋转 3': J3n, '旋转 4': J4n,
+            '旋转 5': J5n, '旋转 6': J6n, '旋转 7': J7n,
+        },
+        // 世界角(用于显示)
+        angles: {
+            '旋转 1': theta1Deg, '旋转 2': theta2Deg,
+            '旋转 3': (th3 + th2) * 180 / Math.PI,  // 小腿世界角
+            '旋转 4': (th4 + th7 + th6 + th1) * 180 / Math.PI,
+            '旋转 6': (th6 + th1) * 180 / Math.PI,
+            '旋转 7': (th7 + th6 + th1) * 180 / Math.PI,
+        }
+    };
+}
+
+/** 4x4 线性方程求解（高斯消元） */
+function solveLinear(A, b) {
+    const M = A.map((row, i) => row.concat(b[i])); // 增广矩阵
+    for (let i = 0; i < 4; i++) {
+        // 选主元
+        let maxRow = i;
+        for (let k = i + 1; k < 4; k++) {
+            if (Math.abs(M[k][i]) > Math.abs(M[maxRow][i])) maxRow = k;
+        }
+        [M[i], M[maxRow]] = [M[maxRow], M[i]];
+        if (Math.abs(M[i][i]) < 1e-12) return null;
+        for (let k = i + 1; k < 4; k++) {
+            const f = M[k][i] / M[i][i];
+            for (let j = i; j <= 4; j++) M[k][j] -= f * M[i][j];
+        }
+    }
+    const x = [0,0,0,0];
+    for (let i = 3; i >= 0; i--) {
+        let s = M[i][4];
+        for (let j = i + 1; j < 4; j++) s -= M[i][j] * x[j];
+        x[i] = s / M[i][i];
+    }
+    return x;
+}
+
+/**
+ * 求解正向运动学（分步圆交点版本，旧逻辑，手动模式用）
  * @param {number} theta1Deg - 主动角1（度），膝盖舵机
  * @param {number} theta2Deg - 主动角2（度），大腿舵机
  * @param {Object} mech - extractMechanism 返回的机构数据
@@ -218,5 +342,5 @@ if (typeof self !== 'undefined') {
     self.checkLimits = checkLimits;
 }
 if (typeof window !== 'undefined') {
-    window.FKSolver = { extractMechanism, solveFK, checkLimits };
+    window.FKSolver = { extractMechanism, solveFK, solveFKCoupled, checkLimits };
 }

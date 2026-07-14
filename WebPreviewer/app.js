@@ -50,6 +50,7 @@
     let isolatedBody = null;      // 当前孤立的刚体名（null=无孤立）
     let currentJointAngles = null; // 树关节角度 {刚体名: 角度}
     let constraintMode = false;   // false=手动模式, true=约束模式(只拖θ1θ2)
+    let lastSolverX0 = null;      // solveFKCoupled 上次解（连续追踪初值，避免跳分支）
 
     // 零件 -> 其旋转关节点A（零件绕此点转）。来自机构分析。
     const partJointMap = {
@@ -532,47 +533,30 @@
         if (!currentTreeData) return;
         const bodies = currentTreeData.bodies;
         if (constraintMode) {
-            // 约束模式：用 applyJointPositions
+            // 约束模式：用 solveFKCoupled 联立求解（连续追踪初值避免跳分支）
             const t1 = currentJointAngles['膝盖动力发生器'] || 0;
             const t2 = currentJointAngles['大腿刚体'] || 0;
-            const result = window.FKSolver.solveFK(t1, t2, currentMechData);
-            if (!result.ok) { viewer.resetPose(); return; }
-            // solver 给的 jointPositions 是 [x,z]（2D），补 Y（初始值）
-            const initPos = {};
-            for (const jn in currentJointInit) {
-                const jw = currentTreeData.bodies.flatMap(b => b.jointWorld ? [] : []).length; // placeholder
+            const result = window.FKSolver.solveFKCoupled(t1, t2, currentMechData, lastSolverX0);
+            if (!result.ok) {
+                showStatus(`θ1=${t1}° θ2=${t2}° → 无解: ${result.reason}`, true);
+                viewer.resetPose();
+                return;
             }
-            // 从原始数据取初始 3D 关节位置（含 Y）
-            const jw3d = {};
-            for (const b of bodies) {
-                if (b.jointWorld) jw3d[b.joint] = b.jointWorld;
-            }
-            // solver 的 jointPositions 键名是 '旋转 1' 等，值是 [x,z]
-            const newPos = {};
-            for (const jn in result.jointPositions) {
-                const p2 = result.jointPositions[jn];
-                const init3 = jw3d[jn];
-                newPos[jn] = [p2[0], init3 ? init3[1] : 0, p2[1]];
-            }
-            const initPos3d = {};
-            for (const jn in jw3d) initPos3d[jn] = jw3d[jn];
-            // 刚体定义：每个刚体由哪两个关节点确定姿态
-            const bodyDefs = [
-                { name: '膝盖动力发生器', parts: bodies.find(b=>b.name==='膝盖动力发生器').parts, jA: '旋转 1', jB: '旋转 6' },
-                { name: '膝盖传动1',      parts: bodies.find(b=>b.name==='膝盖传动1').parts,      jA: '旋转 6', jB: '旋转 7' },
-                { name: '膝盖转动',       parts: bodies.find(b=>b.name==='膝盖转动').parts,       jA: '旋转 7', jB: '旋转 4' },
-                { name: '膝盖传动2',      parts: bodies.find(b=>b.name==='膝盖传动2').parts,      jA: '旋转 4', jB: '旋转 5' },
-                { name: '大腿刚体',       parts: bodies.find(b=>b.name==='大腿刚体').parts,       jA: '旋转 2', jB: '旋转 3' },
-                { name: '小腿',           parts: bodies.find(b=>b.name==='小腿').parts,           jA: '旋转 3', jB: '旋转 5' },
-            ];
-            viewer.applyJointPositions(newPos, initPos3d, bodyDefs);
-            // 同步更新被动角的显示
-            const sa = result.angles;
-            currentJointAngles['膝盖传动1'] = sa['旋转 6'] - t1;
-            currentJointAngles['膝盖转动'] = sa['旋转 7'] - sa['旋转 6'];
-            currentJointAngles['膝盖传动2'] = sa['旋转 4'] - sa['旋转 7'];
-            currentJointAngles['小腿'] = sa['旋转 3'] - t2;
+            hideStatus();
+            lastSolverX0 = result.passive ? [result.passive.th3, result.passive.th4, result.passive.th6, result.passive.th7] : lastSolverX0;
+            // passive 返回的就是树关节相对角(th3/th4/th6/th7)，直接用于 applyJointRotations
+            const p = result.passive;
+            currentJointAngles['膝盖传动1'] = p.th6 * 180 / Math.PI;
+            currentJointAngles['膝盖转动'] = p.th7 * 180 / Math.PI;
+            currentJointAngles['膝盖传动2'] = p.th4 * 180 / Math.PI;
+            currentJointAngles['小腿'] = p.th3 * 180 / Math.PI;
             updateSliderDisplay();
+            // 走 applyJointRotations（和手动模式相同路径，保证一致性）
+            const bodyRotations = bodies.map(b => ({
+                name: b.name, parent: b.parent, jointWorld: b.jointWorld,
+                angle: currentJointAngles[b.name] || 0, parts: b.parts,
+            }));
+            viewer.applyJointRotations(bodyRotations);
         } else {
             // 手动模式：用相对角累积
             const bodyRotations = bodies.map(b => ({
