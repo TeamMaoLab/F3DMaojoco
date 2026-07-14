@@ -95,6 +95,19 @@ def solve_fk(theta1_deg, theta2_deg, J_init, verbose=False):
     J2_new = J2.copy()
     J3_new = J2 + rot(theta2) @ (J3 - J2)
 
+    def angle_of(vec): return math.atan2(vec[1], vec[0])
+    def norm_angle(a):
+        while a > math.pi: a -= 2*math.pi
+        while a < -math.pi: a += 2*math.pi
+        return a
+    def pick_min_rotation(candidates, compute_angle):
+        best = None; best_abs = 1e9
+        for p in candidates:
+            a = abs(norm_angle(compute_angle(p)))
+            if a < best_abs:
+                best_abs = a; best = p
+        return best
+
     # === 步骤2: 闭环1 求 J7 ===
     # J7 满足: |J7 - J6_new| = L_6_7 (膝盖传动1长度)
     #          |J7 - J1_new| = L_7_1 (闭合边)
@@ -102,38 +115,50 @@ def solve_fk(theta1_deg, theta2_deg, J_init, verbose=False):
     J7_candidates = circle_intersect(J6_new, L_6_7, J1_new, L_7_1)
     if len(J7_candidates) == 0:
         return False, None, "闭环1 无交点"
-    # 选最接近初始 J7 的解
-    J7_new = min(J7_candidates, key=lambda p: np.linalg.norm(p - J7))
+    J7_new = pick_min_rotation(J7_candidates,
+        lambda p: angle_of(p - J6_new) - angle_of(J7 - J6))
 
-    # === 步骤3: 闭环2 求 J5 和 J4 ===
-    # J4 在膝盖转动零件上，与 J7 的距离 = L_7_4（刚体约束）
-    # J4 满足: |J4 - J7_new| = L_7_4
-    #         |J4 - J2_new| = L_4_2 (闭环2闭合边)
+    # === 步骤3: 闭环2 求 J4 和 J5 ===
+    # J4 满足: |J4 - J7_new| = L_7_4, |J4 - J2_new| = L_4_2
     J4_candidates = circle_intersect(J7_new, L_7_4, J2_new, L_4_2)
     if len(J4_candidates) == 0:
         return False, None, "闭环2 J4 无交点"
-    J4_new = min(J4_candidates, key=lambda p: np.linalg.norm(p - J4))
+    J4_new = pick_min_rotation(J4_candidates,
+        lambda p: angle_of(p - J7_new) - angle_of(J4 - J7))
 
-    # J5 满足: |J5 - J3_new| = L_3_5 (小腿长度)
-    #         |J5 - J4_new| = L_5_4 (膝盖传动2长度)
+    # J5 满足: |J5 - J3_new| = L_3_5, |J5 - J4_new| = L_5_4
     J5_candidates = circle_intersect(J3_new, L_3_5, J4_new, L_5_4)
     if len(J5_candidates) == 0:
         return False, None, "闭环2 J5 无交点"
-    J5_new = min(J5_candidates, key=lambda p: np.linalg.norm(p - J5))
+    # J5 的选择要用正确的 frame 变换算 θ3:
+    # shin 挂在 thigh 下，θ3 = thigh_frame 里 J5 方向变化
+    # thigh_inv: 绕 J2 转 -theta2
+    def thigh_inv(p):
+        return rot(-theta2) @ (p - J2_new) + J2
+    J5_new = pick_min_rotation(J5_candidates,
+        lambda p: angle_of(thigh_inv(p) - J3) - angle_of(J5 - J3))
 
     # === 步骤4: 计算各被动角（相对于初始位姿的转角）===
-    def angle_of(vec): return math.atan2(vec[1], vec[0])
+    def norm_a(a):
+        while a > math.pi: a -= 2*math.pi
+        while a < -math.pi: a += 2*math.pi
+        return a
 
-    # θ6: 膝盖传动1 的转角 = (J7_new - J6_new) 方向 vs (J7 - J6) 方向
-    theta6 = angle_of(J7_new - J6_new) - angle_of(J7 - J6)
-    # θ7: 闭合边方向变化
-    theta7 = angle_of(J1_new - J7_new) - angle_of(J1 - J7)
-    # θ3: 小腿相对大腿的角 = (J5_new - J3_new) vs (J5 - J3)
-    theta3 = angle_of(J5_new - J3_new) - angle_of(J5 - J3)
-    # θ4: 膝盖传动2 的角 = (J5_new - J4_new) vs (J5 - J4)
-    theta4 = angle_of(J5_new - J4_new) - angle_of(J5 - J4)
-    # θ5: 小腿上 J3-J5 方向变化（同 θ3，验证用）
-    theta5 = angle_of(J4_new - J5_new) - angle_of(J4 - J5)
+    # thigh_inv: 把世界坐标转到 thigh frame（绕 J2 逆转 theta2）
+    def thigh_inv(p):
+        return rot(-theta2) @ (p - J2_new) + J2
+
+    # θ6: 膝盖传动1 绕 J6 转 = (J7_new - J6_new) 方向 vs (J7 - J6) 方向
+    theta6 = norm_a(angle_of(J7_new - J6_new) - angle_of(J7 - J6))
+    # θ7: 膝盖传动1→膝盖转动, 绕 J7 = (J1_new - J7_new) vs (J1 - J7)
+    theta7 = norm_a(angle_of(J1_new - J7_new) - angle_of(J1 - J7))
+    # θ4: 膝盖传动2 绕 J4 = (J5_new - J4_new) 方向 vs (J5 - J4)
+    theta4 = norm_a(angle_of(J5_new - J4_new) - angle_of(J5 - J4))
+    # θ3: 小腿相对大腿, 在 thigh frame 里算
+    # J5 在 thigh frame = thigh_inv(J5_world), 相对 J3 的方向变化
+    theta3 = norm_a(angle_of(thigh_inv(J5_new) - J3) - angle_of(J5 - J3))
+    # θ5: 膝盖传动2→小腿, 同 θ4 的对偶（验证用）
+    theta5 = norm_a(angle_of(J4_new - J5_new) - angle_of(J4 - J5))
 
     angles = {
         '旋转 1': theta1_deg,

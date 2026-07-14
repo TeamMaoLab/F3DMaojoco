@@ -1,0 +1,88 @@
+<mujoco model="servo_quadruped_leg">
+  <compiler angle="radian"/>
+
+  <option timestep="0.001"/>
+
+  <default>
+    <joint damping="2"/>
+    <geom type="mesh" rgba="0.6 0.6 0.7 0.85"/>
+  </default>
+
+  <asset>
+    <mesh name="servo" content_type="model/stl" file="../exports/export1/stl_files/servo_mg90s v2_servo_mg90s v2.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_driver" content_type="model/stl" file="../exports/export1/stl_files/膝盖动力发生器_膝盖动力发生器.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_link1" content_type="model/stl" file="../exports/export1/stl_files/膝盖传动1_膝盖传动1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_rotor" content_type="model/stl" file="../exports/export1/stl_files/膝盖转动_膝盖转动.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_link2" content_type="model/stl" file="../exports/export1/stl_files/膝盖传动2_膝盖传动2.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="thigh_driver" content_type="model/stl" file="../exports/export1/stl_files/大腿主动力发生器_大腿主动力发生器.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="shin" content_type="model/stl" file="../exports/export1/stl_files/小腿_小腿.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="shin_bracket" content_type="model/stl" file="../exports/export1/stl_files/小腿保持架_小腿保持架.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="hip_bracket" content_type="model/stl" file="../exports/export1/stl_files/髋关节保持架_髋关节保持架.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="thigh_cover" content_type="model/stl" file="../exports/export1/stl_files/大腿盖板_大腿盖板.stl" scale="0.001 0.001 0.001"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 -0.5 0.3" dir="0 0.957826 -0.287348" diffuse="0.8 0.8 0.8"/>
+    <light pos="0 0.5 0.3" dir="0 -0.957826 -0.287348" diffuse="0.4 0.4 0.4"/>
+    <body name="servo1" quat="0 -0.707107 0 0.707107">
+      <inertial pos="0 0 0" mass="0.001" diaginertia="0.0001 0.0001 0.0001"/>
+      <geom rgba="0.3 0.3 0.3 0.9" mesh="servo"/>
+    </body>
+    <body name="servo2" pos="-0.0109 0 0.0144" quat="0 0.707107 0 0.707107">
+      <inertial pos="0 0 0" mass="0.001" diaginertia="0.0001 0.0001 0.0001"/>
+      <geom rgba="0.3 0.3 0.3 0.9" mesh="servo"/>
+    </body>
+    <body name="shin_bracket">
+      <inertial pos="0 0 0" mass="0.001" diaginertia="0.0001 0.0001 0.0001"/>
+      <geom rgba="0.5 0.5 0.5 0.6" mesh="shin_bracket"/>
+    </body>
+    <body name="hip_bracket">
+      <inertial pos="0 0 0" mass="0.001" diaginertia="0.0001 0.0001 0.0001"/>
+      <geom rgba="0.5 0.5 0.5 0.6" mesh="hip_bracket"/>
+    </body>
+    <body name="thigh_cover">
+      <inertial pos="0 0 0" mass="0.001" diaginertia="0.0001 0.0001 0.0001"/>
+      <geom rgba="0.5 0.5 0.5 0.6" mesh="thigh_cover"/>
+    </body>
+    <body name="knee_driver">
+      <inertial pos="0 0 0" mass="0.01" diaginertia="0.001 0.001 0.001"/>
+      <joint name="旋转1" pos="0.0109 0.003 0.0144" axis="0 1 0"/>
+      <geom rgba="0.8 0.4 0.2 0.9" mesh="knee_driver"/>
+      <body name="knee_link1">
+        <inertial pos="0 0 0" mass="0.01" diaginertia="0.001 0.001 0.001"/>
+        <joint name="旋转6" pos="-0.0213 -0.004 0.0084" axis="0 1 0"/>
+        <geom rgba="0.2 0.8 0.4 0.9" mesh="knee_link1"/>
+        <body name="knee_rotor">
+          <inertial pos="0 0 0" mass="0.01" diaginertia="0.001 0.001 0.001"/>
+          <joint name="旋转7" pos="-0.0121 -0.0045 -0.007" axis="0 1 0"/>
+          <geom rgba="0.2 0.4 0.8 0.9" mesh="knee_rotor"/>
+          <body name="knee_link2">
+            <inertial pos="0 0 0" mass="0.01" diaginertia="0.001 0.001 0.001"/>
+            <joint name="旋转4" pos="0.0121 -0.004 0.007" axis="0 1 0"/>
+            <geom rgba="0.8 0.8 0.2 0.9" mesh="knee_link2"/>
+          </body>
+        </body>
+      </body>
+    </body>
+    <body name="thigh_driver">
+      <inertial pos="0 0 0" mass="0.01" diaginertia="0.001 0.001 0.001"/>
+      <joint name="旋转2" pos="0 -0.001 0" axis="0 1 0"/>
+      <geom rgba="0.8 0.2 0.6 0.9" mesh="thigh_driver"/>
+      <body name="shin">
+        <inertial pos="0 0 0" mass="0.01" diaginertia="0.001 0.001 0.001"/>
+        <joint name="旋转3" pos="0.025 -0.006 -0.0433" axis="0 1 0"/>
+        <geom rgba="0.2 0.6 0.8 0.9" mesh="shin"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <equality>
+    <connect body1="knee_rotor" body2="thigh_driver" anchor="0 -0.001 0"/>
+    <connect body1="knee_link2" body2="shin" anchor="0.0371 -0.0045 -0.0363"/>
+  </equality>
+
+  <actuator>
+    <general name="servo_knee" joint="旋转1" forcerange="-5 5" biastype="affine" gainprm="500" biasprm="0 -500"/>
+    <general name="servo_thigh" joint="旋转2" forcerange="-5 5" biastype="affine" gainprm="500" biasprm="0 -500"/>
+  </actuator>
+</mujoco>

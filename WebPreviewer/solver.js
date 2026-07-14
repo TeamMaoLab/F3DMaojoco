@@ -106,30 +106,54 @@ function solveFK(theta1Deg, theta2Deg, mech) {
     const J2n = J2.slice();
     const J3n = rotApply(theta2, J3, J2);
 
-    // 步骤2: 闭环1 求 J7
+    // 辅助：选旋转角绝对值最小的候选（连续运动假设，而非位置最近）
+    function normA(a) { while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; return a; }
+    function pickMinRotation(candidates, computeAngle) {
+        let best = candidates[0], bestAbs = 1e9;
+        for (const p of candidates) {
+            const a = Math.abs(normA(computeAngle(p)));
+            if (a < bestAbs) { bestAbs = a; best = p; }
+        }
+        return best;
+    }
+    // thigh 逆变换：世界坐标 → thigh frame（绕 J2 逆转 theta2）
+    function thighInv(p) {
+        return rotApply(-theta2, p, J2n);
+    }
+
+    // 步骤2: 闭环1 求 J7（选 θ6 绝对值最小的解）
     const J7c = circleIntersect(J6n, L_6_7, J1n, L_7_1);
     if (J7c.length === 0) return { ok: false, reason: '闭环1 无交点' };
-    const J7n = J7c.reduce((best, p) => dist(p, J7) < dist(best, J7) ? p : best, J7c[0]);
+    const J7n = pickMinRotation(J7c, p =>
+        angleOf([p[0]-J6n[0], p[1]-J6n[1]]) - angleOf([J7[0]-J6[0], J7[1]-J6[1]]));
 
-    // 步骤3: 闭环2 求 J4（J4 距 J7 = L_7_4，距 J2 = L_4_2）
+    // 步骤3: 闭环2 求 J4（选 J4-J7 方向变化最小的解）
     const J4c = circleIntersect(J7n, L_7_4, J2n, L_4_2);
     if (J4c.length === 0) return { ok: false, reason: '闭环2 J4 无交点' };
-    const J4n = J4c.reduce((best, p) => dist(p, J4) < dist(best, J4) ? p : best, J4c[0]);
+    const J4n = pickMinRotation(J4c, p =>
+        angleOf([p[0]-J7n[0], p[1]-J7n[1]]) - angleOf([J4[0]-J7[0], J4[1]-J7[1]]));
 
-    // 步骤4: 闭环2 求 J5（J5 距 J3 = L_3_5，距 J4 = L_5_4）
+    // 步骤4: 闭环2 求 J5（选 θ3 绝对值最小的解，θ3 在 thigh frame 里算）
     const J5c = circleIntersect(J3n, L_3_5, J4n, L_5_4);
     if (J5c.length === 0) return { ok: false, reason: '闭环2 J5 无交点' };
-    const J5n = J5c.reduce((best, p) => dist(p, J5) < dist(best, J5) ? p : best, J5c[0]);
+    const J5n = pickMinRotation(J5c, p => {
+        const pThigh = thighInv(p);
+        return angleOf([pThigh[0]-J3[0], pThigh[1]-J3[1]]) - angleOf([J5[0]-J3[0], J5[1]-J3[1]]);
+    });
 
-    // 步骤5: 计算被动角（相对初始位姿的方向变化）
+    // 步骤5: 计算被动角（相对初始位姿的转角，用正确的 frame 变换）
     const angles = {
         '旋转 1': theta1Deg,
         '旋转 2': theta2Deg,
-        '旋转 3': (angleOf([J5n[0]-J3n[0], J5n[1]-J3n[1]]) - angleOf([J5[0]-J3[0], J5[1]-J3[1]])) * 180 / Math.PI,
-        '旋转 4': (angleOf([J5n[0]-J4n[0], J5n[1]-J4n[1]]) - angleOf([J5[0]-J4[0], J5[1]-J4[1]])) * 180 / Math.PI,
-        '旋转 5': (angleOf([J4n[0]-J5n[0], J4n[1]-J5n[1]]) - angleOf([J4[0]-J5[0], J4[1]-J5[1]])) * 180 / Math.PI,
-        '旋转 6': (angleOf([J7n[0]-J6n[0], J7n[1]-J6n[1]]) - angleOf([J7[0]-J6[0], J7[1]-J6[1]])) * 180 / Math.PI,
-        '旋转 7': (angleOf([J1n[0]-J7n[0], J1n[1]-J7n[1]]) - angleOf([J1[0]-J7[0], J1[1]-J7[1]])) * 180 / Math.PI,
+        // θ3: 小腿相对大腿，在 thigh frame 里算
+        '旋转 3': normA(angleOf([thighInv(J5n)[0]-J3[0], thighInv(J5n)[1]-J3[1]]) - angleOf([J5[0]-J3[0], J5[1]-J3[1]])) * 180 / Math.PI,
+        // θ4: 膝盖传动2 绕 J4
+        '旋转 4': normA(angleOf([J5n[0]-J4n[0], J5n[1]-J4n[1]]) - angleOf([J5[0]-J4[0], J5[1]-J4[1]])) * 180 / Math.PI,
+        '旋转 5': normA(angleOf([J4n[0]-J5n[0], J4n[1]-J5n[1]]) - angleOf([J4[0]-J5[0], J4[1]-J5[1]])) * 180 / Math.PI,
+        // θ6: 膝盖传动1 绕 J6
+        '旋转 6': normA(angleOf([J7n[0]-J6n[0], J7n[1]-J6n[1]]) - angleOf([J7[0]-J6[0], J7[1]-J6[1]])) * 180 / Math.PI,
+        // θ7: 膝盖传动1→膝盖转动 绕 J7
+        '旋转 7': normA(angleOf([J1n[0]-J7n[0], J1n[1]-J7n[1]]) - angleOf([J1[0]-J7[0], J1[1]-J7[1]])) * 180 / Math.PI,
     };
 
     // 角度归一化到 [-180, 180]
