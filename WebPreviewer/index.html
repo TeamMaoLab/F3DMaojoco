@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F3DMaojoco 导出物预览器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; }
+        body { display: flex; flex-direction: column; background: #1e1e1e; color: #ddd; }
+
+        /* 顶部工具栏 */
+        #toolbar {
+            display: flex; align-items: center; gap: 12px; padding: 8px 16px;
+            background: #252526; border-bottom: 1px solid #3c3c3c; flex-shrink: 0;
+        }
+        #toolbar h1 { font-size: 14px; font-weight: 600; color: #4ec9b0; white-space: nowrap; }
+        #toolbar .spacer { flex: 1; }
+        .btn {
+            padding: 6px 14px; background: #0e639c; color: #fff; border: none; border-radius: 3px;
+            cursor: pointer; font-size: 13px; transition: background 0.15s;
+        }
+        .btn:hover { background: #1177bb; }
+        .btn:disabled { background: #555; cursor: not-allowed; }
+        .btn.secondary { background: #3a3d41; }
+        .btn.secondary:hover { background: #4a4d51; }
+        .toggle-group { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+        .toggle-group input[type="checkbox"] { cursor: pointer; }
+
+        /* 主区域 */
+        #main { flex: 1; display: flex; min-height: 0; }
+        #viewport { flex: 1; position: relative; min-width: 0; }
+        #viewport canvas { display: block; width: 100%; height: 100%; }
+
+        /* 右侧面板 */
+        #panel {
+            width: 320px; background: #252526; border-left: 1px solid #3c3c3c;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .panel-section { border-bottom: 1px solid #3c3c3c; display: flex; flex-direction: column; min-height: 0; }
+        .panel-section h2 {
+            font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+            color: #888; padding: 10px 14px 6px; background: #2d2d2d;
+        }
+        .panel-section .content { padding: 8px 14px; overflow-y: auto; }
+        .panel-section.list { flex: 1; }
+        .panel-section.list .content { flex: 1; overflow-y: auto; }
+
+        #summary dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12px; }
+        #summary dt { color: #888; }
+        #summary dd { color: #ddd; word-break: break-all; }
+
+        .item {
+            display: flex; align-items: center; gap: 8px; padding: 5px 6px; font-size: 12px;
+            border-radius: 3px; cursor: default;
+        }
+        .item:hover { background: #2a2d2e; }
+        .item .swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .item .meta { color: #666; font-size: 11px; }
+        .item.joint .swatch { background: #ff4444; }
+
+        /* 状态/提示 */
+        #status {
+            position: absolute; bottom: 12px; left: 12px; right: 12px;
+            padding: 8px 12px; background: rgba(0,0,0,0.7); border-radius: 4px;
+            font-size: 12px; color: #ddd; pointer-events: none; display: none;
+        }
+        #status.error { background: rgba(180,0,0,0.85); }
+        #status.info { display: block; }
+        #dropzone {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 16px; color: #666; pointer-events: none;
+        }
+        #dropzone .big { font-size: 48px; }
+        #dropzone .hint { font-size: 14px; }
+        #dropzone.hide { display: none; }
+
+        #loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            padding: 20px 30px; background: rgba(0,0,0,0.8); border-radius: 6px;
+            font-size: 14px; display: none;
+        }
+        #loading.show { display: block; }
+    </style>
+</head>
+<body>
+    <div id="toolbar">
+        <h1>F3DMaojoco 导出物预览器</h1>
+        <input type="file" id="dirInput" webkitdirectory style="display:none">
+        <button class="btn" id="openBtn">📂 选择导出目录</button>
+        <div class="spacer"></div>
+        <div class="toggle-group">
+            <input type="checkbox" id="jointsToggle">
+            <label for="jointsToggle">显示关节</label>
+        </div>
+        <div class="toggle-group">
+            <input type="checkbox" id="axesToggle" checked>
+            <label for="axesToggle">坐标轴</label>
+        </div>
+        <div class="toggle-group">
+            <label for="bgSelect">背景</label>
+            <select id="bgSelect">
+                <option value="#1e1e1e">深色</option>
+                <option value="#ffffff">白色</option>
+                <option value="#888888">灰色</option>
+            </select>
+        </div>
+        <button class="btn secondary" id="fitBtn">🔭 适配视角</button>
+    </div>
+
+    <div id="main">
+        <div id="viewport">
+            <div id="dropzone">
+                <div class="big">📁</div>
+                <div class="hint">点击「选择导出目录」加载 Fusion 导出物<br>（含 component_positions.json + stl_files/）</div>
+            </div>
+            <div id="loading">加载中…</div>
+            <div id="status"></div>
+        </div>
+        <div id="panel">
+            <div class="panel-section">
+                <h2>场景摘要</h2>
+                <div class="content" id="summary"><div style="color:#666;font-size:12px">未加载数据</div></div>
+            </div>
+            <div class="panel-section list">
+                <h2>零部件</h2>
+                <div class="content" id="componentList"></div>
+            </div>
+            <div class="panel-section list">
+                <h2>关节</h2>
+                <div class="content" id="jointList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js 及扩展：优先 CDN（r128 UMD 全局版本），失败则降级到本地 vendor/ -->
+    <script>
+        // CDN 加载失败时降级到本地 vendor/（离线备用）
+        function loadScript(src, fallback) {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = src;
+                s.onload = resolve;
+                s.onerror = () => {
+                    if (fallback) {
+                        const f = document.createElement('script');
+                        f.src = fallback;
+                        f.onload = resolve;
+                        f.onerror = reject;
+                        document.head.appendChild(f);
+                    } else { reject(new Error('加载失败: ' + src)); }
+                };
+                document.head.appendChild(s);
+            });
+        }
+        (async () => {
+            const cdn = 'https://unpkg.com/three@0.128.0';
+            try {
+                await loadScript(cdn + '/build/three.min.js', 'vendor/three.min.js');
+                await loadScript(cdn + '/examples/js/loaders/STLLoader.js', 'vendor/examples/js/loaders/STLLoader.js');
+                await loadScript(cdn + '/examples/js/controls/OrbitControls.js', 'vendor/examples/js/controls/OrbitControls.js');
+            } catch (e) {
+                console.error('Three.js 加载失败（CDN 和本地 vendor 均不可用）:', e);
+                document.getElementById('status').textContent = '❌ Three.js 加载失败，请检查网络或本地 vendor/ 目录';
+                document.getElementById('status').className = 'error info';
+                return;
+            }
+            // 加载应用脚本
+            await loadScript('viewer.js');
+            await loadScript('app.js');
+        })();
+    </script>
+</body>
+</html>

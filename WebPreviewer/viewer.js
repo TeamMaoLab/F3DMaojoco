@@ -1,0 +1,290 @@
+/**
+ * F3DMaojoco 导出物预览器 - 3D 渲染封装
+ *
+ * 移植自 VistaQuickViewer（pyvista）的核心渲染逻辑：
+ * - 零件按 world_transform.matrix（4x4 行优先，毫米）变换
+ * - 关节用红色球 + 标签
+ * - 坐标轴 XYZ 红绿蓝
+ * - 相机自适应场景 bounds
+ */
+class ExportViewer {
+    constructor(container) {
+        this.container = container;
+
+        // 场景对象集合
+        this.componentMeshes = [];   // 所有零件 mesh
+        this.jointGroup = null;      // 关节组（统一显隐）
+        this.axesGroup = null;       // 坐标轴组
+        this.allObjects = [];        // 所有需计入 bounds 的对象
+
+        // 缓存：同一 STL 文件被多个 occurrence 引用时复用 geometry
+        this._geometryCache = new Map(); // stlFilePath -> THREE.BufferGeometry
+
+        this._initScene();
+        this._initRenderer();
+        this._initControls();
+        this._initResizeObserver();
+        this._startRenderLoop();
+    }
+
+    _initScene() {
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x1e1e1e);
+
+        // 灯光：环境光 + 两个方向光（正面+背面，避免背光面全黑）
+        this.scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const light1 = new THREE.DirectionalLight(0xffffff, 0.8);
+        light1.position.set(1, -1, 1);
+        this.scene.add(light1);
+        const light2 = new THREE.DirectionalLight(0xffffff, 0.4);
+        light2.position.set(-1, 1, -1);
+        this.scene.add(light2);
+    }
+
+    _initRenderer() {
+        const w = this.container.clientWidth || 800;
+        const h = this.container.clientHeight || 600;
+        this.camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100000);
+        // 初始相机位置：看向原点，Z-up（与 MuJoCo/Fusion 一致）
+        this.camera.position.set(150, -150, 120);
+        this.camera.up.set(0, 0, 1);
+        this.camera.lookAt(0, 0, 0);
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.setSize(w, h);
+        this.container.appendChild(this.renderer.domElement);
+    }
+
+    _initControls() {
+        this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+        // 左键旋转、右键平移、滚轮缩放（OrbitControls 默认即此）
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.1;
+        // 双击 fit
+        this.renderer.domElement.addEventListener('dblclick', () => this.fitCamera());
+    }
+
+    _initResizeObserver() {
+        const ro = new ResizeObserver(() => this._onResize());
+        ro.observe(this.container);
+    }
+
+    _onResize() {
+        const w = this.container.clientWidth;
+        const h = this.container.clientHeight;
+        if (w === 0 || h === 0) return;
+        this.camera.aspect = w / h;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(w, h);
+    }
+
+    _startRenderLoop() {
+        const animate = () => {
+            requestAnimationFrame(animate);
+            this.controls.update();
+            this.renderer.render(this.scene, this.camera);
+        };
+        animate();
+    }
+
+    /**
+     * 清空场景中的零件/关节/坐标轴（保留灯光）
+     */
+    clear() {
+        for (const m of this.componentMeshes) {
+            this.scene.remove(m);
+            // geometry 由缓存管理，不在此 dispose（缓存统一管）
+            if (m.material) m.material.dispose();
+        }
+        this.componentMeshes = [];
+        this._geometryCache.clear();
+
+        if (this.jointGroup) { this.scene.remove(this.jointGroup); this.jointGroup = null; }
+        if (this.axesGroup) { this.scene.remove(this.axesGroup); this.axesGroup = null; }
+        this.allObjects = [];
+    }
+
+    /**
+     * 从 4x4 行优先矩阵（JSON 里的 matrix 字段）构造 THREE.Matrix4
+     * 并清理浮点噪声（<1e-10 归零，移植自 VistaQuickViewer._apply_transform）
+     */
+    _matrixFromJson(matrix4x4) {
+        const m = new THREE.Matrix4();
+        const cleaned = [];
+        for (let r = 0; r < 4; r++) {
+            for (let c = 0; c < 4; c++) {
+                let v = matrix4x4[r][c];
+                if (Math.abs(v) < 1e-10) v = 0.0;
+                cleaned.push(v);
+            }
+        }
+        // THREE.Matrix4.set 接受行优先参数
+        m.set(
+            cleaned[0], cleaned[1], cleaned[2], cleaned[3],
+            cleaned[4], cleaned[5], cleaned[6], cleaned[7],
+            cleaned[8], cleaned[9], cleaned[10], cleaned[11],
+            cleaned[12], cleaned[13], cleaned[14], cleaned[15]
+        );
+        return m;
+    }
+
+    /**
+     * 按 occurrence 名称生成颜色（移植自 VistaQuickViewer._generate_color）
+     * 返回 {css, hex}
+     */
+    _colorForName(name) {
+        const palette = [
+            0x4e79a7, 0xf28e2b, 0xe15759, 0x76b7b2, 0x59a14f,
+            0xedc948, 0xb07aa1, 0xff9da7, 0x9c755f, 0xbab0ac
+        ];
+        // 简单字符串哈希
+        let h = 0;
+        for (let i = 0; i < name.length; i++) {
+            h = ((h << 5) - h + name.charCodeAt(i)) | 0;
+        }
+        const hex = palette[Math.abs(h) % palette.length];
+        return {
+            hex: hex,
+            css: '#' + hex.toString(16).padStart(6, '0')
+        };
+    }
+
+    /**
+     * 添加一个零件
+     * @param {string} stlKey - STL 相对路径（缓存键）
+     * @param {THREE.BufferGeometry} geometry - 已解析的 STL geometry
+     * @param {number[][]} matrix4x4 - world_transform.matrix
+     * @param {string} displayName - 显示名（occurrence_name）
+     */
+    addComponent(stlKey, geometry, matrix4x4, displayName) {
+        const color = this._colorForName(displayName);
+        const material = new THREE.MeshPhongMaterial({
+            color: color.hex,
+            transparent: true,
+            opacity: 0.85,
+            shininess: 30
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.applyMatrix4(this._matrixFromJson(matrix4x4));
+        mesh.userData = { name: displayName, color: color.css };
+        this.scene.add(mesh);
+        this.componentMeshes.push(mesh);
+        this.allObjects.push(mesh);
+        return mesh;
+    }
+
+    /**
+     * 批量构建关节（红色球 + 标签）
+     * @param {Array} joints - [{name, matrix4x4, hasLimits, rotationAxis}]
+     */
+    buildJoints(joints) {
+        if (this.jointGroup) { this.scene.remove(this.jointGroup); }
+        const group = new THREE.Group();
+        group.visible = false; // 默认隐藏
+        const sphereGeo = new THREE.SphereGeometry(2.0, 16, 12); // 半径 2mm
+
+        for (const j of joints) {
+            const mat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
+            const sphere = new THREE.Mesh(sphereGeo, mat);
+            sphere.applyMatrix4(this._matrixFromJson(j.matrix4x4));
+            group.add(sphere);
+
+            // 标签：用 canvas 生成 sprite
+            const label = this._makeLabelSprite(j.name + (j.hasLimits ? '' : ' ⚠'));
+            const pos = new THREE.Vector3();
+            this._matrixFromJson(j.matrix4x4).decompose(
+                pos, new THREE.Quaternion(), new THREE.Vector3()
+            );
+            label.position.copy(pos);
+            label.position.y += 4; // 球上方
+            group.add(label);
+        }
+
+        this.jointGroup = group;
+        this.scene.add(group);
+        // 关节不计入 allObjects（不参与相机 fit，避免球半径干扰）
+    }
+
+    _makeLabelSprite(text) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 256; canvas.height = 64;
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = 'bold 28px sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+        const tex = new THREE.CanvasTexture(canvas);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+        sprite.scale.set(16, 4, 1);
+        return sprite;
+    }
+
+    setJointsVisible(visible) {
+        if (this.jointGroup) this.jointGroup.visible = visible;
+    }
+
+    /**
+     * 构建坐标轴（XYZ 红绿蓝，移植自 VistaQuickViewer，axis_length=50mm）
+     */
+    buildAxes() {
+        if (this.axesGroup) { this.scene.remove(this.axesGroup); }
+        const group = new THREE.Group();
+        const len = 50;
+        const make = (dir, color) => {
+            const geo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                dir.clone().multiplyScalar(len)
+            ]);
+            const mat = new THREE.LineBasicMaterial({ color, linewidth: 2 });
+            return new THREE.Line(geo, mat);
+        };
+        group.add(make(new THREE.Vector3(1, 0, 0), 0xff0000)); // X 红
+        group.add(make(new THREE.Vector3(0, 1, 0), 0x00cc00)); // Y 绿
+        group.add(make(new THREE.Vector3(0, 0, 1), 0x0066ff)); // Z 蓝
+        this.axesGroup = group;
+        this.scene.add(group);
+    }
+
+    setAxesVisible(visible) {
+        if (this.axesGroup) this.axesGroup.visible = visible;
+        else if (visible) { this.buildAxes(); }
+    }
+
+    setBackgroundColor(cssColor) {
+        this.scene.background = new THREE.Color(cssColor);
+    }
+
+    /**
+     * 适配相机：计算所有零件 bounds，定位相机（移植自 VistaQuickViewer._setup_camera）
+     */
+    fitCamera() {
+        if (this.componentMeshes.length === 0) return;
+        const box = new THREE.Box3();
+        for (const m of this.componentMeshes) {
+            box.expandByObject(m);
+        }
+        if (box.isEmpty()) return;
+
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z, 50);
+        const distance = maxDim * 2.5;
+
+        this.camera.position.set(
+            center.x + distance,
+            center.y - distance,
+            center.z + distance * 0.8
+        );
+        this.camera.up.set(0, 0, 1); // Z-up（与 MuJoCo/Fusion 一致）
+        this.camera.lookAt(center);
+        this.controls.target.copy(center);
+        this.controls.update();
+    }
+}
+
+// 暴露到全局
+window.ExportViewer = ExportViewer;
