@@ -27,6 +27,7 @@ from .fusion_export_manager import FusionExportManager
 from .component_collector import ComponentCollector
 from .joint_analyzer import JointAnalyzer
 from .stl_exporter import STLExporter
+from .step_exporter import STEPExporter
 from .data_serializer import DataSerializer
 from .export_analyzer import ExportAnalyzer
 
@@ -53,6 +54,7 @@ __all__ = [
     'ComponentCollector',
     'JointAnalyzer',
     'STLExporter',
+    'STEPExporter',
     'DataSerializer',
     'ExportAnalyzer'
 ]

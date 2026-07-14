@@ -121,6 +121,7 @@ def _show_export_summary(export_manager):
         summary_msg += f"📦 零部件总数: {summary['total_components']}\n"
         summary_msg += f"🔗 关节总数: {summary['total_joints']}\n"
         summary_msg += f"📄 STL文件数: {summary['stl_export']['exported_files_count']}\n"
+        summary_msg += f"📐 STEP文件数: {summary['step_export']['exported_files_count']}\n"
         
         # 添加备份信息
         if backup_info.get('exists') and not backup_info.get('error'):
@@ -134,6 +135,7 @@ def _show_export_summary(export_manager):
         summary_msg += "📊 详细统计:\n"
         summary_msg += f"  • 有实体的零部件: {analysis['components_with_bodies']}\n"
         summary_msg += f"  • 成功导出STL: {analysis['components_with_stl']}\n"
+        summary_msg += f"  • 成功导出STEP: {analysis['components_with_step']}\n"
         summary_msg += f"  • 有子零部件: {analysis['components_with_children']}\n"
         summary_msg += f"  • 活动关节: {analysis['active_joints']}\n\n"
         
@@ -144,6 +146,7 @@ def _show_export_summary(export_manager):
         summary_msg += "\n📋 生成文件:\n"
         summary_msg += f"  • component_positions.json (零部件和关节信息)\n"
         summary_msg += f"  • stl_files/ (STL文件目录)\n"
+        summary_msg += f"  • step_files/ (STEP文件目录，B-Rep精确曲面)\n"
         summary_msg += f"  • export_description.md (导出描述文件)\n"
         summary_msg += f"  • f3d_export.log (执行日志)\n"
         summary_msg += f"  • backup/ (备份目录，带时间戳)\n"
