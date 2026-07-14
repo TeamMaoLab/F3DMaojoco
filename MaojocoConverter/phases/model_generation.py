@@ -4,6 +4,11 @@
 生成 MuJoCo XML 模型文件。
 """
 
+# TODO(重构): 本阶段的 _add_body_to_xml / _add_joint_to_xml / _convert_joint_type /
+# _get_mesh_name / _add_assets_to_xml / _add_lighting_to_xml 等函数与
+# actuator_generation.py 中的同名函数几乎逐行重复。待抽取公共基类
+# （如 XMLGenerationPhaseBase）或 mixin 消除重复。见 2026-07-14 架构梳理。
+
 from typing import Optional
 from pathlib import Path
 import xml.etree.ElementTree as ET

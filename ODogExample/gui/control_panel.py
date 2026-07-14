@@ -391,15 +391,7 @@ class ControlPanel(QWidget):
     def refocus_btn_ref(self):
         """获取重新聚焦按钮引用"""
         return self.camera_control.refocus_btn_ref if self.camera_control else None
-    
-    def toggle_global_precision(self, checked: bool):
-        """切换全局精细控制"""
-        print(f"🎛️ 全局精细控制: {'开启' if checked else '关闭'}")
-        
-        for leg_group in self.leg_groups.values():
-            for joint_widget in leg_group.joint_widgets.values():
-                joint_widget.precision_btn.setChecked(checked)
-    
+
     def toggle_camera_tracking(self, checked: bool):
         """切换相机追踪"""
         if self.camera_control:

@@ -1,5 +1,22 @@
 # ODogExample 动作编辑器开发计划
 
+> ## 📋 文档状态声明（2026-07-14 重启核对）
+>
+> 本计划写于 2025-09-18，共分 6 个开发阶段。**截至重启时，只有第一阶段（基础数据结构）和第五阶段的部分（Tab 集成）真正落地，其余阶段的文件均未创建。**
+>
+> ### 各阶段实际完成情况
+>
+> | 阶段 | 计划内容 | 实际状态 |
+> |---|---|---|
+> | 第一阶段 基础数据结构 | `core/motion_sequence.py`、`core/motion_manager.py` | ✅ 已实现 |
+> | 第二阶段 核心 UI 组件 | `gui/timeline_widget.py`、`gui/keyframe_widget.py`、`gui/motion_controls.py` | ❌ 均未创建 |
+> | 第三阶段 核心功能实现 | `core/motion_interpolation.py`、`core/motion_player.py` | ❌ 均未创建（**无姿态插值，播放是瞬时跳变**） |
+> | 第四阶段 交互功能实现 | `gui/timeline_widget.py` 扩展、`gui/motion_editor.py` | ❌ 均未创建 |
+> | 第五阶段 集成到主应用 | 修改 `app_main.py`、`motion_editor.py` | ⚠️ 部分实现（有 `motion_editor_tab.py` 提供 Tab 页，但无插值/时间轴） |
+> | 第六阶段 优化和完善 | 性能、UX、稳定性 | ❌ 未开展 |
+>
+> 因此本计划的大部分内容仍是**待实现的计划**，而非已完成功能的说明。下方原文保留作为开发依据。
+
 ## 📋 文档信息
 
 **文档目标**: 详细拆解动作编辑器的开发步骤  

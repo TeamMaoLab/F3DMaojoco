@@ -205,7 +205,10 @@ class RobotModel:
     def get_joint_id(self, joint_name: str) -> Optional[int]:
         """根据名称获取关节ID"""
         return self.joint_ids.get(joint_name)
-    
+
+    # TODO(重构): set_joint_angle 与 set_joint_angles 中"查找执行器 id"的循环
+    # （遍历 model.actuator(i).trnid[0] == joint_id）重复了 4 次。待抽取为
+    # _find_actuator(joint_id) 辅助方法。见 2026-07-14 架构梳理。
     def set_joint_angle(self, joint_name: str, angle: float, smooth: bool = True) -> bool:
         """
         设置关节角度

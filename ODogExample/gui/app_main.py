@@ -5,6 +5,7 @@ ODogExample GUI模块 - 主应用窗口
 """
 
 import sys
+import math
 from typing import Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
@@ -215,7 +216,7 @@ class MainApplication(QMainWindow):
                 print(f"🤖 应用姿态 {pose_name} 到机器人: {len(joint_angles)} 个关节")
                 print(f"📊 关节角度数据:")
                 for joint_name, angle in joint_angles.items():
-                    print(f"  - {joint_name}: {angle:.3f} rad ({angle*180/3.14159:.1f}°)")
+                    print(f"  - {joint_name}: {angle:.3f} rad ({math.degrees(angle):.1f}°)")
                 
                 # 使用控制面板的姿态应用功能
                 print("🔧 使用控制面板的set_pose方法")
@@ -232,45 +233,15 @@ class MainApplication(QMainWindow):
             print(f"❌ 应用姿态失败: {e}")
             import traceback
             traceback.print_exc()
-    
-    def _get_fallback_pose(self, pose_name: str) -> dict:
-        """获取后备姿态数据"""
-        fallback_poses = {
-            "站立姿态": {
-                "xuan_zhuan_1": 0.0, "xuan_zhuan_2": 0.0, "xuan_zhuan_3": 0.0, "xuan_zhuan_4": 0.0,
-                "xuan_zhuan_5": 0.0, "xuan_zhuan_6": 0.0, "xuan_zhuan_7": 0.0, "xuan_zhuan_8": 0.0
-            },
-            "趴下姿态": {
-                "xuan_zhuan_1": 1.57, "xuan_zhuan_2": -1.57, "xuan_zhuan_3": 1.57, "xuan_zhuan_4": -1.57,
-                "xuan_zhuan_5": 1.57, "xuan_zhuan_6": -1.57, "xuan_zhuan_7": 1.57, "xuan_zhuan_8": -1.57
-            },
-            "坐下姿态": {
-                "xuan_zhuan_1": 0.8, "xuan_zhuan_2": -1.57, "xuan_zhuan_3": 0.8, "xuan_zhuan_4": -1.57,
-                "xuan_zhuan_5": 0.8, "xuan_zhuan_6": -1.57, "xuan_zhuan_7": 0.8, "xuan_zhuan_8": -1.57
-            },
-            "行走姿态1": {
-                "xuan_zhuan_1": 0.5, "xuan_zhuan_2": -1.0, "xuan_zhuan_3": -0.5, "xuan_zhuan_4": 1.0,
-                "xuan_zhuan_5": 0.5, "xuan_zhuan_6": -1.0, "xuan_zhuan_7": -0.5, "xuan_zhuan_8": 1.0
-            },
-            "行走姿态2": {
-                "xuan_zhuan_1": -0.5, "xuan_zhuan_2": 1.0, "xuan_zhuan_3": 0.5, "xuan_zhuan_4": -1.0,
-                "xuan_zhuan_5": -0.5, "xuan_zhuan_6": 1.0, "xuan_zhuan_7": 0.5, "xuan_zhuan_8": -1.0
-            },
-            "趴下-抬头": {
-                "xuan_zhuan_1": 1.0, "xuan_zhuan_2": -0.3, "xuan_zhuan_3": 1.0, "xuan_zhuan_4": -0.3,
-                "xuan_zhuan_5": 1.0, "xuan_zhuan_6": -0.3, "xuan_zhuan_7": 1.0, "xuan_zhuan_8": -0.3
-            }
-        }
-        return fallback_poses.get(pose_name, {})
-    
+
     def _get_available_poses(self) -> list:
         """获取可用姿态列表"""
         try:
             pose_manager = get_pose_manager()
             return pose_manager.get_pose_names()
         except Exception:
-            return list(self._get_fallback_pose("站立姿态").keys())
-    
+            return []
+
     def _on_joint_angle_changed(self, joint_name: str, angle: float):
         """关节角度改变处理"""
         # 触发3D视图重新渲染以显示关节变化

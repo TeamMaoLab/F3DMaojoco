@@ -5,6 +5,11 @@ ODogExample GUI模块 - 姿态管理器
 使用JSON文件进行持久化存储。
 """
 
+# TODO(重构): 本文件的单例样板（__new__ + 类级 _initialized + _lock）与
+# core/motion_manager.py 几乎一字不差地重复；_get_data_file_path / _ensure_data_dir /
+# _load_* / _save_* 也是平行复制。待抽取公共的 SingletonJsonManager 基类。
+# 注意：本文件位于 gui/，但 docs 曾误标为 core/。见 2026-07-14 架构梳理。
+
 import json
 import os
 from typing import Dict, List, Optional, Any

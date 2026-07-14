@@ -4,6 +4,14 @@
 分析装配关系，构建装配图和动力学树。
 """
 
+# TODO(重构): type_definitions.py 定义了 KinematicTree dataclass（强类型字段），
+# 但本文件构造 kinematic_tree 时用的是 dict 字面量（{'roots':[], 'nodes':{}, ...}），
+# 后续读取也按 dict 访问（kinematic_tree['bodies']、.get('roots', [])），
+# 导致 dataclass 形同虚设、类型系统未启用。待统一为 dataclass 构造与访问。
+# 另：mass/inertia 全部硬编码为 1.0（注释"后续可以计算"未实现）；
+# _extract_rotation_axis_from_matrix 依赖"旋转轴=矩阵第二列"的口头约定，耦合脆弱。
+# 见 2026-07-14 架构梳理。
+
 from typing import Dict, Any, Optional, List, Tuple
 import math
 import networkx as nx

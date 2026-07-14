@@ -1,7 +1,7 @@
 [project]
 name = "f3dmaojoco"
 version = "0.1.0"
-description = "Add your description here"
+description = "Fusion 360 到 MuJoCo 的机器人模型转换与仿真控制工具链"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

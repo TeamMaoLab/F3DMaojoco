@@ -4,6 +4,11 @@
 为 MuJoCo 模型生成执行器配置，支持位置执行器（position actuator）。
 """
 
+# TODO(重构): 本阶段的 XML 生成辅助函数（_add_body_to_xml / _add_joint_to_xml /
+# _convert_joint_type / _get_mesh_name / _add_assets_to_xml / _add_lighting_to_xml）
+# 与 model_generation.py 中几乎逐行重复（本文件仅多了 freejoint / ground / 执行器）。
+# 待抽取公共基类消除重复。见 2026-07-14 架构梳理。
+
 from typing import Optional
 from pathlib import Path
 import xml.etree.ElementTree as ET

@@ -4,6 +4,12 @@ ODogExample核心模块 - 8自由度关节定义和映射
 根据model.xml分析，定义和管理四足机器人的8个关节映射关系。
 """
 
+# TODO(重构): 8 自由度关节定义全部硬编码在本类的 __init__ 中（xuan_zhuan_1..8 →
+# body/leg/type/范围/默认角度），joint_mapping_config.json 只是导出快照而非配置源。
+# 待改为从 MuJoCo 模型动态读取关节，以支持任意模型（包括新舵机四足）。
+# 另：control_gain 字段定义后从未被读取；get_symmetric_joint 仅在 __main__ 自测用。
+# 见 2026-07-14 架构梳理。
+
 import mujoco
 import numpy as np
 from typing import Dict, List, Optional, Tuple

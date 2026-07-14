@@ -677,58 +677,19 @@ class MotionSequenceTabWidget(QGroupBox):
             print(f"➕ 添加关键帧: 第{last_row+1}帧")
         else:
             QMessageBox.warning(self, "添加失败", "无法添加关键帧")
-    
-    def edit_keyframe(self):
-        """编辑关键帧"""
-        current_item = self.keyframe_list.currentItem()
-        if not current_item:
-            QMessageBox.information(self, "提示", "请先选择要编辑的关键帧！")
-            return
-        
-        keyframe_index = current_item.data(Qt.UserRole)
-        print(f"✏️ 编辑关键帧: 第{keyframe_index+1}帧")
-        # 这里可以添加编辑对话框
-    
-    def delete_keyframe(self):
-        """删除关键帧"""
-        current_item = self.keyframe_list.currentItem()
-        if not current_item:
-            QMessageBox.information(self, "提示", "请先选择要删除的关键帧！")
-            return
-        
-        keyframe_index = current_item.data(Qt.UserRole)
-        
-        reply = QMessageBox.question(
-            self, "确认删除", 
-            f"确定要删除第{keyframe_index+1}帧吗？",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-        
-        if reply == QMessageBox.Yes:
-            if keyframe_index < len(self.current_sequence.keyframes):
-                self.current_sequence.keyframes.pop(keyframe_index)
-                success = self.motion_manager.update_sequence(self.current_sequence.name, self.current_sequence)
-                if success:
-                    self.update_pose_list()
-                    self.load_sequence_list()  # 刷新序列列表显示的时长
-                    self.keyframeDeleted.emit(keyframe_index)
-                    print(f"🗑️ 删除关键帧: 第{keyframe_index+1}帧")
-                else:
-                    QMessageBox.warning(self, "删除失败", "无法删除关键帧")
-    
-    def on_keyframe_selection_changed(self):
-        """关键帧选择改变处理（已弃用，保留兼容性）"""
-        # 这个方法已不再使用，保留以避免潜在的引用错误
-        pass
-    
+
     def toggle_playback(self):
         """切换播放状态"""
         if self.is_playing:
             self.pause_playback()
         else:
             self.start_playback()
-    
+
+    # TODO(未实现): 当前动作播放只是关键帧之间的瞬时跳变（update_playback_progress
+    # 在到达每个关键帧时间点时直接 apply_current_pose），没有任何姿态插值。
+    # Keyframe.interpolation_type 字段虽会存盘，但播放时不读取。
+    # 计划中的 core/motion_interpolation.py 与 core/motion_player.py 均未创建。
+    # 见 motion-editor-development-plan.md 第三阶段。2026-07-14 架构梳理。
     def start_playback(self):
         """开始播放"""
         if not self.current_sequence:
@@ -856,19 +817,13 @@ class MotionSequenceTabWidget(QGroupBox):
     def update_sequence_info(self):
         """更新序列信息显示"""
         if self.current_sequence:
-            info_text = f"序列名称: {self.current_sequence.name}\\n"
-            info_text += f"关键帧数: {len(self.current_sequence.keyframes)}\\n"
-            info_text += f"总时长: {self.current_sequence.total_duration:.1f}秒\\n"
+            info_text = f"序列名称: {self.current_sequence.name}\n"
+            info_text += f"关键帧数: {len(self.current_sequence.keyframes)}\n"
+            info_text += f"总时长: {self.current_sequence.total_duration:.1f}秒\n"
             info_text += f"循环播放: {'是' if self.current_sequence.loop else '否'}"
             self.info_label.setText(info_text)
         else:
             self.info_label.setText("未选择序列")
-    
-        
-    def update_keyframe_info(self, keyframe_index: int):
-        """更新关键帧信息显示（已弃用，保留兼容性）"""
-        # 这个方法已不再使用，保留以避免潜在的引用错误
-        pass
 
 
 if __name__ == "__main__":

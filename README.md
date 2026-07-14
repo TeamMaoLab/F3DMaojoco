@@ -69,9 +69,14 @@ F3DMaojoco/
 │   └── 通用轨道相机设计说明书.md
 ├── MaojocoConverter/    # 核心转换器
 ├── F3DMaojocoScripts/   # 脚本工具
-├── VistaQuickViewer/    # 快速查看器
-└── tmp-output/          # 临时输出文件
+├── VistaQuickViewer/    # 快速查看器（pyvista，Python 端）
+├── WebPreviewer/        # 导出物预览器（Three.js，纯前端浏览器版）
+└── exports/             # 导出产物（gitignore，本地存放）
 ```
+
+## WebPreviewer - 浏览器版预览器
+
+纯前端 Three.js 预览器，双击 `WebPreviewer/index.html` 即可用，无需 Python 环境。用于查看 Fusion 导出物（`component_positions.json` + STL），方便分享和跨设备查看。详见 [WebPreviewer/README.md](WebPreviewer/README.md)。
 
 ## 许可证
 

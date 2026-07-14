@@ -1,5 +1,15 @@
 # ODogExample 开发进度报告
 
+> ## 📋 文档状态声明（2026-07-14 重启核对）
+>
+> 本报告最后实质更新于 2025-09-18，**此后未再同步**。其中的完成度百分比（85%、各阶段 100%）为当时的乐观估计，与当前代码存在出入：
+>
+> - **动作编辑器**：报告将其列为"进行中"，但实际只完成了数据模型、CRUD 和播放控制的框架；**姿态插值、可视化时间轴、关键帧拖拽均未实现**，播放是关键帧瞬时跳变。详见 `motion-editor-development-plan.md`。
+> - **不存在的模块**：报告"阶段6 文件结构"和"下一步行动"里列出的 `core/keyframe_manager.py`、`core/motion_player.py`、`gui/motion_editor.py`（实际为 `motion_editor_tab.py`）、`gui/timeline_widget.py`、`gui/keyframe_widget.py`、`gui/motion_controls.py` 在代码中均不存在。
+> - **`pose_manager.py` 实际在 `gui/`，不在 `core/`**。
+>
+> 下方的百分比和阶段状态保留作为历史记录，请勿当作当前真实完成度。
+
 ## 📋 当前进度概览
 
 **最后更新**: 2025-09-18
