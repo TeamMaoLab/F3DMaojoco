@@ -1,7 +1,7 @@
 # F3DMaojoco 导出描述
 
 ## 基本信息
-- **导出时间**: 2026-07-14 11:05:43
+- **导出时间**: 2026-07-15 21:59:17
 - **格式版本**: 1.0
 - **几何单位**: millimeters
 - **位置单位**: millimeters
@@ -13,8 +13,8 @@
 ## 文件结构
 ```
 export_output/
-├── component_positions.json      # 主要数据文件（ExportData）
-├── stl_files/                    # STL几何文件目录
+├── component_positions.json      # 主要数据文件（ExportData，含 brep_surfaces 精确曲面参数）
+├── stl_files/                    # STL几何文件目录（网格，用于渲染）
 │   ├── component_1.stl
 │   ├── component_2.stl
 │   └── ...
@@ -44,6 +44,7 @@ ExportData 是整个工具链的核心数据结构，包含：
 - **world_transform**: 世界坐标系变换矩阵
 - **bodies_count**: 实体数量
 - **has_children**: 是否包含子零部件
+- **colliders**: 碰撞体列表（从子级 `COL_` 前缀组件提取的圆柱几何，单位 mm，世界坐标）。每个碰撞体含 name/parent_component/shape_type/radius/length/axis/origin/endpoints
 
 ### 关节信息
 每个关节包含：

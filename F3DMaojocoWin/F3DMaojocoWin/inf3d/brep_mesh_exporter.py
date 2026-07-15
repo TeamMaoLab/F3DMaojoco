@@ -127,15 +127,17 @@ class BRepMeshExporter:
             return ""
 
     def _tessellate_occurrence(self, occ):
-        """网格化一个 occurrence 的所有 body。返回 {positions, indices, vertex_count}。"""
+        """网格化一个 occurrence 的所有 body。返回 {positions, indices, vertex_count}。
+
+        输出 body 局部坐标（cm→mm），不应用 world_transform。
+        原因：viewer.js 加载时会用 component_positions.json 的 world_transform
+        变换 mesh。如果这里提前应用了变换，viewer 会再转一次 = 转两次 = 错误。
+        这与 STL 导出一致（STL 顶点也是 body 局部坐标）。
+        """
         positions = []
         indices = []
-        # 入口诊断：确认这个方法被执行了 + 精度参数值
-        log_info(self.logger, "[BRep诊断] _tessellate_occurrence 被调用: %s, angle=%s, edge=%s" %
-                 (occ.name, self.angle_tolerance, self.max_edge_length))
         try:
             comp = occ.component
-            world_transform = _accumulate_transform(occ)
             vert_offset = 0
 
             for body_idx in range(comp.bRepBodies.count):
@@ -146,14 +148,11 @@ class BRepMeshExporter:
 
                 coords = mesh.nodeCoordinates
                 for p in coords:
-                    wp = p
-                    if world_transform is not None:
-                        wp = p.copy()
-                        wp.transformBy(world_transform)
+                    # body 局部坐标，cm → mm，不应用 world_transform
                     positions.extend([
-                        round(wp.x * MM, 4),
-                        round(wp.y * MM, 4),
-                        round(wp.z * MM, 4),
+                        round(p.x * MM, 4),
+                        round(p.y * MM, 4),
+                        round(p.z * MM, 4),
                     ])
 
                 idx = mesh.nodeIndices
