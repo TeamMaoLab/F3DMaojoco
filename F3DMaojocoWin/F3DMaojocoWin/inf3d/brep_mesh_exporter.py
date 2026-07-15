@@ -7,6 +7,7 @@
 """
 import os
 import json
+import math
 
 import adsk.core
 import adsk.fusion
@@ -194,21 +195,31 @@ class BRepMeshExporter:
                         self.logger.info("[PY诊断]   读 %s 失败: %s" % (a, e))
                 self._diag_logged = True
 
-            # 尝试设置精度（多种 API 形式）
-            for attr, val in [('angleTolerance', self.angle_tolerance),
-                              ('maxEdgeLength', self.max_edge_length)]:
-                try:
-                    setattr(calc, attr, val)
-                except Exception:
-                    setter = 'set' + attr[0].upper() + attr[1:]
-                    try:
-                        getattr(calc, setter)(val)
-                    except Exception:
-                        pass
+            # 设置精度（正确的 API 属性名，来自 dir() 诊断）
+            # maxNormalDeviation: 法线偏差（弧度，越小越精细）
+            # maxSideLength: 最大边长（cm）
+            # maxAspectRatio: 最大长宽比
+            try:
+                calc.maxNormalDeviation = math.radians(self.angle_tolerance)
+            except Exception as e:
+                if not self._diag_logged:
+                    self.logger.info("[PY诊断] 设 maxNormalDeviation 失败: " + str(e))
+            try:
+                calc.maxSideLength = self.max_edge_length
+            except Exception as e:
+                if not self._diag_logged:
+                    self.logger.info("[PY诊断] 设 maxSideLength 失败: " + str(e))
 
             mesh = calc.calculate()
             if mesh is None:
                 mesh = calc.mesh
+            # 诊断：设完后读回确认
+            if not self._diag_logged:
+                try:
+                    self.logger.info("[PY诊断] 设后 maxNormalDeviation=" + str(calc.maxNormalDeviation))
+                    self.logger.info("[PY诊断] 设后 maxSideLength=" + str(calc.maxSideLength))
+                except Exception:
+                    pass
             return mesh
         except Exception as e:
             log_error(self.logger, f"_tessellate_body 失败: {e}")
