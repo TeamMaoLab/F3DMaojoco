@@ -300,14 +300,15 @@ class ComponentCollector:
                 for face in body.faces:
                     faces_found += 1
                     try:
-                        # BRepFace 没有 surfaceType 属性，用 face.geometry.objectType 判断
+                        # face.geometry 返回 Surface 对象（Cylinder/Plane/Cone 等）
+                        # objectType 形如 'adsk::core::Cylinder'，用 endswith 匹配避免命名空间问题
                         geo = face.geometry
                         if geo is None:
                             continue
-                        geo_type = geo.objectType  # 'Cylinder' / 'Plane' / 'Cone' 等
+                        geo_type = geo.objectType
                         if faces_found <= 6:
                             self.logger.debug(f"    face[{faces_found-1}]: geometry.objectType={geo_type}")
-                        if geo_type != 'Cylinder':
+                        if not geo_type.endswith('Cylinder'):
                             continue
                         cyl = geo  # adsk.core.Cylinder
                     except Exception as fe:
@@ -326,7 +327,8 @@ class ComponentCollector:
                                 geo = edge.geometry
                                 if geo is None:
                                     continue
-                                if getattr(geo, 'objectType', '') == 'Circle3D':
+                                # objectType 形如 'adsk::core::Circle3D'，用 endswith 匹配
+                                if getattr(geo, 'objectType', '').endswith('Circle3D'):
                                     endpoints_local.append(geo.center)
                             except Exception:
                                 continue
