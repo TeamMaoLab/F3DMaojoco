@@ -83,25 +83,26 @@
         }
         #loading.show { display: block; }
 
-        /* 工作空间热力图面板 */
-        #heatmapPanel {
-            position: absolute; top: 12px; right: 12px; width: 380px;
-            background: rgba(30,30,30,0.95); border: 1px solid #3c3c3c; border-radius: 6px;
-            padding: 12px; display: none; z-index: 10;
+        /* 工作空间可达性地图（右侧面板内） */
+        .ws-section .content { padding: 10px; }
+        .ws-toolbar { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+        .ws-toolbar select { background: #3c3c3c; color: #ddd; border: 1px solid #555; border-radius: 3px; padding: 3px 6px; font-size: 11px; }
+        .ws-canvas-wrap { position: relative; display: flex; justify-content: center; }
+        #wsCanvas {
+            border: 1px solid #3c3c3c; background: #222; cursor: crosshair; image-rendering: pixelated;
+            touch-action: none; /* 阻止触摸滚动，交给拖拽逻辑 */
         }
-        #heatmapPanel.show { display: block; }
-        .hp-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
-        .hp-close { background: none; border: none; color: #888; cursor: pointer; font-size: 16px; }
-        .hp-close:hover { color: #fff; }
-        .hp-progress { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .hp-bar { flex: 1; height: 8px; background: #3c3c3c; border-radius: 4px; overflow: hidden; }
-        .hp-fill { height: 100%; background: #4ec9b0; width: 0; transition: width 0.1s; }
-        .hp-text { font-size: 11px; color: #888; white-space: nowrap; }
-        .hp-canvas-wrap { display: flex; justify-content: center; }
-        #heatmapCanvas { border: 1px solid #3c3c3c; background: #222; cursor: crosshair; image-rendering: pixelated; }
-        .hp-legend { display: flex; gap: 12px; justify-content: center; margin-top: 8px; font-size: 11px; color: #ccc; }
-        .hp-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 4px; vertical-align: middle; border-radius: 2px; }
-        .hp-stats { margin-top: 6px; font-size: 11px; color: #888; text-align: center; }
+        #wsCanvas.dragging { cursor: grabbing; }
+        .ws-axis-label { font-size: 10px; color: #888; }
+        .ws-progress { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+        .ws-bar { flex: 1; height: 6px; background: #3c3c3c; border-radius: 3px; overflow: hidden; }
+        .ws-fill { height: 100%; background: #4ec9b0; width: 0; transition: width 0.1s; }
+        .ws-text { font-size: 10px; color: #888; white-space: nowrap; }
+        .ws-legend { display: flex; gap: 10px; justify-content: center; margin-top: 6px; font-size: 10px; color: #ccc; flex-wrap: wrap; }
+        .ws-legend i { display: inline-block; width: 9px; height: 9px; margin-right: 3px; vertical-align: middle; border-radius: 2px; }
+        .ws-stats { margin-top: 4px; font-size: 10px; color: #888; text-align: center; }
+        .ws-hint { margin-top: 6px; font-size: 10px; color: #666; text-align: center; }
+        .ws-readout { font-size: 11px; color: #4ec9b0; text-align: center; margin-top: 4px; font-family: monospace; }
         #workspaceBtn:disabled { opacity: 0.4; }
     </style>
 </head>
@@ -139,27 +140,45 @@
             </div>
             <div id="loading">加载中…</div>
             <div id="status"></div>
-            <div id="heatmapPanel">
-                <div class="hp-header">
-                    <span>工作空间可解性热力图</span>
-                    <button class="hp-close" id="hpCloseBtn">✕</button>
-                </div>
-                <div class="hp-progress" id="hpProgress">
-                    <div class="hp-bar"><div class="hp-fill" id="hpFill"></div></div>
-                    <span class="hp-text" id="hpText">等待计算…</span>
-                </div>
-                <div class="hp-canvas-wrap">
-                    <canvas id="heatmapCanvas" width="360" height="360"></canvas>
-                </div>
-                <div class="hp-legend">
-                    <span><i style="background:#222"></i>无解</span>
-                    <span><i style="background:#e74c3c"></i>有解·超极限</span>
-                    <span><i style="background:#27ae60"></i>有解·极限内</span>
-                </div>
-                <div class="hp-stats" id="hpStats"></div>
-            </div>
         </div>
         <div id="panel">
+            <div class="panel-section ws-section">
+                <h2 style="display:flex;align-items:center;justify-content:space-between;">
+                    <span>工作空间 θ1 × θ2</span>
+                    <span style="font-weight:normal;display:flex;gap:4px;align-items:center;">
+                        <label style="font-size:10px;color:#888;">范围</label>
+                        <select id="wsRangeSelect">
+                            <option value="60">±60°</option>
+                            <option value="90" selected>±90°</option>
+                            <option value="120">±120°</option>
+                        </select>
+                    </span>
+                </h2>
+                <div class="content">
+                    <div class="ws-toolbar">
+                        <button class="btn" id="wsSolveBtn" style="font-size:11px;padding:4px 10px;">🎯 求解可达性</button>
+                        <span class="ws-readout" id="wsReadout">θ1=0° θ2=0°</span>
+                    </div>
+                    <div class="ws-canvas-wrap">
+                        <canvas id="wsCanvas" width="288" height="288"></canvas>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-top:2px;">
+                        <span class="ws-axis-label">← θ2</span>
+                        <span class="ws-axis-label">θ1 →</span>
+                    </div>
+                    <div class="ws-progress" id="wsProgress">
+                        <div class="ws-bar"><div class="ws-fill" id="wsFill"></div></div>
+                        <span class="ws-text" id="wsText">未计算</span>
+                    </div>
+                    <div class="ws-legend">
+                        <span><i style="background:#222"></i>无解</span>
+                        <span><i style="background:#e74c3c"></i>有解·超极限</span>
+                        <span><i style="background:#27ae60"></i>有解·极限内</span>
+                    </div>
+                    <div class="ws-stats" id="wsStats"></div>
+                    <div class="ws-hint">在地图上按住拖动 → 舵机连续运动（步进防跳分支）</div>
+                </div>
+            </div>
             <div class="panel-section list">
                 <h2 style="display:flex;align-items:center;justify-content:space-between;">
                     <span>运动学树</span>

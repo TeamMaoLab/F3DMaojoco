@@ -1,88 +1,147 @@
-<mujoco model="servo_quadruped_leg">
-  <compiler angle="radian"/>
+<!-- 舵机四足单腿（双闭环平面机构，XZ 平面运动，Y 是旋转轴）
+     从 component_positions.json 精确重建。
 
-  <option timestep="0.001"/>
+     运动学树（从机架出发）：
+       机架 ─[旋转1 @ J1]→ 膝盖动力发生器 ─[旋转6 @ J6]→ 膝盖传动1
+                                       ─[旋转7 @ J7]→ 膝盖转动 ─[旋转4 @ J4]→ 膝盖传动2
+       机架 ─[旋转2 @ J2]→ 大腿刚体(4零件) ─[旋转3 @ J3]→ 小腿
+     闭环约束（equality/connect 把两个断点强制重合）：
+       J2': 膝盖转动上的 J2' 点 ↔ 大腿刚体上的 J2 点
+       J5 : 膝盖传动2上的 J5 点 ↔ 小腿上的 J5 点
+
+     驱动方式：θ1/θ2 是"指定驱动关节"（不靠 PD 平衡，直接 lock 到目标角），
+     4 个被动关节自由，靠 equality 约束求解器解出它们的位置 → 纯 FK。
+
+     关节坐标（mm, XZ 平面）：
+       J1=(-10.9,14.4) J2=(0,0) J3=(25,-43.3) J4=(12.12,7) J5=(37.12,-36.3)
+       J6=(-21.29,8.4) J7=(-12.12,-7)
+-->
+<mujoco model="servo_quadruped_leg">
+  <compiler angle="radian" coordinate="local"/>
+  <option timestep="0.002" gravity="0 0 0"/>
 
   <default>
-    <joint damping="2"/>
-    <geom type="mesh" rgba="0.6 0.6 0.7 0.85"/>
+    <joint type="hinge" axis="0 1 0" damping="0.5" armature="0.0001"/>
+    <!-- 可视化 mesh：不参与碰撞（contype=0），group=2 用于渲染 -->
+    <geom type="mesh" rgba="0.6 0.6 0.7 0.8" contype="0" conaffinity="0" group="2"/>
+    <!-- 碰撞胶囊：contype=1 conaffinity=1 互相可碰，group=3 可选渲染 -->
+    <default class="collider">
+      <geom type="capsule" condim="3" contype="1" conaffinity="1" group="3"
+            rgba="1 0.4 0.1 0.55"/>
+    </default>
+    <!-- 接近刚性的闭环约束 -->
+    <equality solref="0.001 1" solimp="0.9999 0.99999 0.00001"/>
   </default>
 
   <asset>
-    <mesh name="servo" content_type="model/stl" file="../exports/export1/stl_files/servo_mg90s v2_servo_mg90s v2.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="knee_driver" content_type="model/stl" file="../exports/export1/stl_files/膝盖动力发生器_膝盖动力发生器.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="knee_link1" content_type="model/stl" file="../exports/export1/stl_files/膝盖传动1_膝盖传动1.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="knee_rotor" content_type="model/stl" file="../exports/export1/stl_files/膝盖转动_膝盖转动.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="knee_link2" content_type="model/stl" file="../exports/export1/stl_files/膝盖传动2_膝盖传动2.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="thigh_driver" content_type="model/stl" file="../exports/export1/stl_files/大腿主动力发生器_大腿主动力发生器.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="shin" content_type="model/stl" file="../exports/export1/stl_files/小腿_小腿.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="shin_bracket" content_type="model/stl" file="../exports/export1/stl_files/小腿保持架_小腿保持架.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="hip_bracket" content_type="model/stl" file="../exports/export1/stl_files/髋关节保持架_髋关节保持架.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="thigh_cover" content_type="model/stl" file="../exports/export1/stl_files/大腿盖板_大腿盖板.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="servo"       file="../exports/export1/stl_files/servo_mg90s v2_servo_mg90s v2.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_driver" file="../exports/export1/stl_files/膝盖动力发生器_膝盖动力发生器.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_link1"  file="../exports/export1/stl_files/膝盖传动1_膝盖传动1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_rotor"  file="../exports/export1/stl_files/膝盖转动_膝盖转动.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_link2"  file="../exports/export1/stl_files/膝盖传动2_膝盖传动2.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="thigh_driver" file="../exports/export1/stl_files/大腿主动力发生器_大腿主动力发生器.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="shin"        file="../exports/export1/stl_files/小腿_小腿.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="shin_bracket" file="../exports/export1/stl_files/小腿保持架_小腿保持架.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="hip_bracket"  file="../exports/export1/stl_files/髋关节保持架_髋关节保持架.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="thigh_cover"  file="../exports/export1/stl_files/大腿盖板_大腿盖板.stl" scale="0.001 0.001 0.001"/>
   </asset>
 
   <worldbody>
-    <light pos="0 -0.5 0.3" dir="0 0.957826 -0.287348" diffuse="0.8 0.8 0.8"/>
-    <light pos="0 0.5 0.3" dir="0 -0.957826 -0.287348" diffuse="0.4 0.4 0.4"/>
-    <body name="servo1" quat="0 -0.707107 0 0.707107">
-      <inertial pos="0 0 0" mass="0.001" diaginertia="0.0001 0.0001 0.0001"/>
-      <geom rgba="0.3 0.3 0.3 0.9" mesh="servo"/>
+    <light pos="0 -0.5 0.3" dir="0 0.95 -0.3" diffuse="0.8 0.8 0.8"/>
+    <light pos="0 0.5 0.3" dir="0 -0.95 -0.3" diffuse="0.4 0.4 0.4"/>
+    <geom type="sphere" size="0.002" rgba="1 1 0 1" contype="0" conaffinity="0"/>
+
+    <!-- 舵机壳体（固定，装饰，不参与碰撞） -->
+    <body name="servo_knee_housing" pos="-0.0109 0 0.0144">
+      <inertial pos="0 0 0" mass="0.01" diaginertia="1e-5 1e-5 1e-5"/>
+      <geom rgba="0.3 0.3 0.3 0.9" mesh="servo" contype="0" conaffinity="0"/>
     </body>
-    <body name="servo2" pos="-0.0109 0 0.0144" quat="0 0.707107 0 0.707107">
-      <inertial pos="0 0 0" mass="0.001" diaginertia="0.0001 0.0001 0.0001"/>
-      <geom rgba="0.3 0.3 0.3 0.9" mesh="servo"/>
+    <body name="servo_thigh_housing">
+      <inertial pos="0 0 0" mass="0.01" diaginertia="1e-5 1e-5 1e-5"/>
+      <geom rgba="0.3 0.3 0.3 0.9" mesh="servo" contype="0" conaffinity="0"/>
     </body>
-    <body name="shin_bracket">
-      <inertial pos="0 0 0" mass="0.001" diaginertia="0.0001 0.0001 0.0001"/>
-      <geom rgba="0.5 0.5 0.5 0.6" mesh="shin_bracket"/>
-    </body>
-    <body name="hip_bracket">
-      <inertial pos="0 0 0" mass="0.001" diaginertia="0.0001 0.0001 0.0001"/>
-      <geom rgba="0.5 0.5 0.5 0.6" mesh="hip_bracket"/>
-    </body>
-    <body name="thigh_cover">
-      <inertial pos="0 0 0" mass="0.001" diaginertia="0.0001 0.0001 0.0001"/>
-      <geom rgba="0.5 0.5 0.5 0.6" mesh="thigh_cover"/>
-    </body>
-    <body name="knee_driver">
-      <inertial pos="0 0 0" mass="0.01" diaginertia="0.001 0.001 0.001"/>
-      <joint name="旋转1" pos="0.0109 0.003 0.0144" axis="0 1 0"/>
-      <geom rgba="0.8 0.4 0.2 0.9" mesh="knee_driver"/>
-      <body name="knee_link1">
-        <inertial pos="0 0 0" mass="0.01" diaginertia="0.001 0.001 0.001"/>
-        <joint name="旋转6" pos="-0.0213 -0.004 0.0084" axis="0 1 0"/>
-        <geom rgba="0.2 0.8 0.4 0.9" mesh="knee_link1"/>
-        <body name="knee_rotor">
-          <inertial pos="0 0 0" mass="0.01" diaginertia="0.001 0.001 0.001"/>
-          <joint name="旋转7" pos="-0.0121 -0.0045 -0.007" axis="0 1 0"/>
-          <geom rgba="0.2 0.4 0.8 0.9" mesh="knee_rotor"/>
-          <body name="knee_link2">
-            <inertial pos="0 0 0" mass="0.01" diaginertia="0.001 0.001 0.001"/>
-            <joint name="旋转4" pos="0.0121 -0.004 0.007" axis="0 1 0"/>
-            <geom rgba="0.8 0.8 0.2 0.9" mesh="knee_link2"/>
+
+    <!-- ============ 膝盖传动链（机架→J1→J6→J7→J4）============ -->
+    <body name="knee_driver" pos="-0.0109 0 0.0144">
+      <inertial pos="0 0 0" mass="0.01" diaginertia="1e-5 1e-5 1e-5"/>
+      <!-- 主动关节1：直接驱动（见 actuator，用强 PD） -->
+      <joint name="j_旋转1" pos="0 0 0"/>
+      <geom rgba="0.9 0.5 0.2 0.9" mesh="knee_driver" pos="0.0109 0 -0.0144"/>
+      <geom class="collider" fromto="-0.00346 0 -0.002 -0.00693 0 -0.004" size="0.0023"/>
+
+      <body name="knee_link1" pos="-0.01039 0 -0.006">
+        <inertial pos="0 0 0" mass="0.005" diaginertia="5e-6 5e-6 5e-6"/>
+        <joint name="j_旋转6" pos="0 0 0"/>
+        <geom rgba="0.2 0.9 0.4 0.9" mesh="knee_link1" pos="0.02129 0 -0.0084"/>
+        <geom class="collider" fromto="0.00205 0 -0.00344 0.00712 0 -0.01196" size="0.0037"/>
+
+        <body name="knee_rotor" pos="0.00917 0 -0.0154">
+          <inertial pos="0 0 0" mass="0.005" diaginertia="5e-6 5e-6 5e-6"/>
+          <joint name="j_旋转7" pos="0 0 0"/>
+          <geom rgba="0.2 0.4 0.9 0.9" mesh="knee_rotor" pos="0.01212 0 0.007"/>
+          <geom class="collider" fromto="0.00346 0 0.002 0.02078 0 0.012" size="0.0073"/>
+
+          <body name="knee_link2" pos="0.02424 0 0.014">
+            <inertial pos="0 0 0" mass="0.005" diaginertia="5e-6 5e-6 5e-6"/>
+            <joint name="j_旋转4" pos="0 0 0"/>
+            <geom rgba="0.9 0.9 0.2 0.9" mesh="knee_link2" pos="-0.01212 0 -0.007"/>
+            <geom class="collider" fromto="0.002 0 -0.00346 0.023 0 -0.03984" size="0.0064"/>
+            <site name="s_J5_link2" pos="0.025 0 -0.0433" size="0.0015" rgba="1 0 0 1"/>
           </body>
         </body>
       </body>
     </body>
-    <body name="thigh_driver">
-      <inertial pos="0 0 0" mass="0.01" diaginertia="0.001 0.001 0.001"/>
-      <joint name="旋转2" pos="0 -0.001 0" axis="0 1 0"/>
-      <geom rgba="0.8 0.2 0.6 0.9" mesh="thigh_driver"/>
-      <body name="shin">
-        <inertial pos="0 0 0" mass="0.01" diaginertia="0.001 0.001 0.001"/>
-        <joint name="旋转3" pos="0.025 -0.006 -0.0433" axis="0 1 0"/>
-        <geom rgba="0.2 0.6 0.8 0.9" mesh="shin"/>
+
+    <!-- ============ 腿链（机架→J2→J3）============ -->
+    <body name="thigh_rigid" pos="0 0 0">
+      <inertial pos="0 0 0" mass="0.02" diaginertia="2e-5 2e-5 2e-5"/>
+      <joint name="j_旋转2" pos="0 0 0"/>
+      <geom rgba="0.9 0.2 0.6 0.9" mesh="thigh_driver"/>
+      <geom rgba="0.6 0.6 0.6 0.7" mesh="shin_bracket"/>
+      <geom rgba="0.6 0.6 0.6 0.7" mesh="hip_bracket"/>
+      <geom rgba="0.6 0.6 0.6 0.7" mesh="thigh_cover"/>
+      <geom class="collider" fromto="0.002 0 -0.00346 0.023 0 -0.03984" size="0.0029"/>
+      <site name="s_J2_thigh" pos="0 0 0" size="0.0015" rgba="0 1 0 1"/>
+
+      <body name="shin" pos="0.025 0 -0.0433">
+        <inertial pos="0 0 0" mass="0.01" diaginertia="1e-5 1e-5 1e-5"/>
+        <joint name="j_旋转3" pos="0 0 0"/>
+        <geom rgba="0.2 0.7 0.9 0.9" mesh="shin" pos="-0.025 0 0.0433"/>
+        <geom class="collider" fromto="0.00346 0 0.002 0.00866 0 0.005" size="0.005"/>
+        <site name="s_J5_shin" pos="0.01212 0 0.007" size="0.0015" rgba="1 0 0 1"/>
       </body>
     </body>
   </worldbody>
 
+  <!-- ============ 闭环约束（2 条断边）============ -->
   <equality>
-    <connect body1="knee_rotor" body2="thigh_driver" anchor="0 -0.001 0"/>
-    <connect body1="knee_link2" body2="shin" anchor="0.0371 -0.0045 -0.0363"/>
+    <connect name="loop_J2" body1="knee_rotor" body2="thigh_rigid"
+             anchor="0.01212 0 0.007"/>
+    <connect name="loop_J5" body1="knee_link2" body2="shin"
+             anchor="0.025 0 -0.0433"/>
   </equality>
 
+  <!-- ============ 碰撞排除 ============
+       相邻刚体（共享关节）在关节轴附近本就连在一起，mesh 会持续穿透，
+       不排除会一直误报碰撞。排除这 4 对父子刚体 + 2 对闭环约束体（在 anchor 处共享点）。
+       MuJoCo 自动排除同一 body 内的多 geom，所以大腿刚体 4 零件不用列。 -->
+  <contact>
+    <!-- 关节父子对 -->
+    <exclude body1="knee_driver" body2="knee_link1"/>
+    <exclude body1="knee_link1" body2="knee_rotor"/>
+    <exclude body1="knee_rotor" body2="knee_link2"/>
+    <exclude body1="thigh_rigid" body2="shin"/>
+    <!-- 闭环约束对（anchor 处 mesh 重叠） -->
+    <exclude body1="knee_rotor" body2="thigh_rigid"/>
+    <exclude body1="knee_link2" body2="shin"/>
+  </contact>
+
+  <!-- 强 PD 伺服：高 kp 刚性追踪，高 kv 阻尼防震荡 -->
+  <default>
+    <position kp="800" kv="20"/>
+  </default>
   <actuator>
-    <general name="servo_knee" joint="旋转1" forcerange="-5 5" biastype="affine" gainprm="500" biasprm="0 -500"/>
-    <general name="servo_thigh" joint="旋转2" forcerange="-5 5" biastype="affine" gainprm="500" biasprm="0 -500"/>
+    <position name="servo_knee"  joint="j_旋转1" kp="800" kv="20" forcerange="-30 30"/>
+    <position name="servo_thigh" joint="j_旋转2" kp="800" kv="20" forcerange="-30 30"/>
   </actuator>
 </mujoco>

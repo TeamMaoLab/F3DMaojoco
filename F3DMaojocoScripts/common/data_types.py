@@ -463,6 +463,59 @@ class JointInfo:
 
 
 @dataclass
+class CollisionShape:
+    """碰撞体几何信息（从 Fusion 圆柱体组件提取）
+    
+    用于 MuJoCo 仿真中的零件自碰撞检测。命名约定：组件名以 `COL_` 开头
+    的 occurrence 被识别为碰撞体，其归属零件由 Fusion 层级决定（父 occurrence）。
+    
+    - name: 碰撞体名（即 Fusion 组件名，COL_ 前缀）
+    - parent_component: 归属零件名（父 occurrence 的 component 名）
+    - shape_type: 形状类型（目前只支持 cylinder，预留 capsule/box）
+    - radius: 半径（mm，世界坐标）
+    - length: 长度（mm，沿轴方向）
+    - axis: 轴方向单位向量 [x,y,z]（世界坐标）
+    - origin: 轴上一点 [x,y,z]（世界坐标 mm）
+    - endpoints: 两端点 [[x,y,z],[x,y,z]]（世界坐标 mm，从圆形边中心算出）
+    
+    所有坐标已转为世界坐标系（应用了 occurrence.transform）和毫米单位（从 cm ×10）。
+    """
+    name: str                                          # 碰撞体名（COL_ 组件名）
+    parent_component: str                              # 归属零件名
+    shape_type: str = "cylinder"                       # 形状类型
+    radius: Optional[float] = None                     # 半径 mm
+    length: Optional[float] = None                     # 长度 mm
+    axis: Optional[List[float]] = None                 # 轴方向 [x,y,z]
+    origin: Optional[List[float]] = None               # 轴上一点 [x,y,z] mm
+    endpoints: Optional[List[List[float]] = None       # 两端点 [[x,y,z],[x,y,z]] mm
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "parent_component": self.parent_component,
+            "shape_type": self.shape_type,
+            "radius": self.radius,
+            "length": self.length,
+            "axis": self.axis,
+            "origin": self.origin,
+            "endpoints": self.endpoints,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'CollisionShape':
+        return cls(
+            name=data["name"],
+            parent_component=data["parent_component"],
+            shape_type=data.get("shape_type", "cylinder"),
+            radius=data.get("radius"),
+            length=data.get("length"),
+            axis=data.get("axis"),
+            origin=data.get("origin"),
+            endpoints=data.get("endpoints"),
+        )
+
+
+@dataclass
 class ComponentInfo:
     """零部件信息
     

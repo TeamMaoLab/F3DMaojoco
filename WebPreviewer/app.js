@@ -31,14 +31,16 @@
     function showLoading(msg) { loadingEl.textContent = msg; loadingEl.classList.add('show'); }
     function hideLoading() { loadingEl.classList.remove('show'); }
 
-    // 工作空间热力图相关
+    // 工作空间可达性地图相关
     const workspaceBtn = document.getElementById('workspaceBtn');
-    const heatmapPanel = document.getElementById('heatmapPanel');
-    const hpCloseBtn = document.getElementById('hpCloseBtn');
-    const hpFill = document.getElementById('hpFill');
-    const hpText = document.getElementById('hpText');
-    const hpStats = document.getElementById('hpStats');
-    const heatmapCanvas = document.getElementById('heatmapCanvas');
+    const wsSolveBtn = document.getElementById('wsSolveBtn');
+    const wsRangeSelect = document.getElementById('wsRangeSelect');
+    const wsFill = document.getElementById('wsFill');
+    const wsText = document.getElementById('wsText');
+    const wsStats = document.getElementById('wsStats');
+    const wsReadout = document.getElementById('wsReadout');
+    const wsCanvas = document.getElementById('wsCanvas');
+    const wsCtx = wsCanvas.getContext('2d');
     let currentMechData = null;   // 加载模型后提取的机构数据
     let currentHeatmap = null;    // 计算完成的热力图数据
     let currentAngles = null;     // 角度序列
@@ -51,6 +53,13 @@
     let currentJointAngles = null; // 树关节角度 {刚体名: 角度}
     let constraintMode = false;   // false=手动模式, true=约束模式(只拖θ1θ2)
     let lastSolverX0 = null;      // solveFKCoupled 上次解（连续追踪初值，避免跳分支）
+
+    // 工作空间拖拽状态
+    let wsRange = 90;             // 扫描范围（±wsRange 度）
+    let wsPointer = { t1: 0, t2: 0 };  // 当前舵机角（用于画指针）
+    let isWsDragging = false;     // 是否正在拖拽
+    let dragTarget = { t1: 0, t2: 0 }; // 拖拽目标角
+    let dragAnimId = null;        // rAF handle
 
     // 零件 -> 其旋转关节点A（零件绕此点转）。来自机构分析。
     const partJointMap = {
@@ -497,33 +506,24 @@
         });
     }
 
-    // 约束模式: 用 solveFK 求解被动角，转换成树关节相对角
+    // 约束模式: 用 solveFKCoupled 求解被动角（与 applyAllJointRotatives 一致）
+    // coupled 解出的 passive.{th3,th4,th6,th7} 就是树关节相对角，直接用
     function solveAndUpdatePassive() {
         if (!currentMechData) return;
         const t1 = currentJointAngles['膝盖动力发生器'] || 0;  // θ1 = 旋转1
         const t2 = currentJointAngles['大腿刚体'] || 0;        // θ2 = 旋转2
-        const result = window.FKSolver.solveFK(t1, t2, currentMechData);
+        const result = window.FKSolver.solveFKCoupled(t1, t2, currentMechData, lastSolverX0);
         if (!result.ok) {
             showStatus(`θ1=${t1}° θ2=${t2}° → 无解: ${result.reason}`, true);
             return;
         }
         hideStatus();
-        // solver 的 angles 是世界角，转换成树关节相对角
-        // solver angles: '旋转 1'..'旋转 7'
-        const sa = result.angles;
-        // 树关节相对角 = 子世界角 - 父世界角
-        // 膝盖动力(父=机架): 相对 = θ1
-        // 膝盖传动1(父=膝盖动力): 相对 = solver6 - θ1
-        // 膝盖转动(父=膝盖传动1): 相对 = solver7 - solver6
-        // 膝盖传动2(父=膝盖转动): 相对 = solver4 - solver7
-        // 大腿刚体(父=机架): 相对 = θ2
-        // 小腿(父=大腿刚体): 相对 = solver3 - θ2
-        currentJointAngles['膝盖动力发生器'] = t1;
-        currentJointAngles['膝盖传动1'] = sa['旋转 6'] - t1;
-        currentJointAngles['膝盖转动'] = sa['旋转 7'] - sa['旋转 6'];
-        currentJointAngles['膝盖传动2'] = sa['旋转 4'] - sa['旋转 7'];
-        currentJointAngles['大腿刚体'] = t2;
-        currentJointAngles['小腿'] = sa['旋转 3'] - t2;
+        lastSolverX0 = result.passive ? [result.passive.th3, result.passive.th4, result.passive.th6, result.passive.th7] : lastSolverX0;
+        const p = result.passive;
+        currentJointAngles['膝盖传动1'] = p.th6 * 180 / Math.PI;
+        currentJointAngles['膝盖转动'] = p.th7 * 180 / Math.PI;
+        currentJointAngles['膝盖传动2'] = p.th4 * 180 / Math.PI;
+        currentJointAngles['小腿'] = p.th3 * 180 / Math.PI;
     }
 
     // 应用所有树关节旋转
@@ -557,6 +557,12 @@
                 angle: currentJointAngles[b.name] || 0, parts: b.parts,
             }));
             viewer.applyJointRotations(bodyRotations);
+            // 同步工作空间地图指针（滑块/地图拖拽都走这里）
+            if (currentAngles) {
+                wsPointer.t1 = t1; wsPointer.t2 = t2;
+                drawWsMap();
+                wsReadout.textContent = `θ1=${t1.toFixed(0)}° θ2=${t2.toFixed(0)}°`;
+            }
         } else {
             // 手动模式：用相对角累积
             const bodyRotations = bodies.map(b => ({
@@ -650,88 +656,202 @@
         applyAllJointRotations();
     });
 
-    // ---- 工作空间热力图 ----
-    workspaceBtn.addEventListener('click', () => {
-        if (!currentMechData) return;
-        heatmapPanel.classList.add('show');
-        runHeatmapScan();
+    // ---- 工作空间可达性地图 ----
+    // 坐标约定: Canvas x 轴 = θ1, y 轴 = θ2（原点左上，与角度序列索引一致）
+    // angles[i] 对应 θ1，angles[j] 对应 θ2（drawHeatmap 里 i→row, j→col）
+
+    workspaceBtn.addEventListener('click', () => { if (currentMechData) runWsScan(); });
+    wsSolveBtn.addEventListener('click', () => { if (currentMechData) runWsScan(); });
+
+    wsRangeSelect.addEventListener('change', () => {
+        wsRange = parseInt(wsRangeSelect.value, 10);
+        if (currentMechData && currentHeatmap) runWsScan();
     });
-    hpCloseBtn.addEventListener('click', () => heatmapPanel.classList.remove('show'));
 
-    function runHeatmapScan() {
-        hpText.textContent = '启动计算…';
-        hpFill.style.width = '0%';
-        hpStats.textContent = '';
-
+    function runWsScan() {
+        wsText.textContent = '计算中…';
+        wsFill.style.width = '0%';
+        wsStats.textContent = '';
         const worker = new Worker('heatmap-worker.js');
         worker.onmessage = (e) => {
             const msg = e.data;
             if (msg.type === 'progress') {
                 const pct = (msg.done / msg.total * 100).toFixed(0);
-                hpFill.style.width = pct + '%';
-                hpText.textContent = `${msg.done}/${msg.total} (${pct}%)`;
+                wsFill.style.width = pct + '%';
+                wsText.textContent = `${msg.done}/${msg.total} (${pct}%)`;
             } else if (msg.type === 'done') {
                 currentHeatmap = msg.heatmap;
                 currentAngles = msg.angles;
-                drawHeatmap(msg.heatmap, msg.angles);
+                drawWsMap();
                 const s = msg.stats;
-                hpText.textContent = '完成';
-                hpFill.style.width = '100%';
-                hpStats.textContent = `无解 ${s.noSolution} · 超极限 ${s.solvable - s.inLimits} · 极限内 ${s.inLimits} / 共 ${s.total}`;
+                wsText.textContent = '完成 · 可拖动';
+                wsFill.style.width = '100%';
+                wsStats.textContent = `无解 ${s.noSolution} · 超极限 ${s.solvable - s.inLimits} · 极限内 ${s.inLimits} / 共 ${s.total}`;
                 worker.terminate();
             }
         };
-        worker.postMessage({ mechData: currentMechData, rangeMin: -90, rangeMax: 90, step: 2 });
+        worker.postMessage({ mechData: currentMechData, rangeMin: -wsRange, rangeMax: wsRange, step: 2 });
     }
 
-    function drawHeatmap(heatmap, angles) {
-        const ctx = heatmapCanvas.getContext('2d');
-        const N = angles.length;
-        const cellW = heatmapCanvas.width / N;
-        const cellH = heatmapCanvas.height / N;
-        // 颜色: 0=无解(深), 1=超极限(红), 2=极限内(绿)
+    // 画底图（无指针）
+    function drawWsMap() {
+        const N = currentAngles.length;
+        const cell = wsCanvas.width / N;
         const colors = ['#222222', '#e74c3c', '#27ae60'];
         for (let i = 0; i < N; i++) {
             for (let j = 0; j < N; j++) {
-                ctx.fillStyle = colors[heatmap[i][j]] || '#222';
-                ctx.fillRect(j * cellW, i * cellH, Math.ceil(cellW), Math.ceil(cellH));
+                wsCtx.fillStyle = colors[currentHeatmap[i][j]] || '#222';
+                wsCtx.fillRect(j * cell, i * cell, Math.ceil(cell), Math.ceil(cell));
             }
         }
+        // 画原点十字（0,0 参考线）
+        wsCtx.strokeStyle = 'rgba(255,255,255,0.25)';
+        wsCtx.lineWidth = 1;
+        const mid = wsCanvas.width / 2;
+        wsCtx.beginPath();
+        wsCtx.moveTo(mid, 0); wsCtx.lineTo(mid, wsCanvas.height);
+        wsCtx.moveTo(0, mid); wsCtx.lineTo(wsCanvas.width, mid);
+        wsCtx.stroke();
+        drawWsPointer();
     }
 
-    // 点击热力图 → 3D 腿摆到该角度组合的姿态
-    heatmapCanvas.addEventListener('click', (e) => {
-        if (!currentHeatmap || !currentAngles || !currentMechData) return;
-        const rect = heatmapCanvas.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-        const y = (e.clientY - rect.top) / rect.height;
+    // 在当前舵机角位置画十字指针（含 + 标记）
+    function drawWsPointer() {
+        if (!currentAngles) return;
+        const [px, py] = angleToPixel(wsPointer.t1, wsPointer.t2);
+        // 外圈光晕
+        wsCtx.strokeStyle = isWsDragging ? '#fff' : 'rgba(255,255,255,0.9)';
+        wsCtx.lineWidth = 2;
+        wsCtx.beginPath();
+        wsCtx.moveTo(px - 8, py); wsCtx.lineTo(px + 8, py);
+        wsCtx.moveTo(px, py - 8); wsCtx.lineTo(px, py + 8);
+        wsCtx.stroke();
+        wsCtx.fillStyle = isWsDragging ? '#ffd700' : '#fff';
+        wsCtx.beginPath();
+        wsCtx.arc(px, py, 3, 0, Math.PI * 2);
+        wsCtx.fill();
+    }
+
+    // 角度 → Canvas 像素（与 angles 序列索引对齐，避免重复计算）
+    function angleToPixel(t1, t2) {
         const N = currentAngles.length;
-        const j = Math.min(N - 1, Math.floor(x * N));
-        const i = Math.min(N - 1, Math.floor(y * N));
-        const t1 = currentAngles[i];
-        const t2 = currentAngles[j];
-        const result = window.FKSolver.solveFK(t1, t2, currentMechData);
-        if (result.ok) {
-            const limOk = window.FKSolver.checkLimits(result, currentMechData);
-            viewer.applyPose(result.partRotations, result.jointPositions, currentJointInit, partJointMap);
-            showStatus(`θ1=${t1}° θ2=${t2}° → ${limOk ? '✅有解·极限内' : '⚠️有解·超极限'}`, false);
-        } else {
-            viewer.resetPose();
-            showStatus(`θ1=${t1}° θ2=${t2}° → ❌无解: ${result.reason}（已复位）`, true);
+        // 找最近的角度格索引
+        let i = 0, best = 1e9;
+        for (let k = 0; k < N; k++) { const d = Math.abs(currentAngles[k] - t1); if (d < best) { best = d; i = k; } }
+        let j = 0; best = 1e9;
+        for (let k = 0; k < N; k++) { const d = Math.abs(currentAngles[k] - t2); if (d < best) { best = d; j = k; } }
+        const cell = wsCanvas.width / N;
+        return [(j + 0.5) * cell, (i + 0.5) * cell];
+    }
+
+    // 像素 → 最近的 {i, j} 网格索引 + 对应角度
+    function pixelToGrid(e) {
+        const rect = wsCanvas.getBoundingClientRect();
+        const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left)) / rect.width;
+        const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top)) / rect.height;
+        const N = currentAngles.length;
+        const i = Math.min(N - 1, Math.max(0, Math.floor(y * N)));
+        const j = Math.min(N - 1, Math.max(0, Math.floor(x * N)));
+        return { i, j, t1: currentAngles[i], t2: currentAngles[j], code: currentHeatmap[i][j] };
+    }
+
+    // 查询某角度格是否有解（code!=0）
+    function isSolvable(t1, t2) {
+        if (!currentHeatmap || !currentAngles) return false;
+        const N = currentAngles.length;
+        let i = 0, best = 1e9;
+        for (let k = 0; k < N; k++) { const d = Math.abs(currentAngles[k] - t1); if (d < best) { best = d; i = k; } }
+        let j = 0; best = 1e9;
+        for (let k = 0; k < N; k++) { const d = Math.abs(currentAngles[k] - t2); if (d < best) { best = d; j = k; } }
+        return currentHeatmap[i][j] !== 0;
+    }
+
+    // 更新指针位置 + readout（不改舵机，仅显示）
+    function refreshPointerDisplay() {
+        if (!currentAngles) return;
+        drawWsMap();  // 重画底图+指针
+        wsReadout.textContent = `θ1=${wsPointer.t1.toFixed(0)}° θ2=${wsPointer.t2.toFixed(0)}°`;
+    }
+
+    // ---- 拖拽控制（核心：步进插值，防 solveFKCoupled 跳分支）----
+    // 鼠标松开时刷新地图
+    function onPointerUp() {
+        isWsDragging = false;
+        wsCanvas.classList.remove('dragging');
+        if (dragAnimId) { cancelAnimationFrame(dragAnimId); dragAnimId = null; }
+        refreshPointerDisplay();
+    }
+
+    wsCanvas.addEventListener('mousedown', (e) => {
+        if (!currentHeatmap) return;
+        const g = pixelToGrid(e);
+        if (g.code === 0) {
+            showStatus(`θ1=${g.t1}° θ2=${g.t2}° 无解区，不可进入`, true);
+            return;
         }
+        hideStatus();
+        isWsDragging = true;
+        wsCanvas.classList.add('dragging');
+        dragTarget.t1 = g.t1; dragTarget.t2 = g.t2;
+        if (!dragAnimId) dragAnimId = requestAnimationFrame(stepDrag);
     });
 
-    // 鼠标在热力图上移动时显示当前角度
-    heatmapCanvas.addEventListener('mousemove', (e) => {
-        if (!currentAngles) return;
-        const rect = heatmapCanvas.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-        const y = (e.clientY - rect.top) / rect.height;
-        const N = currentAngles.length;
-        const j = Math.min(N - 1, Math.max(0, Math.floor(x * N)));
-        const i = Math.min(N - 1, Math.max(0, Math.floor(y * N)));
-        heatmapCanvas.title = `θ1=${currentAngles[i]}° θ2=${currentAngles[j]}°`;
+    wsCanvas.addEventListener('mousemove', (e) => {
+        if (!currentHeatmap) return;
+        const g = pixelToGrid(e);
+        if (isWsDragging) {
+            // 仅更新目标，不直接求解（由 rAF 步进追赶）
+            if (g.code !== 0) { dragTarget.t1 = g.t1; dragTarget.t2 = g.t2; }
+            // 拖到无解区：目标保持在上一个有效点（实现"停在边界"）
+        }
+        wsCanvas.title = `θ1=${g.t1}° θ2=${g.t2}° ${g.code === 0 ? '(无解)' : g.code === 2 ? '(极限内)' : '(超极限)'}`;
     });
+
+    wsCanvas.addEventListener('mouseleave', onPointerUp);
+    window.addEventListener('mouseup', onPointerUp);
+
+    // 每帧步进：从当前角朝目标走 MAX_STEP，求解并渲染
+    function stepDrag() {
+        const MAX_STEP = 2;  // 单帧最大角增量（度），防 lastSolverX0 丢连续性
+        const curT1 = currentJointAngles['膝盖动力发生器'] || 0;
+        const curT2 = currentJointAngles['大腿刚体'] || 0;
+        let d1 = dragTarget.t1 - curT1;
+        let d2 = dragTarget.t2 - curT2;
+        const dist = Math.hypot(d1, d2);
+        if (dist < 0.1) {
+            // 已到目标
+            dragAnimId = null;
+            refreshPointerDisplay();
+            return;
+        }
+        // 等比缩放，保证两轴同步且单帧总位移 ≤ MAX_STEP
+        const scale = Math.min(1, MAX_STEP / dist);
+        let nextT1 = curT1 + d1 * scale;
+        let nextT2 = curT2 + d2 * scale;
+        // 进入无解区 → 卡在当前（不前进）
+        if (!isSolvable(nextT1, nextT2)) {
+            // 尝试只走单轴
+            if (isSolvable(curT1 + d1 * scale, curT2)) { nextT1 = curT1 + d1 * scale; nextT2 = curT2; }
+            else if (isSolvable(curT1, curT2 + d2 * scale)) { nextT1 = curT1; nextT2 = curT2 + d2 * scale; }
+            else { dragAnimId = null; refreshPointerDisplay(); return; }  // 两轴都进不去，停
+        }
+        // 自动切约束模式（若不在）
+        if (!constraintMode) {
+            constraintMode = true;
+            document.getElementById('modeConstraintBtn').click();
+        }
+        currentJointAngles['膝盖动力发生器'] = nextT1;
+        currentJointAngles['大腿刚体'] = nextT2;
+        wsPointer.t1 = nextT1; wsPointer.t2 = nextT2;
+        applyAllJointRotations();   // 内部用 solveFKCoupled + lastSolverX0 连续追踪
+        updateSliderDisplay();
+        // 实时刷新指针（轻量重画）
+        refreshPointerDisplay();
+        dragAnimId = requestAnimationFrame(stepDrag);
+    }
+
+    // 滑块拖动时也同步指针位置（约束模式下 θ1/θ2 滑块拖动反映到地图）
+    // （通过在 applyAllJointRotations 后更新 wsPointer 实现，见下方 hook）
 
     // 初始建坐标轴（即使没加载数据也能看到）
     viewer.buildAxes();
