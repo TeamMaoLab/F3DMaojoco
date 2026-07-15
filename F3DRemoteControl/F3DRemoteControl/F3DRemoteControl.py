@@ -126,8 +126,15 @@ def _do_hot_reload():
             pyc_dir = os.path.join(d, sub, '__pycache__')
             if os.path.isdir(pyc_dir):
                 shutil.rmtree(pyc_dir, ignore_errors=True)
-        if d not in sys.path:
-            sys.path.insert(0, d)
+    # path 只加 Win 版（绝对导入），移除 Mac 版（相对导入会报错）
+    win_dir = next((d for d in SCRIPT_DIRS if 'F3DMaojocoWin' in d), None)
+    for d in list(SCRIPT_DIRS):
+        if d in sys.path and d != win_dir:
+            sys.path.remove(d)
+    if win_dir:
+        if win_dir in sys.path:
+            sys.path.remove(win_dir)
+        sys.path.insert(0, win_dir)
     return list(reversed(to_remove))
 
 
