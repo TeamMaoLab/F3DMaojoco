@@ -142,9 +142,17 @@ class Handler(BaseHTTPRequestHandler):
                     self._json({'ok': False, 'error': '缺少 code 参数'}, 400)
                     return
                 # 执行任意代码（调试用，仅 localhost）
+                # 用本模块 globals() 作上下文，暴露 __file__/SCRIPT_DIRS/sys 等
                 try:
-                    local_ns = {'adsk': adsk, 'app': app, 'ui': ui, 'sys': sys, 'os': os}
-                    result = exec(code, {'__name__': '__remote__'}, local_ns)
+                    g = globals()
+                    # exec 返回 None，用 eval 兜底取最后一行表达式值
+                    try:
+                        result = exec(code, g)
+                    except SyntaxError:
+                        # 如果是表达式（如 result 字典），用 eval
+                        result = eval(code, g)
+                    # exec 不返回值；约定代码最后一行赋值给 _result 变量
+                    result = g.get('_result', result)
                     self._json({'ok': True, 'result': str(result)})
                 except Exception as e:
                     self._json({'ok': False, 'error': str(e), 'traceback': traceback.format_exc()}, 500)
