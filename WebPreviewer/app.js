@@ -194,7 +194,8 @@
     function renderTreeList(treeData) {
         const el = document.getElementById('treeList');
         el.innerHTML = treeData.bodies.map(b => {
-            const color = viewer._colorForName ? '#888' : '#888';
+            // 用刚体的首个零件名查配色（同刚体同色）
+            const color = viewer._colorForName(b.parts[0]).css;
             return `<div class="tree-item" data-body="${b.name}" style="display:flex;align-items:center;gap:8px;padding:5px 6px;font-size:12px;cursor:pointer;border-radius:3px;">
                 <span class="swatch" style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;"></span>
                 <span class="name" style="flex:1;">${b.name}</span>
@@ -226,8 +227,7 @@
             .filter(c => !(c.has_children && (c.bodies_count === 0 || c.bodies_count === '0')))
             .map(c => {
                 const dn = c.occurrence_name || c.name;
-                const colorNum = viewer._colorForName(c.name);
-                const colorHex = '#' + colorNum.toString(16).padStart(6, '0');
+                const colorHex = viewer._colorForName(c.name).css;
                 return `<div class="item"><span class="swatch" style="background:${colorHex};"></span><span class="name">${dn}</span></div>`;
             }).join('');
     }

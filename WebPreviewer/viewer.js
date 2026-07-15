@@ -44,13 +44,16 @@ class ExportViewer {
     _initRenderer() {
         const w = this.container.clientWidth || 800;
         const h = this.container.clientHeight || 600;
-        this.camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100000);
+        // near/far 收紧到零件尺度（腿对角线~50mm，相机距离~150mm）。
+        // 之前 0.1/100000 比值 100 万，深度缓冲精度崩坏 → Z-fighting 闪烁。
+        this.camera = new THREE.PerspectiveCamera(50, w / h, 1, 2000);
         // 初始相机位置：看向原点，Z-up（与 MuJoCo/Fusion 一致）
         this.camera.position.set(150, -150, 120);
         this.camera.up.set(0, 0, 1);
         this.camera.lookAt(0, 0, 0);
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        // logarithmicDepthBuffer: 彻底消除 Z-fighting（零件毫米级，远近同时清晰）
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(w, h);
         this.container.appendChild(this.renderer.domElement);
@@ -135,21 +138,31 @@ class ExportViewer {
      * 按 occurrence 名称生成颜色（移植自 VistaQuickViewer._generate_color）
      * 返回 {css, hex}
      */
+    // 按运动学树刚体分组配色（与 MuJoCo leg.xml 颜色对齐）
+    // key = 零件名关键词，value = hex 色（0x 前缀）
+    static BODY_COLORS = {
+        '膝盖动力发生器': 0xe67f33,  // 橙
+        '膝盖传动1':      0x33e666,  // 绿
+        '膝盖转动':       0x3366e6,  // 蓝
+        '膝盖传动2':      0xe6e633,  // 黄
+        '大腿主动力发生器': 0xe63399, // 品红（大腿刚体）
+        '小腿保持架':     0xe63399,
+        '髋关节保持架':   0xe63399,
+        '大腿盖板':       0xe63399,  // 盖板单独透明（见 addComponent）
+        '小腿':           0x33b3e6,  // 青
+        'servo':          0x4d4d4d,  // 舵机壳体深灰
+    };
+
+    // 按零件名查色（子串匹配），未匹配返回默认灰
     _colorForName(name) {
-        const palette = [
-            0x4e79a7, 0xf28e2b, 0xe15759, 0x76b7b2, 0x59a14f,
-            0xedc948, 0xb07aa1, 0xff9da7, 0x9c755f, 0xbab0ac
-        ];
-        // 简单字符串哈希
-        let h = 0;
-        for (let i = 0; i < name.length; i++) {
-            h = ((h << 5) - h + name.charCodeAt(i)) | 0;
+        if (!name) return { hex: 0xcccccc, css: '#cccccc' };
+        for (const key in ExportViewer.BODY_COLORS) {
+            if (name.includes(key)) {
+                const hex = ExportViewer.BODY_COLORS[key];
+                return { hex: hex, css: '#' + hex.toString(16).padStart(6, '0') };
+            }
         }
-        const hex = palette[Math.abs(h) % palette.length];
-        return {
-            hex: hex,
-            css: '#' + hex.toString(16).padStart(6, '0')
-        };
+        return { hex: 0xcccccc, css: '#cccccc' };
     }
 
     /**
@@ -160,12 +173,15 @@ class ExportViewer {
      * @param {string} displayName - 显示名（occurrence_name）
      */
     addComponent(stlKey, geometry, matrix4x4, displayName) {
-        // 统一灰白半透明材质
+        // 大腿盖板单独透明（透视内部结构），其余按刚体配色不透明
+        const isCover = displayName && displayName.includes('盖板');
+        const col = this._colorForName(displayName);
         const material = new THREE.MeshPhongMaterial({
-            color: 0xcccccc,
-            transparent: true,
-            opacity: 0.6,
-            shininess: 30
+            color: col.hex,
+            transparent: isCover,
+            opacity: isCover ? 0.35 : 1,
+            shininess: 30,
+            side: isCover ? THREE.DoubleSide : THREE.FrontSide,
         });
         const mesh = new THREE.Mesh(geometry, material);
         // 不 bake 矩阵到几何，改用 mesh.matrix 驱动（便于姿态更新时只改矩阵，无需克隆几何）
@@ -175,7 +191,8 @@ class ExportViewer {
         mesh.matrixWorldNeedsUpdate = true;
         mesh.userData = {
             name: displayName,
-            color: '#cccccc',
+            color: col.css,
+            baseColorHex: col.hex,   // 刚体配色（取消高亮时恢复）
             initMatrix: initMatrix.clone(), // 保存初始矩阵，applyPose 基于此叠加旋转
         };
         this.scene.add(mesh);
@@ -357,11 +374,10 @@ class ExportViewer {
      * @param {Array|null} partNames - 零件 occurrence_name 列表，null 表示取消高亮
      */
     highlightBody(partNames) {
-        // 清除之前的高亮
+        // 清除之前的高亮（恢复各自刚体配色）
         for (const mesh of this.componentMeshes) {
             if (mesh.userData.highlighted) {
-                mesh.material.color.setHex(0xcccccc);
-                mesh.material.opacity = 0.6;
+                mesh.material.color.setHex(mesh.userData.baseColorHex || 0xcccccc);
                 mesh.userData.highlighted = false;
             }
         }
@@ -377,7 +393,6 @@ class ExportViewer {
             const mesh = this.componentMeshes.find(m => m.userData.name === name);
             if (!mesh) continue;
             mesh.material.color.setHex(0xffdd00);
-            mesh.material.opacity = 0.9;
             mesh.userData.highlighted = true;
         }
 
