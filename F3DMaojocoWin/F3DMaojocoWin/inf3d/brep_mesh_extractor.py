@@ -52,14 +52,14 @@ class BRepMeshExtractor:
     输出与 geometry.json 兼容的 {positions, indices}。
     """
 
-    def __init__(self, logger, angle_tolerance: float = 5.0,
-                 max_edge_length: float = 0.5):
+    def __init__(self, logger, angle_tolerance: float = 1.0,
+                 max_edge_length: float = 0.1):
         """初始化。
 
         Args:
             logger: 日志记录器
-            angle_tolerance: 角度容差（度，越小越精细，默认 5°）
-            max_edge_length: 最大边长（cm，越小越精细，默认 0.5cm=5mm）
+            angle_tolerance: 角度容差（度，越小越精细，默认 1°，圆柱面每段≤1°≈360段，很圆）
+            max_edge_length: 最大边长（cm，越小越精细，默认 0.1cm=1mm）
         """
         self.logger = logger
         self.angle_tolerance = angle_tolerance
