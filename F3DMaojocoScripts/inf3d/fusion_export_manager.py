@@ -101,7 +101,11 @@ class FusionExportManager:
             # 失败仅警告，不影响 STL/JSON 主流程
             try:
                 self.logger.info("开始导出BRep精确网格")
+                self.logger.info("[FM诊断] BRepMeshExporter类来源: " + str(BRepMeshExporter.__module__))
+                self.logger.info("[FM诊断] BRepMeshExporter文件: " + str(getattr(BRepMeshExporter, '__file__', '无__file__')))
                 brep_mesh_exporter = BRepMeshExporter(self.logger)
+                self.logger.info("[FM诊断] 实例 angle_tolerance=" + str(brep_mesh_exporter.angle_tolerance))
+                self.logger.info("[FM诊断] 有 _tessellate_occurrence 方法: " + str(hasattr(brep_mesh_exporter, '_tessellate_occurrence')))
                 brep_out = brep_mesh_exporter.export_assembly(output_dir)
                 self._export_stats['brep_geometry'] = brep_out
             except Exception as brep_err:
