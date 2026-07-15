@@ -60,12 +60,37 @@ def _find_script_dirs():
 
 
 def _do_hot_reload():
-    """清除 F3DMaojoco 插件模块的 sys.modules 缓存 + __pycache__。返回清除的模块列表。"""
-    removed = []
-    for key in list(sys.modules.keys()):
-        if any(key == p or key.startswith(p + '.') for p in HOT_RELOAD_PREFIXES):
-            del sys.modules[key]
-            removed.append(key)
+    """清除 F3DMaojoco 插件模块的 sys.modules 缓存 + __pycache__。
+
+    Python 3.14 健壮清除：倒序删（子模块先于父包），清 __dict__，invalidate importlib 缓存。
+    """
+    import importlib
+
+    to_remove = sorted(
+        (k for k in sys.modules
+         if any(k == p or k.startswith(p + '.') for p in HOT_RELOAD_PREFIXES)),
+        reverse=True
+    )
+    for key in to_remove:
+        mod = sys.modules.get(key)
+        if mod is not None:
+            try:
+                loader = getattr(mod, '__loader__', None)
+                if loader and hasattr(loader, 'invalidate_caches'):
+                    loader.invalidate_caches()
+            except Exception:
+                pass
+            try:
+                getattr(mod, '__dict__', {}).clear()
+            except Exception:
+                pass
+        sys.modules.pop(key, None)
+
+    try:
+        importlib.invalidate_caches()
+    except Exception:
+        pass
+
     # 清 __pycache__
     import shutil
     for d in SCRIPT_DIRS:
@@ -77,7 +102,7 @@ def _do_hot_reload():
     for d in SCRIPT_DIRS:
         if d not in sys.path:
             sys.path.insert(0, d)
-    return removed
+    return list(reversed(to_remove))
 
 
 class Handler(BaseHTTPRequestHandler):

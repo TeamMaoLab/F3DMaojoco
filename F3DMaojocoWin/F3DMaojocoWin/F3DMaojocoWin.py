@@ -24,27 +24,66 @@ _HOT_RELOAD_PREFIXES = ('inf3d', 'common')
 
 
 def _hot_reload():
-    """清除本插件模块的 sys.modules 缓存，强制下次 import 从磁盘重读。"""
-    removed = []
-    for key in list(sys.modules.keys()):
-        if any(key == p or key.startswith(p + '.') for p in _HOT_RELOAD_PREFIXES):
-            del sys.modules[key]
-            removed.append(key)
-    # 清 .pyc 缓存目录，防止 Python 用旧字节码
+    """清除本插件模块的 sys.modules 缓存，强制下次 import 从磁盘重读。
+
+    关键：必须清除 importlib 的内部缓存（_bootstrap_external FileFinder/SourceFileLoader），
+    否则 Python 3.14 会用旧的模块规格查找，导致 KeyError。
+    清除顺序：先子模块后父包（倒序），避免半残状态。
+    """
+    import importlib
+
+    # 收集要清除的模块（含父包），倒序排列（子模块先删）
+    to_remove = sorted(
+        (k for k in sys.modules
+         if any(k == p or k.startswith(p + '.') for p in _HOT_RELOAD_PREFIXES)),
+        reverse=True
+    )
+    for key in to_remove:
+        # 先 invalidate 模块的 importlib 缓存
+        mod = sys.modules.get(key)
+        if mod is not None:
+            try:
+                # 清除该模块的 __loader__ 缓存（如果有的话）
+                loader = getattr(mod, '__loader__', None)
+                if loader and hasattr(loader, 'invalidate_caches'):
+                    loader.invalidate_caches()
+            except Exception:
+                pass
+            # 删 __dict__ 引用，帮助 GC
+            try:
+                mod_dict = getattr(mod, '__dict__', None)
+                if mod_dict:
+                    mod_dict.clear()
+            except Exception:
+                pass
+        sys.modules.pop(key, None)
+
+    # 清 importlib 的路径查找缓存
+    try:
+        importlib.invalidate_caches()
+    except Exception:
+        pass
+
+    # 清 .pyc 缓存目录
+    import shutil
     for sub in ('inf3d', 'common'):
         pyc_dir = os.path.join(_SCRIPT_DIR, sub, '__pycache__')
         if os.path.isdir(pyc_dir):
-            import shutil
             shutil.rmtree(pyc_dir, ignore_errors=True)
-    return removed
+
+    return list(reversed(to_remove))  # 返回正序方便看
 
 
 def run(_context):
     """运行装配体导出"""
-    # 热重载：每次运行清除旧模块缓存，从磁盘重读最新代码
-    purged = _hot_reload()
-    if purged:
-        app.log(f'[热重载] 清除 {len(purged)} 个模块缓存，重新从磁盘加载')
+    # 热重载：如果 add-in (F3DRemoteControl) 已经清过缓存，这里跳过（避免双重清除导致状态损坏）
+    # 检测方法：看 inf3d 是否已不在 sys.modules（被 add-in 清掉了）
+    needs_reload = any(('inf3d' in sys.modules.get(k, '')) or k == 'inf3d'
+                       for k in sys.modules)
+    if needs_reload:
+        purged = _hot_reload()
+        if purged:
+            app.log(f'[热重载] 清除 {len(purged)} 个模块缓存，重新从磁盘加载')
 
     # import 放在 run 内部（热重载后才能拿到最新代码）
     from inf3d.fusion_export_manager import FusionExportManager
