@@ -1,0 +1,7369 @@
+{
+  "meta": {
+    "export_time": "2026-07-15 21:25:16",
+    "geometry_unit": "millimeters",
+    "position_unit": "millimeters",
+    "matrix_storage": "4x4_array",
+    "count_components": 13,
+    "count_joints": 8,
+    "format_version": "1.0"
+  },
+  "components": [
+    {
+      "name": "servo_mg90s v2",
+      "occurrence_name": "servo_mg90s v2:2",
+      "full_path_name": "用于绘制腿部结构的舵机组 v8/servo_mg90s v2:2",
+      "component_id": "servo_mg90s v2",
+      "stl_file": "stl_files\\servo_mg90s v2_servo_mg90s v2.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            2.4980018054065973e-16,
+            8.687957029205475e-96,
+            -1.0000000000000004,
+            0.0
+          ],
+          [
+            2.1570415377137162e-32,
+            1.0,
+            4.930380657631326e-32,
+            0.0
+          ],
+          [
+            1.0000000000000004,
+            5.473822126268817e-48,
+            2.498001805406601e-16,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 2,
+      "has_children": false,
+      "colliders": [],
+      "brep_surfaces": [
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.707107,
+              0.707107,
+              -0.0
+            ],
+            "point": [
+              1.6186,
+              28.8887,
+              -0.0
+            ]
+          },
+          "area_mm2": 4.61
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.707107,
+              -0.707107,
+              0.0
+            ],
+            "origin": [
+              3.7399,
+              31.0101,
+              -0.0
+            ],
+            "radius": 0.375
+          },
+          "area_mm2": 7.07
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.707107,
+              -0.707107,
+              0.0
+            ],
+            "origin": [
+              3.7399,
+              31.0101,
+              -0.85
+            ],
+            "radius": 0.375
+          },
+          "area_mm2": 7.07
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.707107,
+              -0.707107,
+              0.0
+            ],
+            "origin": [
+              3.7399,
+              31.0101,
+              0.85
+            ],
+            "radius": 0.375
+          },
+          "area_mm2": 7.07
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "point": [
+              4.4471,
+              30.3029,
+              1.5
+            ]
+          },
+          "area_mm2": 6.0
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.707107,
+              -0.707107,
+              0.0
+            ],
+            "point": [
+              4.4471,
+              30.3029,
+              -1.5
+            ]
+          },
+          "area_mm2": 9.0
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -0.0,
+              -1.0
+            ],
+            "point": [
+              3.0328,
+              31.7172,
+              -1.5
+            ]
+          },
+          "area_mm2": 6.0
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.707107,
+              0.707107,
+              -0.0
+            ],
+            "point": [
+              3.0328,
+              31.7172,
+              1.5
+            ]
+          },
+          "area_mm2": 8.93
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.707107,
+              0.707107,
+              -0.0
+            ],
+            "point": [
+              4.25,
+              30.5,
+              3.1
+            ]
+          },
+          "area_mm2": 46.61
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.707107,
+              0.707107,
+              -0.0
+            ],
+            "point": [
+              4.25,
+              30.5,
+              3.1
+            ]
+          },
+          "area_mm2": 0.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.707107,
+              0.707107,
+              -0.0
+            ],
+            "point": [
+              4.25,
+              30.5,
+              3.1
+            ]
+          },
+          "area_mm2": 0.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -1.0,
+              0.0,
+              0.0
+            ],
+            "point": [
+              -21.65,
+              12.4,
+              0.6
+            ]
+          },
+          "area_mm2": 13.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -0.0,
+              -1.0
+            ],
+            "point": [
+              -20.5033,
+              12.4,
+              0.6
+            ]
+          },
+          "area_mm2": 2.75
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              -19.35,
+              12.4,
+              -0.0
+            ],
+            "radius": 1.3
+          },
+          "area_mm2": 16.61
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "point": [
+              -21.65,
+              12.4,
+              -0.6
+            ]
+          },
+          "area_mm2": 2.75
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -1.0,
+              0.0,
+              0.0
+            ],
+            "point": [
+              -21.65,
+              12.4,
+              -6.2
+            ]
+          },
+          "area_mm2": 13.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -19.15,
+              12.4,
+              -0.0
+            ]
+          },
+          "area_mm2": 55.43
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -19.15,
+              14.8,
+              -0.0
+            ]
+          },
+          "area_mm2": 55.43
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -1.0,
+              -0.0,
+              -0.0
+            ],
+            "point": [
+              -16.65,
+              8.0,
+              -6.2
+            ]
+          },
+          "area_mm2": 213.28
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -1.0,
+              -0.0,
+              -0.0
+            ],
+            "point": [
+              -16.65,
+              8.0,
+              -6.2
+            ]
+          },
+          "area_mm2": 54.56
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              1.0,
+              -0.0,
+              -0.0
+            ],
+            "point": [
+              10.75,
+              12.4,
+              -0.6
+            ]
+          },
+          "area_mm2": 13.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              0.0,
+              1.0
+            ],
+            "point": [
+              9.6033,
+              12.4,
+              -0.6
+            ]
+          },
+          "area_mm2": 2.75
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              8.45,
+              12.4,
+              0.0
+            ],
+            "radius": 1.3
+          },
+          "area_mm2": 16.61
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -0.0,
+              -1.0
+            ],
+            "point": [
+              10.75,
+              12.4,
+              0.6
+            ]
+          },
+          "area_mm2": 2.75
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              1.0,
+              -0.0,
+              -0.0
+            ],
+            "point": [
+              10.75,
+              12.4,
+              6.2
+            ]
+          },
+          "area_mm2": 13.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              8.25,
+              12.4,
+              0.0
+            ]
+          },
+          "area_mm2": 55.43
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              8.25,
+              14.8,
+              0.0
+            ]
+          },
+          "area_mm2": 55.43
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              1.0,
+              -0.0,
+              -0.0
+            ],
+            "point": [
+              5.75,
+              8.0,
+              6.2
+            ]
+          },
+          "area_mm2": 54.56
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              1.0,
+              -0.0,
+              -0.0
+            ],
+            "point": [
+              5.75,
+              8.0,
+              6.2
+            ]
+          },
+          "area_mm2": 176.08
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.707107,
+              0.707107,
+              -0.0
+            ],
+            "point": [
+              4.25,
+              30.5,
+              3.1
+            ]
+          },
+          "area_mm2": 0.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "point": [
+              -5.45,
+              32.0,
+              -0.0
+            ]
+          },
+          "area_mm2": 237.42
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -0.0,
+              -1.0
+            ],
+            "point": [
+              5.75,
+              8.0,
+              -6.2
+            ]
+          },
+          "area_mm2": 557.1
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "point": [
+              -5.45,
+              8.0,
+              -0.0
+            ]
+          },
+          "area_mm2": 159.48
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              0.0,
+              1.0
+            ],
+            "point": [
+              -16.65,
+              8.0,
+              6.2
+            ]
+          },
+          "area_mm2": 557.1
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              -0.0,
+              3.5,
+              -0.0
+            ],
+            "radius": 1.0
+          },
+          "area_mm2": 178.97
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              -0.0,
+              3.5,
+              -0.0
+            ],
+            "radius": 5.75
+          },
+          "area_mm2": 138.22
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              -6.0,
+              3.5,
+              -0.0
+            ],
+            "radius": 2.75
+          },
+          "area_mm2": 46.89
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "point": [
+              -1.5,
+              3.5,
+              -0.0
+            ]
+          },
+          "area_mm2": 115.14
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -0.0,
+              3.5,
+              -0.0
+            ]
+          },
+          "area_mm2": 13.84
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "radius": 1.0
+          },
+          "area_mm2": 21.99
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "area_mm2": 13.84
+        }
+      ]
+    },
+    {
+      "name": "servo_mg90s v2",
+      "occurrence_name": "servo_mg90s v2:3",
+      "full_path_name": "用于绘制腿部结构的舵机组 v8/servo_mg90s v2:3",
+      "component_id": "servo_mg90s v2",
+      "stl_file": "stl_files\\servo_mg90s v2_servo_mg90s v2.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            -2.4841240175987885e-15,
+            1.1102230246251564e-16,
+            1.0000000000000013,
+            -10.900000000000002
+          ],
+          [
+            -2.4492935982947094e-16,
+            1.0,
+            -1.1102230246251627e-16,
+            7.771561172376141e-16
+          ],
+          [
+            -1.0000000000000013,
+            -2.44929359829471e-16,
+            -2.470246229790974e-15,
+            14.399999999999995
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 2,
+      "has_children": false,
+      "colliders": [],
+      "brep_surfaces": [
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.707107,
+              0.707107,
+              0.0
+            ],
+            "point": [
+              -12.5186,
+              28.8887,
+              14.4
+            ]
+          },
+          "area_mm2": 4.61
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.707107,
+              -0.707107,
+              -0.0
+            ],
+            "origin": [
+              -14.6399,
+              31.0101,
+              14.4
+            ],
+            "radius": 0.375
+          },
+          "area_mm2": 7.07
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.707107,
+              -0.707107,
+              -0.0
+            ],
+            "origin": [
+              -14.6399,
+              31.0101,
+              15.25
+            ],
+            "radius": 0.375
+          },
+          "area_mm2": 7.07
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.707107,
+              -0.707107,
+              -0.0
+            ],
+            "origin": [
+              -14.6399,
+              31.0101,
+              13.55
+            ],
+            "radius": 0.375
+          },
+          "area_mm2": 7.07
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -0.0,
+              -1.0
+            ],
+            "point": [
+              -15.3471,
+              30.3029,
+              12.9
+            ]
+          },
+          "area_mm2": 6.0
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.707107,
+              -0.707107,
+              0.0
+            ],
+            "point": [
+              -15.3471,
+              30.3029,
+              15.9
+            ]
+          },
+          "area_mm2": 9.0
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "point": [
+              -13.9328,
+              31.7172,
+              15.9
+            ]
+          },
+          "area_mm2": 6.0
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.707107,
+              0.707107,
+              -0.0
+            ],
+            "point": [
+              -13.9328,
+              31.7172,
+              12.9
+            ]
+          },
+          "area_mm2": 8.93
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.707107,
+              0.707107,
+              0.0
+            ],
+            "point": [
+              -15.15,
+              30.5,
+              11.3
+            ]
+          },
+          "area_mm2": 46.61
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.707107,
+              0.707107,
+              0.0
+            ],
+            "point": [
+              -15.15,
+              30.5,
+              11.3
+            ]
+          },
+          "area_mm2": 0.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.707107,
+              0.707107,
+              0.0
+            ],
+            "point": [
+              -15.15,
+              30.5,
+              11.3
+            ]
+          },
+          "area_mm2": 0.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              1.0,
+              -0.0,
+              -0.0
+            ],
+            "point": [
+              10.75,
+              12.4,
+              13.8
+            ]
+          },
+          "area_mm2": 13.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "point": [
+              9.6033,
+              12.4,
+              13.8
+            ]
+          },
+          "area_mm2": 2.75
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              8.45,
+              12.4,
+              14.4
+            ],
+            "radius": 1.3
+          },
+          "area_mm2": 16.61
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -0.0,
+              -1.0
+            ],
+            "point": [
+              10.75,
+              12.4,
+              15.0
+            ]
+          },
+          "area_mm2": 2.75
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              1.0,
+              -0.0,
+              -0.0
+            ],
+            "point": [
+              10.75,
+              12.4,
+              20.6
+            ]
+          },
+          "area_mm2": 13.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              8.25,
+              12.4,
+              14.4
+            ]
+          },
+          "area_mm2": 55.43
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              8.25,
+              14.8,
+              14.4
+            ]
+          },
+          "area_mm2": 55.43
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              1.0,
+              -0.0,
+              -0.0
+            ],
+            "point": [
+              5.75,
+              8.0,
+              20.6
+            ]
+          },
+          "area_mm2": 213.28
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              1.0,
+              -0.0,
+              -0.0
+            ],
+            "point": [
+              5.75,
+              8.0,
+              20.6
+            ]
+          },
+          "area_mm2": 54.56
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -1.0,
+              0.0,
+              0.0
+            ],
+            "point": [
+              -21.65,
+              12.4,
+              15.0
+            ]
+          },
+          "area_mm2": 13.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -0.0,
+              -1.0
+            ],
+            "point": [
+              -20.5033,
+              12.4,
+              15.0
+            ]
+          },
+          "area_mm2": 2.75
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              -19.35,
+              12.4,
+              14.4
+            ],
+            "radius": 1.3
+          },
+          "area_mm2": 16.61
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "point": [
+              -21.65,
+              12.4,
+              13.8
+            ]
+          },
+          "area_mm2": 2.75
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -1.0,
+              0.0,
+              0.0
+            ],
+            "point": [
+              -21.65,
+              12.4,
+              8.2
+            ]
+          },
+          "area_mm2": 13.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -19.15,
+              12.4,
+              14.4
+            ]
+          },
+          "area_mm2": 55.43
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -19.15,
+              14.8,
+              14.4
+            ]
+          },
+          "area_mm2": 55.43
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -1.0,
+              0.0,
+              0.0
+            ],
+            "point": [
+              -16.65,
+              8.0,
+              8.2
+            ]
+          },
+          "area_mm2": 54.56
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -1.0,
+              0.0,
+              0.0
+            ],
+            "point": [
+              -16.65,
+              8.0,
+              8.2
+            ]
+          },
+          "area_mm2": 176.08
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.707107,
+              0.707107,
+              0.0
+            ],
+            "point": [
+              -15.15,
+              30.5,
+              11.3
+            ]
+          },
+          "area_mm2": 0.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              -0.0
+            ],
+            "point": [
+              -5.45,
+              32.0,
+              14.4
+            ]
+          },
+          "area_mm2": 237.42
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "point": [
+              -16.65,
+              8.0,
+              20.6
+            ]
+          },
+          "area_mm2": 557.1
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              -0.0
+            ],
+            "point": [
+              -5.45,
+              8.0,
+              14.4
+            ]
+          },
+          "area_mm2": 159.48
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -0.0,
+              -1.0
+            ],
+            "point": [
+              5.75,
+              8.0,
+              8.2
+            ]
+          },
+          "area_mm2": 557.1
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              -10.9,
+              3.5,
+              14.4
+            ],
+            "radius": 1.0
+          },
+          "area_mm2": 178.97
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              -10.9,
+              3.5,
+              14.4
+            ],
+            "radius": 5.75
+          },
+          "area_mm2": 138.22
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              -4.9,
+              3.5,
+              14.4
+            ],
+            "radius": 2.75
+          },
+          "area_mm2": 46.89
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              -0.0
+            ],
+            "point": [
+              -9.4,
+              3.5,
+              14.4
+            ]
+          },
+          "area_mm2": 115.14
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -10.9,
+              3.5,
+              14.4
+            ]
+          },
+          "area_mm2": 13.84
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              -10.9,
+              0.0,
+              14.4
+            ],
+            "radius": 1.0
+          },
+          "area_mm2": 21.99
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.41
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -10.9,
+              0.0,
+              14.4
+            ]
+          },
+          "area_mm2": 13.84
+        }
+      ]
+    },
+    {
+      "name": "ONE-LEG",
+      "occurrence_name": "ONE-LEG:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v8/ONE-LEG:1",
+      "component_id": "ONE-LEG",
+      "stl_file": "stl_files\\ONE-LEG_ONE-LEG.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 0,
+      "has_children": true,
+      "colliders": [
+        {
+          "name": "COL_GROUP",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 2.0,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "origin": [
+            12.0448,
+            -5.0,
+            -7.136
+          ],
+          "endpoints": [
+            [
+              12.0448,
+              -1.0,
+              -7.136
+            ],
+            [
+              12.0448,
+              -5.0,
+              -7.136
+            ]
+          ]
+        },
+        {
+          "name": "COL_GROUP_1",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 9.9943,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "origin": [
+            -0.0,
+            -5.0,
+            0.0
+          ],
+          "endpoints": [
+            [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            [
+              -0.0,
+              -5.0,
+              0.0
+            ]
+          ]
+        },
+        {
+          "name": "COL_GROUP_2",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 2.0,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            22.9639,
+            -5.0,
+            -29.426
+          ],
+          "endpoints": [
+            [
+              22.9639,
+              -1.0,
+              -29.426
+            ],
+            [
+              22.9639,
+              -5.0,
+              -29.426
+            ]
+          ]
+        },
+        {
+          "name": "COL_GROUP_3",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 2.0,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            8.6024,
+            -5.0,
+            -11.0453
+          ],
+          "endpoints": [
+            [
+              8.6024,
+              -1.0,
+              -11.0453
+            ],
+            [
+              8.6024,
+              -5.0,
+              -11.0453
+            ]
+          ]
+        }
+      ],
+      "brep_surfaces": []
+    },
+    {
+      "name": "膝盖传动1",
+      "occurrence_name": "膝盖传动1:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v8/ONE-LEG:1/膝盖传动1:1",
+      "component_id": "膝盖传动1",
+      "stl_file": "stl_files\\膝盖传动1_膝盖传动1.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": [],
+      "brep_surfaces": [
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -17.6999,
+              -1.5,
+              -3.6589
+            ],
+            "radius": 2.0
+          },
+          "area_mm2": 8.44
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -11.2267,
+              -4.5,
+              3.9633
+            ],
+            "radius": 8.0
+          },
+          "area_mm2": 75.3
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -18.4723,
+              -4.5,
+              -5.6023
+            ],
+            "radius": 2.0
+          },
+          "area_mm2": 12.01
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -12.1244,
+              -1.5,
+              -7.0
+            ],
+            "radius": 4.5
+          },
+          "area_mm2": 4.36
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -21.0128,
+              -4.5,
+              1.906
+            ],
+            "radius": 2.0
+          },
+          "area_mm2": 8.44
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -21.2923,
+              -1.5,
+              8.4
+            ],
+            "radius": 4.5
+          },
+          "area_mm2": 4.36
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -23.0894,
+              -1.5,
+              2.1534
+            ],
+            "radius": 2.0
+          },
+          "area_mm2": 12.01
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -11.2267,
+              -4.5,
+              3.9633
+            ],
+            "radius": 14.0
+          },
+          "area_mm2": 139.03
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "point": [
+              -17.1755,
+              -1.5,
+              0.7
+            ]
+          },
+          "area_mm2": 39.37
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "point": [
+              -17.1755,
+              -1.5,
+              0.7
+            ]
+          },
+          "area_mm2": 39.37
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -21.2923,
+              -1.5,
+              8.4
+            ],
+            "radius": 1.05
+          },
+          "area_mm2": 13.19
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -12.1244,
+              -1.5,
+              -7.0
+            ],
+            "radius": 1.05
+          },
+          "area_mm2": 13.19
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -12.9569,
+              -1.5,
+              -1.058
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 0.61
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -21.2923,
+              -1.5,
+              8.4
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 18.85
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -12.1244,
+              -1.5,
+              -7.0
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 20.17
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "point": [
+              -17.1755,
+              0.5,
+              0.7
+            ]
+          },
+          "area_mm2": 147.02
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -17.1755,
+              -4.5,
+              0.7
+            ]
+          },
+          "area_mm2": 39.37
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -17.1755,
+              -4.5,
+              0.7
+            ]
+          },
+          "area_mm2": 39.37
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -21.2923,
+              -4.5,
+              8.4
+            ],
+            "radius": 1.05
+          },
+          "area_mm2": 13.19
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -12.1244,
+              -4.5,
+              -7.0
+            ],
+            "radius": 1.05
+          },
+          "area_mm2": 13.19
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -21.2923,
+              -4.5,
+              8.4
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 18.85
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -12.9569,
+              -4.5,
+              -1.058
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 0.61
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -12.1244,
+              -4.5,
+              -7.0
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 20.17
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -17.1755,
+              -6.5,
+              0.7
+            ]
+          },
+          "area_mm2": 147.02
+        }
+      ]
+    },
+    {
+      "name": "膝盖转动",
+      "occurrence_name": "膝盖转动:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v8/ONE-LEG:1/膝盖转动:1",
+      "component_id": "膝盖转动",
+      "stl_file": "stl_files\\膝盖转动_膝盖转动.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": [],
+      "brep_surfaces": [
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -12.1244,
+              -4.0,
+              -7.0
+            ],
+            "radius": 1.15
+          },
+          "area_mm2": 14.45
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -12.1244,
+              -4.0,
+              -7.0
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 23.46
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -7.3947,
+              -4.0,
+              -10.692
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 9.08
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -12.9569,
+              -4.0,
+              -1.058
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 9.08
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -10.4063,
+              -4.0,
+              -5.4069
+            ]
+          },
+          "area_mm2": 33.48
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -10.4063,
+              -2.0,
+              -5.4069
+            ]
+          },
+          "area_mm2": 33.48
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -3.0,
+              0.0
+            ],
+            "radius": 10.0
+          },
+          "area_mm2": 215.96
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              12.1244,
+              -4.0,
+              7.0
+            ],
+            "radius": 1.15
+          },
+          "area_mm2": 14.45
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              12.1244,
+              -4.0,
+              7.0
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 23.46
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              7.3947,
+              -4.0,
+              10.692
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 9.08
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              12.9569,
+              -4.0,
+              1.058
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 9.08
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              10.4063,
+              -4.0,
+              5.4069
+            ]
+          },
+          "area_mm2": 33.48
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              10.4063,
+              -2.0,
+              5.4069
+            ]
+          },
+          "area_mm2": 33.48
+        },
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "majorRadius": 6.85,
+            "minorRadius": 1.55
+          },
+          "area_mm2": 126.14
+        },
+        {
+          "surface": "Cone",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -1.756,
+              0.0
+            ],
+            "radius": 7.798,
+            "halfAngle": 0.785398
+          },
+          "area_mm2": 20.51
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -1.304,
+              0.0
+            ],
+            "radius": 7.65
+          },
+          "area_mm2": 29.22
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "point": [
+              10.0,
+              -1.0,
+              0.0
+            ]
+          },
+          "area_mm2": 130.31
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              7.65,
+              -5.0,
+              0.0
+            ]
+          },
+          "area_mm2": 130.31
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -4.696,
+              0.0
+            ],
+            "radius": 7.65
+          },
+          "area_mm2": 29.22
+        },
+        {
+          "surface": "Cone",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -4.244,
+              0.0
+            ],
+            "radius": 7.798,
+            "halfAngle": 0.785398
+          },
+          "area_mm2": 20.51
+        }
+      ]
+    },
+    {
+      "name": "膝盖传动2",
+      "occurrence_name": "膝盖传动2:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v8/ONE-LEG:1/膝盖传动2:1",
+      "component_id": "膝盖传动2",
+      "stl_file": "stl_files\\膝盖传动2_膝盖传动2.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            0.9999999999999991,
+            -5.0799412957015864e-08,
+            1.3196789513904886e-09,
+            -2.3783607658263119e-07
+          ],
+          [
+            5.0799412957493464e-08,
+            0.999999999999999,
+            1.1166966865111713e-16,
+            -1.3178494876615844e-14
+          ],
+          [
+            -1.319679173435097e-09,
+            -4.5458032502976415e-17,
+            1.0000000000000007,
+            1.6001810032438912e-08
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": [],
+      "brep_surfaces": [
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              41.1382,
+              -1.5,
+              -28.0545
+            ],
+            "radius": 2.0
+          },
+          "area_mm2": 13.74
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              37.1244,
+              -1.5,
+              -36.3013
+            ],
+            "radius": 7.1717
+          },
+          "area_mm2": 4.52
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              41.4545,
+              -4.5,
+              -33.8013
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 7.44
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              39.3301,
+              -4.5,
+              -27.3988
+            ],
+            "radius": 2.0
+          },
+          "area_mm2": 6.38
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              20.937,
+              -1.5,
+              4.459
+            ],
+            "radius": 2.0
+          },
+          "area_mm2": 6.38
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -30.1513,
+              -4.5,
+              -46.2754
+            ],
+            "radius": 70.0
+          },
+          "area_mm2": 269.51
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              21.2731,
+              -4.5,
+              6.3527
+            ],
+            "radius": 2.0
+          },
+          "area_mm2": 13.74
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -34.1169,
+              -4.5,
+              -48.5649
+            ],
+            "radius": 80.0
+          },
+          "area_mm2": 335.24
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              16.4545,
+              -4.5,
+              9.5
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 7.44
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              12.1244,
+              -1.5,
+              7.0
+            ],
+            "radius": 7.1717
+          },
+          "area_mm2": 4.52
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "point": [
+              26.7894,
+              -1.5,
+              -13.4006
+            ]
+          },
+          "area_mm2": 66.28
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              37.1244,
+              -1.5,
+              -36.3013
+            ],
+            "radius": 1.05
+          },
+          "area_mm2": 13.19
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              12.1244,
+              -1.5,
+              7.0
+            ],
+            "radius": 1.05
+          },
+          "area_mm2": 13.19
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.5,
+              -0.0,
+              0.866025
+            ],
+            "point": [
+              10.6244,
+              -1.5,
+              9.5981
+            ]
+          },
+          "area_mm2": 10.0
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              12.1244,
+              -1.5,
+              7.0
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 18.85
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.5,
+              0.0,
+              -0.866025
+            ],
+            "point": [
+              14.4904,
+              -1.5,
+              4.9019
+            ]
+          },
+          "area_mm2": 2.0
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              15.9904,
+              -1.5,
+              2.3038
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 7.7
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              34.9904,
+              -1.5,
+              -30.6051
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 7.7
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.5,
+              -0.0,
+              0.866025
+            ],
+            "point": [
+              35.6244,
+              -1.5,
+              -33.7032
+            ]
+          },
+          "area_mm2": 2.0
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              37.1244,
+              -1.5,
+              -36.3013
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 18.85
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.5,
+              0.0,
+              -0.866025
+            ],
+            "point": [
+              42.9545,
+              -1.5,
+              -36.3993
+            ]
+          },
+          "area_mm2": 10.0
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "point": [
+              26.7894,
+              -1.5,
+              -13.4006
+            ]
+          },
+          "area_mm2": 66.28
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "point": [
+              26.7894,
+              0.5,
+              -13.4006
+            ]
+          },
+          "area_mm2": 364.38
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              26.7894,
+              -4.5,
+              -13.4006
+            ]
+          },
+          "area_mm2": 66.28
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              26.7894,
+              -4.5,
+              -13.4006
+            ]
+          },
+          "area_mm2": 66.28
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              37.1244,
+              -4.5,
+              -36.3013
+            ],
+            "radius": 1.05
+          },
+          "area_mm2": 13.19
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              12.1244,
+              -4.5,
+              7.0
+            ],
+            "radius": 1.05
+          },
+          "area_mm2": 13.19
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.5,
+              -0.0,
+              0.866025
+            ],
+            "point": [
+              36.4904,
+              -4.5,
+              -33.2032
+            ]
+          },
+          "area_mm2": 2.0
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              34.9904,
+              -4.5,
+              -30.6051
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 7.7
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              15.9904,
+              -4.5,
+              2.3038
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 7.7
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.5,
+              0.0,
+              -0.866025
+            ],
+            "point": [
+              13.6244,
+              -4.5,
+              4.4019
+            ]
+          },
+          "area_mm2": 2.0
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              12.1244,
+              -4.5,
+              7.0
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 18.85
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.5,
+              -0.0,
+              0.866025
+            ],
+            "point": [
+              14.9545,
+              -4.5,
+              12.0981
+            ]
+          },
+          "area_mm2": 10.0
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              16.4545,
+              -4.5,
+              9.5
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 7.44
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              41.4545,
+              -4.5,
+              -33.8013
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 7.44
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.5,
+              0.0,
+              -0.866025
+            ],
+            "point": [
+              38.6244,
+              -4.5,
+              -38.8993
+            ]
+          },
+          "area_mm2": 10.0
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              37.1244,
+              -4.5,
+              -36.3013
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 18.85
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              26.7894,
+              -6.5,
+              -13.4006
+            ]
+          },
+          "area_mm2": 364.38
+        }
+      ]
+    },
+    {
+      "name": "小腿",
+      "occurrence_name": "小腿:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v8/ONE-LEG:1/小腿:1",
+      "component_id": "小腿",
+      "stl_file": "stl_files\\小腿_小腿.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            0.9999999999999987,
+            -5.0799412957015864e-08,
+            2.7212710160220145e-09,
+            -1.8695638460650438e-07
+          ],
+          [
+            5.0799412957015844e-08,
+            0.999999999999999,
+            1.836970191574493e-16,
+            -1.5350397147554458e-06
+          ],
+          [
+            -2.721270960510869e-09,
+            -4.5458052355311116e-17,
+            1.0,
+            6.803498766045686e-08
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": [],
+      "brep_surfaces": [
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              35.9985,
+              -5.5,
+              -91.458
+            ],
+            "radius": 41.829
+          },
+          "area_mm2": 205.33
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.760941,
+              -0.0,
+              0.648821
+            ],
+            "point": [
+              -9.8636,
+              -5.5,
+              -72.5258
+            ]
+          },
+          "area_mm2": 224.29
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              -6.8198,
+              -5.5,
+              -75.1211
+            ],
+            "radius": 4.0
+          },
+          "area_mm2": 69.66
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              7.9326,
+              -5.5,
+              -58.7561
+            ]
+          },
+          "area_mm2": 297.96
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              7.9326,
+              -0.5,
+              -58.7561
+            ]
+          },
+          "area_mm2": 297.96
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -3.0,
+              -43.3013
+            ],
+            "radius": 7.5677
+          },
+          "area_mm2": 122.99
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              37.1244,
+              -4.0,
+              -36.3013
+            ],
+            "radius": 1.15
+          },
+          "area_mm2": 14.45
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              37.1244,
+              -4.0,
+              -36.3013
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 23.38
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              30.0675,
+              -4.0,
+              -30.7155
+            ],
+            "radius": 6.0
+          },
+          "area_mm2": 15.41
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              1.0,
+              -0.0
+            ],
+            "origin": [
+              38.4334,
+              -4.0,
+              -45.2056
+            ],
+            "radius": 6.0
+          },
+          "area_mm2": 15.41
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              33.9754,
+              -4.0,
+              -38.8324
+            ]
+          },
+          "area_mm2": 46.23
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              33.9754,
+              -2.0,
+              -38.8324
+            ]
+          },
+          "area_mm2": 46.23
+        },
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "majorRadius": 4.4177,
+            "minorRadius": 1.55
+          },
+          "area_mm2": 88.93
+        },
+        {
+          "surface": "Cone",
+          "params": {
+            "axis": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -1.756,
+              -43.3013
+            ],
+            "radius": 5.3657,
+            "halfAngle": 0.785398
+          },
+          "area_mm2": 14.11
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -1.054,
+              -43.3013
+            ],
+            "radius": 5.2177
+          },
+          "area_mm2": 36.32
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              -0.0
+            ],
+            "point": [
+              32.5677,
+              -0.5,
+              -43.3013
+            ]
+          },
+          "area_mm2": 94.39
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              30.2177,
+              -5.5,
+              -43.3013
+            ]
+          },
+          "area_mm2": 94.39
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -4.946,
+              -43.3013
+            ],
+            "radius": 5.2177
+          },
+          "area_mm2": 36.32
+        },
+        {
+          "surface": "Cone",
+          "params": {
+            "axis": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -4.244,
+              -43.3013
+            ],
+            "radius": 5.3657,
+            "halfAngle": 0.785398
+          },
+          "area_mm2": 14.11
+        }
+      ]
+    },
+    {
+      "name": "大腿部分",
+      "occurrence_name": "大腿部分:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v8/ONE-LEG:1/大腿部分:1",
+      "component_id": "大腿部分",
+      "stl_file": "stl_files\\大腿部分_大腿部分.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 0,
+      "has_children": true,
+      "colliders": [
+        {
+          "name": "COL_GROUP",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 2.0,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "origin": [
+            12.0448,
+            -5.0,
+            -7.136
+          ],
+          "endpoints": [
+            [
+              12.0448,
+              -1.0,
+              -7.136
+            ],
+            [
+              12.0448,
+              -5.0,
+              -7.136
+            ]
+          ]
+        },
+        {
+          "name": "COL_GROUP_1",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 9.9943,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "origin": [
+            -0.0,
+            -5.0,
+            0.0
+          ],
+          "endpoints": [
+            [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            [
+              -0.0,
+              -5.0,
+              0.0
+            ]
+          ]
+        },
+        {
+          "name": "COL_GROUP_2",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 2.0,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            22.9639,
+            -5.0,
+            -29.426
+          ],
+          "endpoints": [
+            [
+              22.9639,
+              -1.0,
+              -29.426
+            ],
+            [
+              22.9639,
+              -5.0,
+              -29.426
+            ]
+          ]
+        },
+        {
+          "name": "COL_GROUP_3",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 2.0,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            8.6024,
+            -5.0,
+            -11.0453
+          ],
+          "endpoints": [
+            [
+              8.6024,
+              -1.0,
+              -11.0453
+            ],
+            [
+              8.6024,
+              -5.0,
+              -11.0453
+            ]
+          ]
+        }
+      ],
+      "brep_surfaces": []
+    },
+    {
+      "name": "大腿主动力发生器",
+      "occurrence_name": "大腿主动力发生器:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v8/ONE-LEG:1/大腿部分:1/大腿主动力发生器:1",
+      "component_id": "大腿主动力发生器",
+      "stl_file": "stl_files\\大腿主动力发生器_大腿主动力发生器.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": [],
+      "brep_surfaces": [
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -9.0,
+              -43.3013
+            ],
+            "radius": 1.0
+          },
+          "area_mm2": 40.84
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -0.0,
+              0.5,
+              0.0
+            ]
+          },
+          "area_mm2": 3.14
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "point": [
+              11.5302,
+              -6.0,
+              -20.6506
+            ]
+          },
+          "area_mm2": 37.97
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "point": [
+              11.5302,
+              -6.0,
+              -20.6506
+            ]
+          },
+          "area_mm2": 62.18
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -6.196,
+              -43.3013
+            ],
+            "radius": 3.6177
+          },
+          "area_mm2": 36.55
+        },
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              -0.0,
+              -1.0,
+              -0.0
+            ],
+            "majorRadius": 4.4177,
+            "minorRadius": 1.55
+          },
+          "area_mm2": 46.23
+        },
+        {
+          "surface": "Cone",
+          "params": {
+            "axis": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -4.244,
+              -43.3013
+            ],
+            "radius": 3.4697,
+            "halfAngle": 0.785398
+          },
+          "area_mm2": 9.13
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              0.196,
+              -43.3013
+            ],
+            "radius": 3.6177
+          },
+          "area_mm2": 70.02
+        },
+        {
+          "surface": "Cone",
+          "params": {
+            "axis": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -1.756,
+              -43.3013
+            ],
+            "radius": 3.4697,
+            "halfAngle": 0.785398
+          },
+          "area_mm2": 9.13
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              6.05,
+              -0.0,
+              0.0
+            ]
+          },
+          "area_mm2": 408.69
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -60.925,
+              3.0,
+              -57.7559
+            ],
+            "radius": 90.0
+          },
+          "area_mm2": 85.59
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -24.6533,
+              3.0,
+              -40.8511
+            ],
+            "radius": 57.7137
+          },
+          "area_mm2": 62.16
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              3.0,
+              -43.3013
+            ],
+            "radius": 8.0
+          },
+          "area_mm2": 25.81
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -12.9579,
+              3.0,
+              -38.1642
+            ],
+            "radius": 30.304
+          },
+          "area_mm2": 41.76
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              -0.0
+            ],
+            "point": [
+              14.9227,
+              2.0,
+              -21.3698
+            ]
+          },
+          "area_mm2": 580.67
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -17.8591,
+              3.0,
+              -42.4459
+            ],
+            "radius": 40.0
+          },
+          "area_mm2": 76.27
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              1.5,
+              0.0
+            ],
+            "radius": 10.0
+          },
+          "area_mm2": 140.66
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -9.0,
+              0.0
+            ],
+            "radius": 4.1
+          },
+          "area_mm2": 115.92
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              0.0,
+              -1.5,
+              0.0
+            ]
+          },
+          "area_mm2": 49.67
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -0.804,
+              0.0
+            ],
+            "radius": 6.05
+          },
+          "area_mm2": 61.12
+        },
+        {
+          "surface": "Cone",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -1.756,
+              0.0
+            ],
+            "radius": 5.902,
+            "halfAngle": 0.785398
+          },
+          "area_mm2": 15.52
+        },
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "majorRadius": 6.85,
+            "minorRadius": 1.55
+          },
+          "area_mm2": 83.44
+        },
+        {
+          "surface": "Cone",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -4.244,
+              0.0
+            ],
+            "radius": 5.902,
+            "halfAngle": 0.785398
+          },
+          "area_mm2": 15.52
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -5.196,
+              0.0
+            ],
+            "radius": 6.05
+          },
+          "area_mm2": 61.12
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "area_mm2": 15.49
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -0.0,
+              0.0,
+              0.0
+            ],
+            "radius": 1.0
+          },
+          "area_mm2": 9.42
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -0.0,
+              3.0,
+              0.0
+            ]
+          },
+          "area_mm2": 1126.83
+        }
+      ]
+    },
+    {
+      "name": "小腿保持架",
+      "occurrence_name": "小腿保持架:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v8/ONE-LEG:1/大腿部分:1/小腿保持架:1",
+      "component_id": "小腿保持架",
+      "stl_file": "stl_files\\小腿保持架_小腿保持架.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": [],
+      "brep_surfaces": [
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              -0.672351,
+              -0.707262,
+              0.21846
+            ],
+            "majorRadius": 2.4004,
+            "minorRadius": 1.0
+          },
+          "area_mm2": 1.49
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -3.0,
+              -43.3013
+            ],
+            "radius": 3.8177
+          },
+          "area_mm2": 50.48
+        },
+        {
+          "surface": "Sphere",
+          "params": {
+            "center": [
+              26.3651,
+              -3.0,
+              -39.1
+            ],
+            "radius": 1.6
+          },
+          "area_mm2": 7.52
+        },
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              0.672646,
+              -0.706952,
+              -0.218556
+            ],
+            "majorRadius": 2.3996,
+            "minorRadius": 1.0
+          },
+          "area_mm2": 1.49
+        },
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              -0.415536,
+              -0.707262,
+              -0.571936
+            ],
+            "majorRadius": 2.4004,
+            "minorRadius": 1.0
+          },
+          "area_mm2": 1.49
+        },
+        {
+          "surface": "Sphere",
+          "params": {
+            "center": [
+              21.4262,
+              -3.0,
+              -40.7047
+            ],
+            "radius": 1.6
+          },
+          "area_mm2": 7.52
+        },
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              0.415718,
+              -0.706952,
+              0.572187
+            ],
+            "majorRadius": 2.3996,
+            "minorRadius": 1.0
+          },
+          "area_mm2": 1.49
+        },
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              0.415536,
+              -0.707262,
+              -0.571936
+            ],
+            "majorRadius": 2.4004,
+            "minorRadius": 1.0
+          },
+          "area_mm2": 1.49
+        },
+        {
+          "surface": "Sphere",
+          "params": {
+            "center": [
+              21.4262,
+              -3.0,
+              -45.8978
+            ],
+            "radius": 1.6
+          },
+          "area_mm2": 7.52
+        },
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              -0.415718,
+              -0.706952,
+              0.572187
+            ],
+            "majorRadius": 2.3996,
+            "minorRadius": 1.0
+          },
+          "area_mm2": 1.49
+        },
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              0.672351,
+              -0.707262,
+              0.21846
+            ],
+            "majorRadius": 2.4004,
+            "minorRadius": 1.0
+          },
+          "area_mm2": 1.49
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.672351,
+              0.707262,
+              -0.21846
+            ],
+            "point": [
+              28.5758,
+              -3.0,
+              -54.3024
+            ]
+          },
+          "area_mm2": 0.63
+        },
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              -0.672646,
+              -0.706952,
+              -0.218556
+            ],
+            "majorRadius": 2.3996,
+            "minorRadius": 1.0
+          },
+          "area_mm2": 1.49
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.672646,
+              0.706952,
+              0.218556
+            ],
+            "point": [
+              31.3327,
+              -5.9,
+              -53.4066
+            ]
+          },
+          "area_mm2": 0.63
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.672646,
+              0.706952,
+              0.218556
+            ],
+            "point": [
+              25.8165,
+              -5.9,
+              -31.4036
+            ]
+          },
+          "area_mm2": 0.63
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.672351,
+              0.707262,
+              -0.21846
+            ],
+            "point": [
+              28.5734,
+              -3.0,
+              -32.2994
+            ]
+          },
+          "area_mm2": 0.63
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.415718,
+              0.706952,
+              -0.572187
+            ],
+            "point": [
+              13.937,
+              -5.9,
+              -38.8481
+            ]
+          },
+          "area_mm2": 0.63
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.415536,
+              0.707262,
+              0.571936
+            ],
+            "point": [
+              15.6408,
+              -3.0,
+              -36.503
+            ]
+          },
+          "area_mm2": 0.63
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.415536,
+              0.707262,
+              0.571936
+            ],
+            "point": [
+              15.6423,
+              -3.0,
+              -50.1016
+            ]
+          },
+          "area_mm2": 0.63
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.415718,
+              0.706952,
+              -0.572187
+            ],
+            "point": [
+              17.3461,
+              -5.9,
+              -52.4467
+            ]
+          },
+          "area_mm2": 0.63
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              28.8177,
+              -5.0,
+              -43.3013
+            ]
+          },
+          "area_mm2": 1.68
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              28.8177,
+              -5.0,
+              -43.3013
+            ]
+          },
+          "area_mm2": 1.68
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              28.8177,
+              -5.0,
+              -43.3013
+            ]
+          },
+          "area_mm2": 1.68
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              28.8177,
+              -5.0,
+              -43.3013
+            ]
+          },
+          "area_mm2": 1.68
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              28.8177,
+              -5.0,
+              -43.3013
+            ]
+          },
+          "area_mm2": 1.68
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -3.0,
+              -43.3013
+            ],
+            "radius": 5.0177
+          },
+          "area_mm2": 76.73
+        },
+        {
+          "surface": "Sphere",
+          "params": {
+            "center": [
+              26.3651,
+              -3.0,
+              -47.5026
+            ],
+            "radius": 1.6
+          },
+          "area_mm2": 7.52
+        },
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              0.0,
+              -0.707262,
+              0.706952
+            ],
+            "majorRadius": 2.4004,
+            "minorRadius": 1.0
+          },
+          "area_mm2": 1.49
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              0.707262,
+              -0.706952
+            ],
+            "point": [
+              36.5677,
+              -3.0,
+              -43.3
+            ]
+          },
+          "area_mm2": 0.63
+        },
+        {
+          "surface": "Torus",
+          "params": {
+            "center": null,
+            "axis": [
+              -0.0,
+              -0.706952,
+              -0.707262
+            ],
+            "majorRadius": 2.3996,
+            "minorRadius": 1.0
+          },
+          "area_mm2": 1.49
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              0.706952,
+              0.707262
+            ],
+            "point": [
+              36.5677,
+              -5.9,
+              -40.4013
+            ]
+          },
+          "area_mm2": 0.63
+        },
+        {
+          "surface": "Sphere",
+          "params": {
+            "center": [
+              29.4175,
+              -3.0,
+              -43.3013
+            ],
+            "radius": 1.6
+          },
+          "area_mm2": 7.52
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "point": [
+              30.0177,
+              -1.0,
+              -43.3013
+            ]
+          },
+          "area_mm2": 33.31
+        }
+      ]
+    },
+    {
+      "name": "髋关节保持架",
+      "occurrence_name": "髋关节保持架:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v8/ONE-LEG:1/大腿部分:1/髋关节保持架:1",
+      "component_id": "髋关节保持架",
+      "stl_file": "stl_files\\髋关节保持架_髋关节保持架.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": [],
+      "brep_surfaces": [
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.87
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 0.07
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              6.25,
+              -5.0,
+              0.0
+            ]
+          },
+          "area_mm2": 5.12
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -3.0,
+              0.0
+            ],
+            "radius": 6.25
+          },
+          "area_mm2": 100.12
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.87
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              6.25,
+              -5.0,
+              0.0
+            ]
+          },
+          "area_mm2": 5.12
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 0.07
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -3.0,
+              0.0
+            ],
+            "radius": 7.45
+          },
+          "area_mm2": 156.75
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.87
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 0.07
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              6.25,
+              -5.0,
+              0.0
+            ]
+          },
+          "area_mm2": 5.12
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.87
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 0.07
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.87
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 0.07
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              6.25,
+              -5.0,
+              0.0
+            ]
+          },
+          "area_mm2": 5.12
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.87
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 0.07
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.87
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 0.07
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              6.25,
+              -5.0,
+              0.0
+            ]
+          },
+          "area_mm2": 5.12
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.87
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 0.07
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.87
+        },
+        {
+          "surface": "Sphere",
+          "params": {
+            "center": [
+              3.025,
+              -3.0,
+              5.2395
+            ],
+            "radius": 1.6
+          },
+          "area_mm2": 8.43
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.87
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 0.07
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 0.07
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              6.25,
+              -5.0,
+              0.0
+            ]
+          },
+          "area_mm2": 5.12
+        },
+        {
+          "surface": "Sphere",
+          "params": {
+            "center": [
+              3.025,
+              -3.0,
+              -5.2395
+            ],
+            "radius": 1.6
+          },
+          "area_mm2": 8.43
+        },
+        {
+          "surface": "Sphere",
+          "params": {
+            "center": [
+              -3.025,
+              -3.0,
+              -5.2395
+            ],
+            "radius": 1.6
+          },
+          "area_mm2": 8.43
+        },
+        {
+          "surface": "Sphere",
+          "params": {
+            "center": [
+              -6.05,
+              -3.0,
+              0.0
+            ],
+            "radius": 1.6
+          },
+          "area_mm2": 8.43
+        },
+        {
+          "surface": "Sphere",
+          "params": {
+            "center": [
+              -3.025,
+              -3.0,
+              5.2395
+            ],
+            "radius": 1.6
+          },
+          "area_mm2": 8.43
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.87
+        },
+        {
+          "surface": "Sphere",
+          "params": {
+            "center": [
+              6.05,
+              -3.0,
+              0.0
+            ],
+            "radius": 1.6
+          },
+          "area_mm2": 8.43
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.87
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 0.07
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 0.07
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "point": [
+              7.45,
+              -1.0,
+              0.0
+            ]
+          },
+          "area_mm2": 51.65
+        }
+      ]
+    },
+    {
+      "name": "大腿盖板",
+      "occurrence_name": "大腿盖板:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v8/ONE-LEG:1/大腿部分:1/大腿盖板:1",
+      "component_id": "大腿盖板",
+      "stl_file": "stl_files\\大腿盖板_大腿盖板.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": [],
+      "brep_surfaces": [
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -9.0,
+              -43.3013
+            ],
+            "radius": 1.0
+          },
+          "area_mm2": 9.42
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -9.0,
+              -43.3013
+            ],
+            "radius": 2.7
+          },
+          "area_mm2": 25.45
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              25.0,
+              -7.5,
+              -43.3013
+            ]
+          },
+          "area_mm2": 19.76
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -0.0,
+              -9.0,
+              0.0
+            ]
+          },
+          "area_mm2": 1099.66
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "point": [
+              10.0,
+              -6.0,
+              0.0
+            ]
+          },
+          "area_mm2": 513.87
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -6.196,
+              -43.3013
+            ],
+            "radius": 3.6177
+          },
+          "area_mm2": 33.47
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -17.8591,
+              -9.0,
+              -42.4459
+            ],
+            "radius": 40.0
+          },
+          "area_mm2": 76.27
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              14.9227,
+              -8.0,
+              -21.3698
+            ]
+          },
+          "area_mm2": 580.67
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -12.9579,
+              -9.0,
+              -38.1642
+            ],
+            "radius": 30.304
+          },
+          "area_mm2": 41.76
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              25.0,
+              -9.0,
+              -43.3013
+            ],
+            "radius": 8.0
+          },
+          "area_mm2": 25.81
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -24.6533,
+              -9.0,
+              -40.8511
+            ],
+            "radius": 57.7137
+          },
+          "area_mm2": 62.16
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -7.5,
+              0.0
+            ],
+            "radius": 10.0
+          },
+          "area_mm2": 140.66
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -60.925,
+              -9.0,
+              -57.7559
+            ],
+            "radius": 90.0
+          },
+          "area_mm2": 85.59
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -0.0,
+              -3.0,
+              0.0
+            ],
+            "radius": 2.7
+          },
+          "area_mm2": 91.61
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "point": [
+              0.0,
+              -1.6,
+              0.0
+            ]
+          },
+          "area_mm2": 44.64
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -6.0,
+              0.0
+            ],
+            "radius": 3.9
+          },
+          "area_mm2": 107.82
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "point": [
+              -0.0,
+              -3.6,
+              0.0
+            ]
+          },
+          "area_mm2": 19.76
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              0.0,
+              -1.6,
+              -0.0
+            ],
+            "radius": 1.0
+          },
+          "area_mm2": 12.57
+        }
+      ]
+    },
+    {
+      "name": "膝盖动力发生器",
+      "occurrence_name": "膝盖动力发生器:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v8/ONE-LEG:1/膝盖动力发生器:1",
+      "component_id": "膝盖动力发生器",
+      "stl_file": "stl_files\\膝盖动力发生器_膝盖动力发生器.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": [],
+      "brep_surfaces": [
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -10.9,
+              -5.0,
+              14.4
+            ],
+            "radius": 2.7
+          },
+          "area_mm2": 33.93
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -10.9,
+              -3.0,
+              14.4
+            ]
+          },
+          "area_mm2": 19.76
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.348669,
+              0.0,
+              -0.937246
+            ],
+            "point": [
+              -9.1567,
+              -4.0,
+              9.7138
+            ]
+          },
+          "area_mm2": 23.66
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -21.2923,
+              -4.0,
+              8.4
+            ],
+            "radius": 1.15
+          },
+          "area_mm2": 14.45
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.637344,
+              0.0,
+              0.770579
+            ],
+            "point": [
+              -23.2043,
+              -4.0,
+              10.7117
+            ]
+          },
+          "area_mm2": 23.66
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -21.2923,
+              -4.0,
+              8.4
+            ],
+            "radius": 3.0
+          },
+          "area_mm2": 16.84
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -16.7245,
+              -4.0,
+              11.8264
+            ]
+          },
+          "area_mm2": 68.05
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "point": [
+              -16.7245,
+              -2.0,
+              11.8264
+            ]
+          },
+          "area_mm2": 68.05
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "origin": [
+              -10.9,
+              0.0,
+              14.4
+            ],
+            "radius": 5.0
+          },
+          "area_mm2": 223.26
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -10.9,
+              0.0,
+              14.4
+            ]
+          },
+          "area_mm2": 15.49
+        },
+        {
+          "surface": "Cylinder",
+          "params": {
+            "axis": [
+              0.0,
+              -1.0,
+              0.0
+            ],
+            "origin": [
+              -10.9,
+              0.0,
+              14.4
+            ],
+            "radius": 1.0
+          },
+          "area_mm2": 18.85
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -10.9,
+              -5.0,
+              14.4
+            ]
+          },
+          "area_mm2": 55.64
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "NurbsSurface",
+          "params": {
+            "_unsupported": "NurbsSurface"
+          },
+          "area_mm2": 1.26
+        },
+        {
+          "surface": "Plane",
+          "params": {
+            "normal": [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            "point": [
+              -10.9,
+              3.0,
+              14.4
+            ]
+          },
+          "area_mm2": 59.91
+        }
+      ]
+    }
+  ],
+  "joints": [
+    {
+      "name": "旋转 1",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "膝盖动力发生器:1",
+        "occurrence_one_full_path": "膝盖动力发生器:1",
+        "occurrence_one_component": "膝盖动力发生器",
+        "occurrence_two_name": "servo_mg90s v2:2",
+        "occurrence_two_full_path": "servo_mg90s v2:2",
+        "occurrence_two_component": "servo_mg90s v2"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              1.110223024625161e-16,
+              0.0,
+              -10.900000000000007
+            ],
+            [
+              0.0,
+              1.0,
+              -2.44929349141908e-16,
+              3.000000000000001
+            ],
+            [
+              0.0,
+              -2.44929349141908e-16,
+              -1.0,
+              14.399999999999999
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              -1.2246467991473537e-16,
+              -3.944304526105059e-31,
+              -10.9
+            ],
+            [
+              4.930380657631324e-32,
+              1.0,
+              8.721036339266858e-33,
+              3.500000000000001
+            ],
+            [
+              -3.944304526105059e-31,
+              1.922556626864841e-33,
+              -1.0,
+              14.399999999999993
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 2",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "大腿主动力发生器:1",
+        "occurrence_one_full_path": "大腿主动力发生器:1",
+        "occurrence_one_component": "大腿主动力发生器",
+        "occurrence_two_name": "servo_mg90s v2:2",
+        "occurrence_two_full_path": "servo_mg90s v2:2",
+        "occurrence_two_component": "servo_mg90s v2"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -1.0,
+              0.0,
+              3.0000000000000004
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              -1.2246467991473532e-16,
+              0.0,
+              -9.817843340120827e-32
+            ],
+            [
+              -2.7369110631344083e-48,
+              1.0,
+              -2.5407181807811912e-33,
+              3.5000000000000004
+            ],
+            [
+              0.0,
+              -2.5407181807811967e-33,
+              -1.0,
+              -4.2862637970157386e-16
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 2",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "膝盖转动:1",
+        "occurrence_one_full_path": "膝盖转动:1",
+        "occurrence_one_component": "膝盖转动",
+        "occurrence_two_name": "大腿主动力发生器:1",
+        "occurrence_two_full_path": "大腿主动力发生器:1",
+        "occurrence_two_component": "大腿主动力发生器"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -1.0,
+              0.0,
+              -1.0000000000000013
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -1.0,
+              0.0,
+              -1.1102230246251565e-15
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 3",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "大腿主动力发生器:1",
+        "occurrence_one_full_path": "大腿主动力发生器:1",
+        "occurrence_one_component": "大腿主动力发生器",
+        "occurrence_two_name": "小腿:1",
+        "occurrence_two_full_path": "小腿:1",
+        "occurrence_two_component": "小腿"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              24.999999593604684
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              -6.000000000000001
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              -43.30127018922194
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              -0.9999999999999988,
+              -5.079941328241823e-08,
+              0.0,
+              24.999999593610262
+            ],
+            [
+              5.0799413282418235e-08,
+              -0.9999999999999988,
+              1.232595164407831e-32,
+              -5.5000000000000195
+            ],
+            [
+              9.392266674999547e-40,
+              -1.8488927466117442e-32,
+              -1.0,
+              -43.30127018921872
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 4",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "膝盖转动:1",
+        "occurrence_one_full_path": "膝盖转动:1",
+        "occurrence_one_component": "膝盖转动",
+        "occurrence_two_name": "膝盖传动2:1",
+        "occurrence_two_full_path": "膝盖传动2:1",
+        "occurrence_two_component": "膝盖传动2"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              12.124355652982146
+            ],
+            [
+              0.0,
+              -1.0,
+              0.0,
+              -4.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              6.999999999999997
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              -5.999000866580277e-26,
+              0.0,
+              12.12435565298117
+            ],
+            [
+              5.889827473806316e-26,
+              -1.0,
+              6.162975822039155e-33,
+              -4.499999384089859
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              7.0000000000015525
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": {
+        "revolute_limits": {
+          "rotation_limits": {
+            "minimum_value": -1.9198621771937625,
+            "maximum_value": 1.2217304763960306,
+            "rest_value": 0.0872664625997165,
+            "has_limits": true
+          },
+          "current_angle": 4.942156062059701e-08,
+          "rotation_axis": {
+            "x": 5.0799412957015864e-08,
+            "y": -0.999999999999999,
+            "z": 4.5458032502976415e-17
+          }
+        },
+        "ball_limits": null
+      }
+    },
+    {
+      "name": "旋转 5",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "膝盖传动2:1",
+        "occurrence_one_full_path": "膝盖传动2:1",
+        "occurrence_one_component": "膝盖传动2",
+        "occurrence_two_name": "小腿:1",
+        "occurrence_two_full_path": "小腿:1",
+        "occurrence_two_component": "小腿"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              5.999000866580277e-26,
+              0.0,
+              37.12435521484179
+            ],
+            [
+              5.889827473806316e-26,
+              1.0,
+              -6.162975822039155e-33,
+              -4.499998114104558
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              -36.30127022221239
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              -6.4937412201049016e-24,
+              0.0,
+              37.124355189442106
+            ],
+            [
+              1.2370366879196048e-25,
+              1.0,
+              1.232595164407831e-32,
+              -3.9999981141045593
+            ],
+            [
+              0.0,
+              1.8488927466117464e-32,
+              -1.0,
+              -36.30127022221237
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 6",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "膝盖动力发生器:1",
+        "occurrence_one_full_path": "膝盖动力发生器:1",
+        "occurrence_one_component": "膝盖动力发生器",
+        "occurrence_two_name": "膝盖传动1:1",
+        "occurrence_two_full_path": "膝盖传动1:1",
+        "occurrence_two_component": "膝盖传动1"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              -21.29230484541327
+            ],
+            [
+              0.0,
+              -1.0,
+              0.0,
+              -4.000000000000002
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              8.399999999999991
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              -21.29230484541327
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              -4.5
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              8.39999999999999
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": {
+        "revolute_limits": {
+          "rotation_limits": {
+            "minimum_value": -0.6981317007977318,
+            "maximum_value": 1.1344640137963142,
+            "rest_value": 0.0,
+            "has_limits": true
+          },
+          "current_angle": 0.0,
+          "rotation_axis": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+          }
+        },
+        "ball_limits": null
+      }
+    },
+    {
+      "name": "旋转 7",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "膝盖传动1:1",
+        "occurrence_one_full_path": "膝盖传动1:1",
+        "occurrence_one_component": "膝盖传动1",
+        "occurrence_two_name": "膝盖转动:1",
+        "occurrence_two_full_path": "膝盖转动:1",
+        "occurrence_two_component": "膝盖转动"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              -12.124355652982146
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              -4.5
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              -6.999999999999998
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              -12.124355652982146
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              -4.0
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              -6.999999999999998
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": {
+        "revolute_limits": {
+          "rotation_limits": {
+            "minimum_value": -2.530727415391778,
+            "maximum_value": 0.6981317007977318,
+            "rest_value": 0.08726646259971649,
+            "has_limits": true
+          },
+          "current_angle": 0.0,
+          "rotation_axis": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+          }
+        },
+        "ball_limits": null
+      }
+    }
+  ]
+}

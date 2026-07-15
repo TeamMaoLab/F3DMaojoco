@@ -23,7 +23,6 @@
     const componentListEl = document.getElementById('componentList');
 
     const viewer = new ExportViewer(document.getElementById('viewport'));
-    if (typeof window !== 'undefined') window.viewer = viewer;
 
     // ---- 状态 ----
     function showStatus(msg, isError) {
