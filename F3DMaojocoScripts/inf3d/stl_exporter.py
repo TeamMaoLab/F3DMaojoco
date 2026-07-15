@@ -82,8 +82,8 @@ class STLExporter:
         # 遍历所有零部件
         for i, component in enumerate(components):
             try:
-                # 碰撞体（COL_ 前缀）不导出 STL——它们是碰撞几何，不是可视零件
-                if component.name.startswith("COL_"):
+                # 碰撞体（COL 前缀，含 COL_ 和裸 COL）不导出 STL——它们是碰撞几何，不是可视零件
+                if component.name.startswith("COL"):
                     self.logger.debug(f"跳过碰撞体 STL 导出: {component.name}")
                     continue
 
