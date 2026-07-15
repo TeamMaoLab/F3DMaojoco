@@ -129,7 +129,6 @@
             </select>
         </div>
         <button class="btn secondary" id="fitBtn">🔭 适配视角</button>
-        <button class="btn" id="workspaceBtn" disabled>🎯 求解工作空间</button>
     </div>
 
     <div id="main">
@@ -143,40 +142,22 @@
         </div>
         <div id="panel">
             <div class="panel-section ws-section">
-                <h2 style="display:flex;align-items:center;justify-content:space-between;">
-                    <span>工作空间 θ1 × θ2</span>
-                    <span style="font-weight:normal;display:flex;gap:4px;align-items:center;">
-                        <label style="font-size:10px;color:#888;">范围</label>
-                        <select id="wsRangeSelect">
-                            <option value="60">±60°</option>
-                            <option value="90" selected>±90°</option>
-                            <option value="120">±120°</option>
-                        </select>
-                    </span>
-                </h2>
+                <h2>解空间 θ1 × θ2</h2>
                 <div class="content">
-                    <div class="ws-toolbar">
-                        <button class="btn" id="wsSolveBtn" style="font-size:11px;padding:4px 10px;">🎯 求解可达性</button>
-                        <span class="ws-readout" id="wsReadout">θ1=0° θ2=0°</span>
-                    </div>
                     <div class="ws-canvas-wrap">
                         <canvas id="wsCanvas" width="288" height="288"></canvas>
                     </div>
                     <div style="display:flex;justify-content:space-between;margin-top:2px;">
-                        <span class="ws-axis-label">← θ2</span>
-                        <span class="ws-axis-label">θ1 →</span>
+                        <span class="ws-axis-label">θ1</span>
+                        <span class="ws-axis-label">θ1+ / θ2+</span>
                     </div>
-                    <div class="ws-progress" id="wsProgress">
-                        <div class="ws-bar"><div class="ws-fill" id="wsFill"></div></div>
-                        <span class="ws-text" id="wsText">未计算</span>
-                    </div>
+                    <div class="ws-readout" id="wsReadout">θ1=0° θ2=0°</div>
                     <div class="ws-legend">
-                        <span><i style="background:#222"></i>无解</span>
-                        <span><i style="background:#e74c3c"></i>有解·超极限</span>
-                        <span><i style="background:#27ae60"></i>有解·极限内</span>
+                        <span><i style="background:#222"></i>不可达</span>
+                        <span><i style="background:#c72626"></i>碰撞</span>
+                        <span><i style="background:#27ae60"></i>可达</span>
                     </div>
-                    <div class="ws-stats" id="wsStats"></div>
-                    <div class="ws-hint">在地图上按住拖动 → 舵机连续运动（步进防跳分支）</div>
+                    <div class="ws-hint">在地图上拖动 → 舵机运动（碰撞区挡回）</div>
                 </div>
             </div>
             <div class="panel-section list">
@@ -190,13 +171,7 @@
                 <div class="content" id="treeList"><div style="color:#666;font-size:12px">未加载</div></div>
             </div>
             <div class="panel-section list">
-                <h2 style="display:flex;align-items:center;justify-content:space-between;">
-                    <span>关节旋转</span>
-                    <span style="font-weight:normal;display:flex;gap:4px;">
-                        <button id="modeManualBtn" style="background:#0e639c;border:none;color:#fff;cursor:pointer;font-size:11px;padding:2px 8px;border-radius:3px;">手动</button>
-                        <button id="modeConstraintBtn" style="background:#3a3d41;border:none;color:#ccc;cursor:pointer;font-size:11px;padding:2px 8px;border-radius:3px;">约束(θ1θ2)</button>
-                    </span>
-                </h2>
+                <h2>舵机控制</h2>
                 <div class="content" id="jointSliders"><div style="color:#666;font-size:12px">未加载</div></div>
             </div>
             <div class="panel-section list">
@@ -239,7 +214,6 @@
                 return;
             }
             // 加载应用脚本
-            await loadScript('solver.js');
             await loadScript('viewer.js');
             await loadScript('app.js');
         })();

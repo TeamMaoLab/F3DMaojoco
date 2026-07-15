@@ -67,25 +67,24 @@
       <!-- 主动关节1：直接驱动（见 actuator，用强 PD） -->
       <joint name="j_旋转1" pos="0 0 0"/>
       <geom rgba="0.9 0.5 0.2 0.9" mesh="knee_driver" pos="0.0109 0 -0.0144"/>
-      <geom class="collider" fromto="-0.00346 0 -0.002 -0.00693 0 -0.004" size="0.0023"/>
+      <geom name="c_kd" class="collider" type="cylinder" fromto="-0.01039 0.0005 -0.006 -0.01039 -0.0065 -0.006" size="0.003"/>
 
       <body name="knee_link1" pos="-0.01039 0 -0.006">
         <inertial pos="0 0 0" mass="0.005" diaginertia="5e-6 5e-6 5e-6"/>
         <joint name="j_旋转6" pos="0 0 0"/>
         <geom rgba="0.2 0.9 0.4 0.9" mesh="knee_link1" pos="0.02129 0 -0.0084"/>
-        <geom class="collider" fromto="0.00205 0 -0.00344 0.00712 0 -0.01196" size="0.0037"/>
 
         <body name="knee_rotor" pos="0.00917 0 -0.0154">
           <inertial pos="0 0 0" mass="0.005" diaginertia="5e-6 5e-6 5e-6"/>
           <joint name="j_旋转7" pos="0 0 0"/>
           <geom rgba="0.2 0.4 0.9 0.9" mesh="knee_rotor" pos="0.01212 0 0.007"/>
-          <geom class="collider" fromto="0.00346 0 0.002 0.02078 0 0.012" size="0.0073"/>
+          <geom name="c_kr" class="collider" type="cylinder" fromto="0 0.0005 0 0 -0.0065 0" size="0.003"/>
 
           <body name="knee_link2" pos="0.02424 0 0.014">
             <inertial pos="0 0 0" mass="0.005" diaginertia="5e-6 5e-6 5e-6"/>
             <joint name="j_旋转4" pos="0 0 0"/>
             <geom rgba="0.9 0.9 0.2 0.9" mesh="knee_link2" pos="-0.01212 0 -0.007"/>
-            <geom class="collider" fromto="0.002 0 -0.00346 0.023 0 -0.03984" size="0.0064"/>
+            <geom name="c_kl2" class="collider" type="cylinder" fromto="0 0.0005 0 0 -0.0065 0" size="0.003"/>
             <site name="s_J5_link2" pos="0.025 0 -0.0433" size="0.0015" rgba="1 0 0 1"/>
           </body>
         </body>
@@ -100,14 +99,17 @@
       <geom rgba="0.6 0.6 0.6 0.7" mesh="shin_bracket"/>
       <geom rgba="0.6 0.6 0.6 0.7" mesh="hip_bracket"/>
       <geom rgba="0.6 0.6 0.6 0.7" mesh="thigh_cover"/>
-      <geom class="collider" fromto="0.002 0 -0.00346 0.023 0 -0.03984" size="0.0029"/>
+      <geom name="c_th0" class="collider" type="cylinder" fromto="0.01204 -0.001 -0.00714 0.01204 -0.005 -0.00714" size="0.002"/>
+      <geom name="c_th1" class="collider" type="cylinder" fromto="0 -0.001 0 0 -0.005 0" size="0.00999"/>
+      <geom name="c_th2" class="collider" type="cylinder" fromto="0.02296 -0.001 -0.02943 0.02296 -0.005 -0.02943" size="0.002"/>
+      <geom name="c_th3" class="collider" type="cylinder" fromto="0.0086 -0.001 -0.01105 0.0086 -0.005 -0.01105" size="0.002"/>
       <site name="s_J2_thigh" pos="0 0 0" size="0.0015" rgba="0 1 0 1"/>
 
       <body name="shin" pos="0.025 0 -0.0433">
         <inertial pos="0 0 0" mass="0.01" diaginertia="1e-5 1e-5 1e-5"/>
         <joint name="j_旋转3" pos="0 0 0"/>
         <geom rgba="0.2 0.7 0.9 0.9" mesh="shin" pos="-0.025 0 0.0433"/>
-        <geom class="collider" fromto="0.00346 0 0.002 0.00866 0 0.005" size="0.005"/>
+        <geom name="c_shin" class="collider" type="cylinder" fromto="0.01212 0.0005 0.007 0.01212 -0.0065 0.007" size="0.003"/>
         <site name="s_J5_shin" pos="0.01212 0 0.007" size="0.0015" rgba="1 0 0 1"/>
       </body>
     </body>
@@ -121,19 +123,17 @@
              anchor="0.025 0 -0.0433"/>
   </equality>
 
-  <!-- ============ 碰撞排除 ============
-       相邻刚体（共享关节）在关节轴附近本就连在一起，mesh 会持续穿透，
-       不排除会一直误报碰撞。排除这 4 对父子刚体 + 2 对闭环约束体（在 anchor 处共享点）。
-       MuJoCo 自动排除同一 body 内的多 geom，所以大腿刚体 4 零件不用列。 -->
+  <!-- ============ 碰撞强制检测 ============
+       MuJoCo 默认不检测 parent-child body 之间的碰撞。
+       但本机构的碰撞限位恰恰需要 parent-child 检测（如大腿↔小腿、膝盖转动↔传动2）。
+       用 <pair> 显式指定这些 collider geom 对参与碰撞，覆盖默认排除。
+       闭环对（不同 root）默认会检测，不用列。 -->
   <contact>
-    <!-- 关节父子对 -->
-    <exclude body1="knee_driver" body2="knee_link1"/>
-    <exclude body1="knee_link1" body2="knee_rotor"/>
-    <exclude body1="knee_rotor" body2="knee_link2"/>
-    <exclude body1="thigh_rigid" body2="shin"/>
-    <!-- 闭环约束对（anchor 处 mesh 重叠） -->
-    <exclude body1="knee_rotor" body2="thigh_rigid"/>
-    <exclude body1="knee_link2" body2="shin"/>
+    <!-- 父子 body 对的 collider（MuJoCo 默认排除，这里强制启用） -->
+    <pair geom1="c_th0" geom2="c_shin"/>
+    <pair geom1="c_th1" geom2="c_shin"/>
+    <pair geom1="c_th2" geom2="c_shin"/>
+    <pair geom1="c_th3" geom2="c_shin"/>
   </contact>
 
   <!-- 强 PD 伺服：高 kp 刚性追踪，高 kv 阻尼防震荡 -->

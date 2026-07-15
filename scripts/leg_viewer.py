@@ -80,14 +80,28 @@ def main():
         in_slider_cb = [False]  # 防止递归回调
 
         def try_move(t1, t2):
-            """尝试移到 (t1,t2)，返回是否安全（不碰撞）。"""
+            """尝试移到 (t1,t2)，返回是否安全（不碰撞）。
+            先保存主 d 的 qpos，solve 到目标检测碰撞，碰撞则恢复 qpos（保持安全姿态）。"""
+            qpos_backup = d.qpos.copy()  # 保存当前（安全）姿态
             x, err, it = solve_fk_newton(m, d, t1, t2, x0=state["last_x0"])
             if err > 1e-4:
+                d.qpos[:] = qpos_backup  # 恢复
+                mujoco.mj_forward(m, d)
                 return False, "闭环不闭合", None
-            col, contacts = has_collision(m, d)
-            if col:
-                pairs = set((c[0], c[1]) for c in contacts)
-                return False, "碰撞", pairs
+            mujoco.mj_forward(m, d)
+            contacts = []
+            for i in range(d.ncon):
+                con = d.contact[i]
+                if con.dist < -1e-5:
+                    b1 = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, m.geom_bodyid[con.geom1])
+                    b2 = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, m.geom_bodyid[con.geom2])
+                    contacts.append((b1, b2))
+            if contacts:
+                # 碰撞：恢复到安全姿态（不渲染碰撞姿态）
+                d.qpos[:] = qpos_backup
+                mujoco.mj_forward(m, d)
+                return False, "碰撞", set(contacts)
+            # 安全：保持当前姿态（已经是 d 上的解）
             state["last_x0"] = x.copy()
             return True, "OK", None
 
@@ -111,17 +125,14 @@ def main():
                 warn.config(text="")
                 info.config(fg="black")
             else:
-                # 碰撞：回到上次安全位置，把滑块顶回去
+                # 碰撞：d 已经保持在上次安全姿态（try_move 不更新主 d）
+                # 只把滑块顶回去
                 in_slider_cb[0] = True
                 s1.set(int(state["safe_t1"]))
                 s2.set(int(state["safe_t2"]))
                 in_slider_cb[0] = False
-                # 重新摆到安全位置
-                solve_fk_newton(m, d, state["safe_t1"], state["safe_t2"],
-                                x0=state["last_x0"])
                 pair_str = ""
                 if pairs:
-                    # 只显示碰撞对的关键名字
                     short = set()
                     for a, b in pairs:
                         short.add(f"{a[:8]}↔{b[:8]}")

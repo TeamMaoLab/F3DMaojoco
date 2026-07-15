@@ -1,0 +1,18 @@
+<!-- knee_link2 -->
+      <geom class="collider" type="cylinder" fromto="0.00000 0.00050 0.00000 0.00000 -0.00650 0.00000" size="0.00300"/>
+
+<!-- knee_rotor -->
+      <geom class="collider" type="cylinder" fromto="-0.00000 0.00050 0.00000 -0.00000 -0.00650 0.00000" size="0.00300"/>
+
+<!-- shin -->
+      <geom class="collider" type="cylinder" fromto="0.01212 0.00050 0.00700 0.01212 -0.00650 0.00700" size="0.00300"/>
+
+<!-- thigh_rigid -->
+      <geom class="collider" type="cylinder" fromto="0.01204 -0.00100 -0.00714 0.01204 -0.00500 -0.00714" size="0.00200"/>
+      <geom class="collider" type="cylinder" fromto="-0.00000 -0.00100 0.00000 -0.00000 -0.00500 0.00000" size="0.00999"/>
+      <geom class="collider" type="cylinder" fromto="0.02296 -0.00100 -0.02943 0.02296 -0.00500 -0.02943" size="0.00200"/>
+      <geom class="collider" type="cylinder" fromto="0.00860 -0.00100 -0.01105 0.00860 -0.00500 -0.01105" size="0.00200"/>
+
+<!-- knee_driver -->
+      <geom class="collider" type="cylinder" fromto="-0.01039 0.00050 -0.00600 -0.01039 -0.00650 -0.00600" size="0.00300"/>
+

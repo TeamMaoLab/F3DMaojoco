@@ -83,6 +83,8 @@ class ExportViewer {
         const animate = () => {
             requestAnimationFrame(animate);
             this.controls.update();
+            // 渲染前钩子：app.js 在这里更新姿态（保证矩阵最新再渲染，避免闪烁）
+            if (this.onBeforeRender) this.onBeforeRender();
             this.renderer.render(this.scene, this.camera);
         };
         animate();
