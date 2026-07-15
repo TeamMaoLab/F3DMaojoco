@@ -530,7 +530,9 @@ class ComponentInfo:
     - bodies_count: 零部件包含的实体数量
     - has_children: 是否包含子零部件（是否为子装配体）
     - colliders: 碰撞体列表（COL_ 前缀子组件提取的圆柱几何，用于 MuJoCo 碰撞检测）
-    
+    - brep_surfaces: BRep 精确曲面列表（Plane/Cylinder/Cone/Sphere/Torus 参数，
+      数学精确，非网格近似；网页端可按曲面类型重建几何，替代体积大的 STL）
+
     这些信息用于在MuJoCo中重建模型结构和位置关系
     
     详细说明请参考: docs/theory/fusion_360_matrix_formats.md
@@ -544,6 +546,7 @@ class ComponentInfo:
     bodies_count: int = 0                  # 实体数量
     has_children: bool = False             # 是否包含子零部件
     colliders: List[CollisionShape] = field(default_factory=list)  # 碰撞体（COL_ 组件提取）
+    brep_surfaces: List[Dict[str, Any]] = field(default_factory=list)  # BRep 精确曲面（Plane/Cylinder/...）
 
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
@@ -556,9 +559,10 @@ class ComponentInfo:
             "world_transform": transform4d_to_dict(self.world_transform) if self.world_transform else None,
             "bodies_count": self.bodies_count,
             "has_children": self.has_children,
-            "colliders": [c.to_dict() for c in self.colliders] if self.colliders else []
+            "colliders": [c.to_dict() for c in self.colliders] if self.colliders else [],
+            "brep_surfaces": self.brep_surfaces if self.brep_surfaces else []
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'ComponentInfo':
         """从字典创建"""
@@ -571,7 +575,8 @@ class ComponentInfo:
             world_transform=transform4d_from_dict(data["world_transform"]) if data.get("world_transform") else None,
             bodies_count=data.get("bodies_count", 0),
             has_children=data.get("has_children", False),
-            colliders=[CollisionShape.from_dict(c) for c in data.get("colliders", [])]
+            colliders=[CollisionShape.from_dict(c) for c in data.get("colliders", [])],
+            brep_surfaces=data.get("brep_surfaces", [])
         )
 
 

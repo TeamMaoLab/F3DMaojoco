@@ -11,6 +11,7 @@ import adsk.core
 import adsk.fusion
 
 from .logger import log_component, log_transform
+from .brep_extractor import BRepExtractor
 from ..common.data_types import ComponentInfo, CollisionShape
 from ..common.geometry_math import Transform4D
 
@@ -37,6 +38,7 @@ class ComponentCollector:
         self.logger = logger
         self.app = adsk.core.Application.get()
         self.design = self.app.activeProduct
+        self._brep_extractor = BRepExtractor(logger)
         
         # 用于跟踪已处理的零部件，避免重复处理
         self._processed_components = set()
@@ -193,6 +195,14 @@ class ComponentCollector:
                 has_children=has_children,
                 world_transform=world_transform
             )
+
+            # 提取 BRep 精确曲面（Plane/Cylinder/Cone/Sphere/Torus 参数）
+            # 仅对有实体的零件提取，容器组件跳过
+            if bodies_count > 0:
+                try:
+                    component_info.brep_surfaces = self._brep_extractor.extract_surfaces(occurrence)
+                except Exception as brep_err:
+                    self.logger.warning(f"BRep 提取失败 {occurrence.name}（不影响主流程）: {brep_err}")
             
             # 记录变换信息（调试级别）
             if world_transform:

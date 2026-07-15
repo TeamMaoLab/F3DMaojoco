@@ -16,7 +16,6 @@ from .logger import log_performance_start, log_performance_end, log_progress
 from .component_collector import ComponentCollector
 from .joint_analyzer import JointAnalyzer
 from .stl_exporter import STLExporter
-from .step_exporter import STEPExporter
 from .data_serializer import DataSerializer
 from .export_analyzer import ExportAnalyzer
 from ..common.data_types import (
@@ -52,7 +51,6 @@ class FusionExportManager:
             'total_components': 0,
             'total_joints': 0,
             'stl_files': [],
-            'step_files': [],
             'start_time': None,
             'end_time': None
         }
@@ -98,19 +96,9 @@ class FusionExportManager:
             self._export_stats['stl_files'] = stl_files
             log_progress(self.logger, len(stl_files), len(components), "STL文件导出完成")
 
-            # 第三步（附加）：导出STEP文件（B-Rep精确曲面，附加产物）
-            # 失败仅警告，不影响STL/JSON主流程
-            step_files = []
-            try:
-                self.logger.info("开始导出STEP文件")
-                step_exporter = STEPExporter(self.logger)
-                step_files = step_exporter.export_components(components, output_dir)
-                self._export_stats['step_files'] = step_files
-                log_progress(self.logger, len(step_files), len(components), "STEP文件导出完成")
-            except Exception as step_err:
-                self.logger.warning(f"STEP导出失败（不影响主流程）: {str(step_err)}")
-                self._export_stats['step_files'] = []
-            
+            # 注：STEP 导出已移除（BRep 曲面参数现在由 component_collector 直接提取，
+            # 存入 component_positions.json 的 brep_surfaces 字段，数学精确且体积远小于 STEP）
+
             # 第四步：创建导出数据
             self.logger.info("开始创建导出数据")
             metadata = create_default_metadata(
@@ -197,10 +185,6 @@ class FusionExportManager:
                 'exported_files_count': len(self._export_stats['stl_files']),
                 'file_list': self._export_stats['stl_files']
             },
-            'step_export': {
-                'exported_files_count': len(self._export_stats.get('step_files', [])),
-                'file_list': self._export_stats.get('step_files', [])
-            },
             'execution_time': execution_time
         }
     
@@ -214,7 +198,6 @@ class FusionExportManager:
         return {
             'components_with_bodies': self._export_stats['total_components'],
             'components_with_stl': len(self._export_stats['stl_files']),
-            'components_with_step': len(self._export_stats.get('step_files', [])),
             'components_with_children': 0,  # 需要从组件数据中统计
             'active_joints': self._export_stats['total_joints'],
             'joint_types': {

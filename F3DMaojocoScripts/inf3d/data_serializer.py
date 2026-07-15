@@ -128,14 +128,10 @@ class DataSerializer:
 ## 文件结构
 ```
 export_output/
-├── component_positions.json      # 主要数据文件（ExportData）
-├── stl_files/                    # STL几何文件目录（网格）
+├── component_positions.json      # 主要数据文件（ExportData，含 brep_surfaces 精确曲面参数）
+├── stl_files/                    # STL几何文件目录（网格，用于渲染）
 │   ├── component_1.stl
 │   ├── component_2.stl
-│   └── ...
-├── step_files/                   # STEP几何文件目录（B-Rep精确曲面，附加产物）
-│   ├── component_1.step
-│   ├── component_2.step
 │   └── ...
 ├── export_description.md         # 本描述文件
 ├── f3d_export.log                # 执行日志

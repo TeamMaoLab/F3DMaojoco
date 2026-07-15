@@ -27,7 +27,7 @@ from .fusion_export_manager import FusionExportManager
 from .component_collector import ComponentCollector
 from .joint_analyzer import JointAnalyzer
 from .stl_exporter import STLExporter
-from .step_exporter import STEPExporter
+from .brep_extractor import BRepExtractor
 from .data_serializer import DataSerializer
 from .export_analyzer import ExportAnalyzer
 
@@ -48,13 +48,13 @@ __all__ = [
     'get_logger',
     'initialize_logging',
     'cleanup_logging',
-    
+
     # 核心导出类
     'FusionExportManager',
     'ComponentCollector',
     'JointAnalyzer',
     'STLExporter',
-    'STEPExporter',
+    'BRepExtractor',
     'DataSerializer',
     'ExportAnalyzer'
 ]
