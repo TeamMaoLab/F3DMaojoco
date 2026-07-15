@@ -129,6 +129,9 @@ class BRepMeshExporter:
         """网格化一个 occurrence 的所有 body。返回 {positions, indices, vertex_count}。"""
         positions = []
         indices = []
+        # 入口诊断：确认这个方法被执行了 + 精度参数值
+        log_info(self.logger, "[BRep诊断] _tessellate_occurrence 被调用: %s, angle=%s, edge=%s" %
+                 (occ.name, self.angle_tolerance, self.max_edge_length))
         try:
             comp = occ.component
             world_transform = _accumulate_transform(occ)
