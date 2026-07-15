@@ -99,16 +99,45 @@
         }
     }
 
+    // base64 → Float32Array（解码 geometry.json 的 positions）
+    function decodePositions(b64) {
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return new Float32Array(bytes.buffer);
+    }
+
+    // 从 geometry.json 构造 BufferGeometry（跳过 STLLoader）
+    function geometryFromPacked(packed) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(decodePositions(packed.positions), 3));
+        // indices 是嵌套数组 [[i,j,k],...]，展平
+        const idx = packed.indices.flat();
+        geometry.setIndex(idx);
+        geometry.computeVertexNormals();
+        return geometry;
+    }
+
     // ---- 渲染 ----
     async function renderData(data, fileMap) {
         viewer.clear();
         const components = data.components || [];
         const joints = data.joints || [];
-        showLoading(`正在加载 ${components.length} 个零件的 STL…`);
+        showLoading(`正在加载 ${components.length} 个零件…`);
 
         const stlLoader = new THREE.STLLoader();
         const geometryCache = new Map();
         const failedComponents = [];
+
+        // 尝试加载预打包的 geometry.json（优先，体积小加载快）
+        let packedGeoms = null;
+        try {
+            const r = await fetch('geometry.json');
+            if (r.ok) {
+                packedGeoms = (await r.json()).parts || {};
+                console.log(`geometry.json 已加载（${Object.keys(packedGeoms).length} 零件）`);
+            }
+        } catch (e) { /* 降级回 STL */ }
 
         for (const comp of components) {
             const stlPath = comp.stl_file;
@@ -118,11 +147,17 @@
             if (!matrix) { failedComponents.push(displayName); continue; }
             let geometry = geometryCache.get(stlPath);
             if (!geometry) {
-                const file = fileMap.get(stlPath) || fileMap.get(stlPath.split('/').pop());
-                if (!file) { failedComponents.push(displayName); continue; }
                 try {
-                    const buf = await file.arrayBuffer();
-                    geometry = stlLoader.parse(buf);
+                    if (packedGeoms && packedGeoms[stlPath]) {
+                        // 优先：从 geometry.json 解码
+                        geometry = geometryFromPacked(packedGeoms[stlPath]);
+                    } else {
+                        // 降级：fetch STL + STLLoader
+                        const file = fileMap.get(stlPath) || fileMap.get(stlPath.split('/').pop());
+                        if (!file) { failedComponents.push(displayName); continue; }
+                        const buf = await file.arrayBuffer();
+                        geometry = stlLoader.parse(buf);
+                    }
                     geometryCache.set(stlPath, geometry);
                 } catch (e) { failedComponents.push(displayName); continue; }
             }
