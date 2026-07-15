@@ -48,12 +48,12 @@ def main():
     root.geometry("420x260")
 
     tk.Label(root, text="θ1 膝盖舵机 (°)", font=("Arial", 10)).pack()
-    s1 = tk.Scale(root, from_=-60, to=60, resolution=1, orient=tk.HORIZONTAL, length=380)
+    s1 = tk.Scale(root, from_=-180, to=180, resolution=1, orient=tk.HORIZONTAL, length=380)
     s1.set(0)
     s1.pack()
 
     tk.Label(root, text="θ2 大腿舵机 (°)", font=("Arial", 10)).pack()
-    s2 = tk.Scale(root, from_=-60, to=60, resolution=1, orient=tk.HORIZONTAL, length=380)
+    s2 = tk.Scale(root, from_=-180, to=180, resolution=1, orient=tk.HORIZONTAL, length=380)
     s2.set(0)
     s2.pack()
 

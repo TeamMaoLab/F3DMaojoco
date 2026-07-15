@@ -41,7 +41,7 @@
     // LUT 数据
     let lutData = null;       // workspace_lut.json
     let gridData = null;      // workspace_grid.json
-    let lutAngles = null;     // [-60,-58,...,60]
+    let lutAngles = null;     // [-180,-178,...,180]
     let lutAngleIndex = null; // angle → index 映射
 
     const wsCanvas = document.getElementById('wsCanvas');
@@ -238,11 +238,11 @@
         el.innerHTML = `
             <div style="margin:8px 0;">
                 <label style="font-size:12px;color:#aaa;">θ1 膝盖舵机 <span id="t1val" style="color:#4ec9b0;">0°</span></label>
-                <input type="range" id="t1Slider" min="-60" max="60" value="0" step="1" style="width:100%;">
+                <input type="range" id="t1Slider" min="-180" max="180" value="0" step="1" style="width:100%;">
             </div>
             <div style="margin:8px 0;">
                 <label style="font-size:12px;color:#aaa;">θ2 大腿舵机 <span id="t2val" style="color:#4ec9b0;">0°</span></label>
-                <input type="range" id="t2Slider" min="-60" max="60" value="0" step="1" style="width:100%;">
+                <input type="range" id="t2Slider" min="-180" max="180" value="0" step="1" style="width:100%;">
             </div>
             <div id="passiveAngles" style="margin-top:10px;padding:8px;background:#2a2d2e;border-radius:4px;font-family:monospace;font-size:11px;color:#888;">
                 被动关节（自动求解）:<br>
@@ -291,23 +291,24 @@
             // 权重全在不可达点上，但有可达点 → 用最近可达点
             const nearest = valid[0];
             return { t1: nearest.c.t1, t2: nearest.c.t2, t3: nearest.c.t3, t4: nearest.c.t4,
-                     t6: nearest.c.t6, t7: nearest.c.t7, collision: nearest.c.collision };
+                     t6: nearest.c.t6, t7: nearest.c.t7, collision: nearest.c.collision,
+                     connected: !!nearest.c.connected };
         }
-        // 碰撞判断：加权（任一可达角点碰撞，按权重影响）
-        let collision = false;
         const lerp = (key) => {
             let s = 0;
             for (const x of valid) { s += x.c[key] * (x.w / wsum); }
             return s;
         };
         // 碰撞判断（保守）：任何可达角点碰撞 → 整格碰撞
-        // 这样碰撞边界更严格，追踪时不会滑进碰撞区
         collision = valid.some(x => x.c.collision);
+        // 连通判断（保守）：任何可达角点不连通（孤岛）→ 整格不可进
+        const connected = valid.every(x => x.c.connected !== false);
         return {
             t1: lerp('t1'), t2: lerp('t2'),
             t3: lerp('t3'), t4: lerp('t4'),
             t6: lerp('t6'), t7: lerp('t7'),
             collision,
+            connected,
         };
     }
 
@@ -357,30 +358,15 @@
     const MAX_STEP = 5;              // 每帧最大步进（度）
     let stepping = false;
 
-    // 检查 (t1,t2) 是否在绿色可达区（用 LUT 的 4 角点）
+    // 检查 (t1,t2) 是否在绿色可达区（可达 + 不碰撞 + 与原点连通，即非孤岛）
     function isGreen(t1, t2) {
         const r = lutInterp(t1, t2);
-        return r && !r.collision;
+        return r && !r.collision && r.connected;
     }
 
-    // 射线法判断点是否在黄框多边形内
-    function isInsideSafePoly(t1, t2) {
-        const poly = SAFE_POLY;
-        let inside = false;
-        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-            const xi = poly[i][0], yi = poly[i][1];
-            const xj = poly[j][0], yj = poly[j][1];
-            if (((yi > t2) !== (yj > t2)) &&
-                (t1 < (xj - xi) * (t2 - yi) / (yj - yi) + xi)) {
-                inside = !inside;
-            }
-        }
-        return inside;
-    }
-
-    // 综合：可达 + 不碰撞 + 在黄框内
+    // 综合：可达 + 不碰撞（红色碰撞区/不可达区都不能进）
     function isAllowed(t1, t2) {
-        return isGreen(t1, t2) && isInsideSafePoly(t1, t2);
+        return isGreen(t1, t2);
     }
 
     // 设置目标（滑块或地图拖动调用）
@@ -393,7 +379,6 @@
     // 每帧小步追向 target（由 viewer 的渲染循环驱动，避免双 rAF 不同步闪烁）
     function stepTowards() {
         if (!stepping) return;
-        console.log('stepTowards', safeT1.toFixed(1), safeT2.toFixed(1), '->', targetT1, targetT2);
         const dt1 = targetT1 - safeT1;
         const dt2 = targetT2 - safeT2;
         const dist = Math.hypot(dt1, dt2);
@@ -465,6 +450,7 @@
 
     // 滑块拖动 → 设目标
     function onServoChange() {
+        if (suppressSliderEvent) return;  // renderAt 同步滑块时不响应
         const t1 = parseInt(document.getElementById('t1Slider').value);
         const t2 = parseInt(document.getElementById('t2Slider').value);
         setTarget(t1, t2);
@@ -472,12 +458,7 @@
 
     // ---- 解空间地图 ----
     // grid[i][j]: i=θ1 索引, j=θ2 索引
-    // 绘制：X 轴=θ1（横向），Y 轴=θ2（纵向，上正下负）
-    // 黄色安全框：实际可用工作范围（比解空间小）
-    const SAFE_POLY = [
-        [-25, -60], [-25, -35], [50, 30], [48, 60], [20, 60], [-47, 2], [-47, -60]
-    ];
-
+    // 绘制：X 轴=θ1（横向，左-右+），Y 轴=θ2（纵向，下-上+）
     function angleToCanvas(t1, t2) {
         const rng = gridData.range;
         return [
@@ -492,24 +473,26 @@
         const N = gridData.angles.length;
         const cellW = wsCanvas.width / N;
         const cellH = wsCanvas.height / N;
-        const colors = ['#222222', '#27ae60', '#c72626']; // 不可达/可达/碰撞
+        const colors = ['#222222', '#27ae60', '#c72626', '#e8c530']; // 不可达/可达·连通/碰撞/可达·孤岛(黄)
         for (let i = 0; i < N; i++) {       // i = θ1
             for (let j = 0; j < N; j++) {   // j = θ2
                 wsCtx.fillStyle = colors[grid[i][j]] || '#222';
                 wsCtx.fillRect(i * cellW, (N - 1 - j) * cellH, Math.ceil(cellW), Math.ceil(cellH));
             }
         }
-        // 画黄色安全框
-        wsCtx.strokeStyle = '#ffcc00';
-        wsCtx.lineWidth = 2;
+        // θ1=0 / θ2=0 十字参考线（原点居中）
+        wsCtx.strokeStyle = 'rgba(255,255,255,0.35)';
+        wsCtx.lineWidth = 1;
+        const [zx, zy] = angleToCanvas(0, 0);
         wsCtx.beginPath();
-        for (let k = 0; k < SAFE_POLY.length; k++) {
-            const [px, py] = angleToCanvas(SAFE_POLY[k][0], SAFE_POLY[k][1]);
-            if (k === 0) wsCtx.moveTo(px, py);
-            else wsCtx.lineTo(px, py);
-        }
-        wsCtx.closePath();
+        wsCtx.moveTo(zx, 0); wsCtx.lineTo(zx, wsCanvas.height); // θ1=0 竖线
+        wsCtx.moveTo(0, zy); wsCtx.lineTo(wsCanvas.width, zy);   // θ2=0 横线
         wsCtx.stroke();
+        // 原点小圆点
+        wsCtx.fillStyle = '#ffffff';
+        wsCtx.beginPath();
+        wsCtx.arc(zx, zy, 2, 0, Math.PI * 2);
+        wsCtx.fill();
     }
 
     function drawWorkspacePointer(t1, t2, ok) {
@@ -556,6 +539,7 @@
         const t2 = Math.round((1 - y) * 2 * rng - rng);
         const t1c = Math.max(-rng, Math.min(rng, t1));
         const t2c = Math.max(-rng, Math.min(rng, t2));
+        // 设为目标，由 stepTowards 一步步追过去；红色区由 isAllowed 挡回
         setTarget(t1c, t2c);
     }
 
@@ -583,7 +567,18 @@
     // ---- 启动 ----
     // 把 stepTowards 挂到 viewer 渲染循环，每帧渲染前更新姿态（避免双 rAF 闪烁）
     viewer.onBeforeRender = stepTowards;
-    loadFromExport1().then(() => loadLUT()).catch(e => {
+    loadFromExport1().then(() => {
+        return loadLUT();
+    }).then(() => {
+        // LUT 加载完后，强制初始渲染（画地图 + 初始姿态）
+        console.log('启动完成，gridData=', !!gridData, 'lutData=', !!lutData, 'treeData=', !!currentTreeData);
+        drawWorkspaceMap();
+        drawWorkspacePointer(0, 0, true);
+        // 应用初始姿态（home 位）
+        if (currentTreeData) {
+            renderAt(0, 0);
+        }
+    }).catch(e => {
         console.error('启动失败:', e);
         showStatus('❌ 启动失败: ' + e.message, true);
     });

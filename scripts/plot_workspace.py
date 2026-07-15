@@ -22,17 +22,20 @@ with open('mujoco_leg/workspace_grid.json') as f:
     data = json.load(f)
 
 angles = data['angles']
-grid = np.array(data['grid'])  # [i_θ1, j_θ2], 值 0/1/2
+# grid[i][j]: i=θ1序号, j=θ2序号. imshow 把 第0维→Y轴, 第1维→X轴。
+# 要让 X=θ1, Y=θ2，必须转置：grid.T 后 第0维(行)=j(θ2)→Y, 第1维(列)=i(θ1)→X
+grid = np.array(data['grid']).T  # [j_θ2, i_θ1], 值 0/1/2
 RANGE = data['range']
 
 # 画图：X 轴=θ1, Y 轴=θ2
 fig, ax = plt.subplots(figsize=(8, 8))
 
-# 颜色映射：0黑 1绿 2红
+# 颜色映射：0黑 1绿(连通) 2红(碰撞) 3黄(孤岛)
 colors = np.zeros((*grid.shape, 3))
 colors[grid == 0] = [0.13, 0.13, 0.13]  # 黑
-colors[grid == 1] = [0.15, 0.68, 0.38]  # 绿
-colors[grid == 2] = [0.78, 0.15, 0.15]  # 红
+colors[grid == 1] = [0.15, 0.68, 0.38]  # 绿（可达·连通）
+colors[grid == 2] = [0.78, 0.15, 0.15]  # 红（碰撞）
+colors[grid == 3] = [0.91, 0.77, 0.19]  # 黄（可达·孤岛）
 
 extent = [angles[0], angles[-1], angles[0], angles[-1]]
 ax.imshow(colors, extent=extent, origin='lower', aspect='equal', interpolation='nearest')
@@ -50,47 +53,47 @@ ax.annotate('home (0,0)', (0, 0), textcoords='offset points', xytext=(8, 8),
 # 找碰撞边界（绿→红 的过渡线）
 # 沿 θ1 正向（θ2=0）找第一个红
 def find_boundary(grid, angles, fixed_axis, fixed_val, scan_axis, direction):
-    """沿 scan_axis 方向找绿→红边界。"""
+    """沿 scan_axis 方向找绿→红边界。
+    grid 已转置：grid[j_θ2, i_θ1]。fixed_axis=0 固定θ1，=1 固定θ2。"""
     j = angles.index(fixed_val) if fixed_val in angles else None
     if j is None:
-        # 找最近的
         j = min(range(len(angles)), key=lambda i: abs(angles[i] - fixed_val))
-    if scan_axis == 0:  # 扫 θ1（变 i），θ2 固定（j）
+    if fixed_axis == 0:
+        # 固定 θ1=i=j，扫 θ2（变行）：grid[:, j]
         col = grid[:, j]
-    else:  # 扫 θ2（变 j），θ1 固定（i）
-        col = grid[j, :]
-    if direction > 0:
-        mid = len(angles) // 2
-        for i in range(mid, len(angles)):
-            if col[i] == 2:  # 红
-                return angles[i]
     else:
-        mid = len(angles) // 2
-        for i in range(mid, -1, -1):
-            if col[i] == 2:
-                return angles[i]
+        # 固定 θ2=j，扫 θ1（变列）：grid[j, :]
+        col = grid[j, :]
+    mid = len(angles) // 2
+    rng = range(mid, len(angles)) if direction > 0 else range(mid, -1, -1)
+    for i in rng:
+        if col[i] == 2:  # 红
+            return angles[i]
     return None
 
+# find_boundary(grid, angles, fixed_axis=固定哪个轴, fixed_val=固定值, scan_axis, direction)
+# fixed_axis=0 固定θ1扫θ2，fixed_axis=1 固定θ2扫θ1
 lims = {
-    'θ1+': find_boundary(grid, angles, 1, 0, 0, 1),
-    'θ1-': find_boundary(grid, angles, 1, 0, 0, -1),
-    'θ2+': find_boundary(grid, angles, 0, 0, 1, 1),
-    'θ2-': find_boundary(grid, angles, 0, 0, 1, -1),
+    'θ1+': find_boundary(grid, angles, 1, 0, 0, 1),    # 固定θ2=0，扫θ1 正向
+    'θ1-': find_boundary(grid, angles, 1, 0, 0, -1),   # 固定θ2=0，扫θ1 负向
+    'θ2+': find_boundary(grid, angles, 0, 0, 1, 1),    # 固定θ1=0，扫θ2 正向
+    'θ2-': find_boundary(grid, angles, 0, 0, 1, -1),   # 固定θ1=0，扫θ2 负向
 }
 
-# 标注边界
-info_text = '碰撞限位:\n'
+# 标注边界（英文，避免中文字形缺失）
+info_text = 'Collision limits:\n'
 for name, val in lims.items():
     if val is not None:
-        info_text += f'  {name} = {val:+d}°\n'
+        info_text += f'  {name} = {val:+d} deg\n'
     else:
-        info_text += f'  {name} = (±{RANGE}°内无)\n'
+        info_text += f'  {name} = (none in +/-{RANGE})\n'
 ax.text(0.02, 0.98, info_text.strip(), transform=ax.transAxes,
         verticalalignment='top', fontsize=10, family='monospace',
         bbox=dict(boxstyle='round', facecolor='black', alpha=0.7, edgecolor='#888'))
 
 # 图例
-legend = [Patch(facecolor='#27ae60', label='Reachable·No collision'),
+legend = [Patch(facecolor='#27ae60', label='Reachable / connected'),
+          Patch(facecolor='#e8c530', label='Reachable / isolated'),
           Patch(facecolor='#c72626', label='Collision'),
           Patch(facecolor='#222222', label='Unreachable')]
 ax.legend(handles=legend, loc='lower right', fontsize=10, framealpha=0.8)

@@ -147,15 +147,21 @@
                     <div class="ws-canvas-wrap">
                         <canvas id="wsCanvas" width="288" height="288"></canvas>
                     </div>
-                    <div style="display:flex;justify-content:space-between;margin-top:2px;">
-                        <span class="ws-axis-label">θ1</span>
-                        <span class="ws-axis-label">θ1+ / θ2+</span>
+                    <div style="display:flex;justify-content:space-between;margin-top:2px;font-size:10px;color:#888;">
+                        <span>-180</span>
+                        <span>θ1 →</span>
+                        <span>+180</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-top:1px;font-size:10px;color:#888;">
+                        <span>↑ θ2 +180</span>
+                        <span>↓ θ2 -180</span>
                     </div>
                     <div class="ws-readout" id="wsReadout">θ1=0° θ2=0°</div>
                     <div class="ws-legend">
-                        <span><i style="background:#222"></i>不可达</span>
+                        <span><i style="background:#27ae60"></i>可达·连通</span>
+                        <span><i style="background:#e8c530"></i>可达·孤岛</span>
                         <span><i style="background:#c72626"></i>碰撞</span>
-                        <span><i style="background:#27ae60"></i>可达</span>
+                        <span><i style="background:#222"></i>不可达</span>
                     </div>
                     <div class="ws-hint">在地图上拖动 → 舵机运动（碰撞区挡回）</div>
                 </div>

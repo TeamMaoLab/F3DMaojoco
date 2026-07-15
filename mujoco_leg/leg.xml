@@ -68,6 +68,7 @@
       <joint name="j_旋转1" pos="0 0 0"/>
       <geom rgba="0.9 0.5 0.2 0.9" mesh="knee_driver" pos="0.0109 0 -0.0144"/>
       <geom name="c_kd" class="collider" type="cylinder" fromto="-0.01039 0.0005 -0.006 -0.01039 -0.0065 -0.006" size="0.003"/>
+      <geom name="c_kd1" class="collider" type="cylinder" fromto="0 -0.005 0 0 0.005 0" size="0.005"/>
 
       <body name="knee_link1" pos="-0.01039 0 -0.006">
         <inertial pos="0 0 0" mass="0.005" diaginertia="5e-6 5e-6 5e-6"/>
