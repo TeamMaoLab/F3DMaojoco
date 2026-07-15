@@ -100,20 +100,45 @@
     }
 
     // base64 → Float32Array（解码 geometry.json 的 positions）
-    function decodePositions(b64) {
+    // base64 → Uint8Array
+    function b64ToBytes(b64) {
         const bin = atob(b64);
         const bytes = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        return new Float32Array(bytes.buffer);
+        return bytes;
     }
 
-    // 从 geometry.json 构造 BufferGeometry（跳过 STLLoader）
+    // 从 geometry.json 构造 BufferGeometry（支持 Float32/Int16 positions + Uint16/Uint32/text indices）
     function geometryFromPacked(packed) {
         const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.BufferAttribute(decodePositions(packed.positions), 3));
-        // indices 是嵌套数组 [[i,j,k],...]，展平
-        const idx = packed.indices.flat();
-        geometry.setIndex(idx);
+        // positions
+        const bytes = b64ToBytes(packed.positions);
+        if (packed.posType === 'int16') {
+            // Int16 定点量化：value = q * scale + offset
+            const q = new Int16Array(bytes.buffer);
+            const scale = packed.posScale, off = packed.posOffset;
+            const f = new Float32Array(q.length);
+            for (let i = 0; i < q.length; i += 3) {
+                f[i]   = q[i]   * scale[0] + off[0];
+                f[i+1] = q[i+1] * scale[1] + off[1];
+                f[i+2] = q[i+2] * scale[2] + off[2];
+            }
+            geometry.setAttribute('position', new THREE.BufferAttribute(f, 3));
+        } else {
+            // Float32（无损）
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(bytes.buffer), 3));
+        }
+        // indices
+        if (packed.idxType === 'uint16') {
+            geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(b64ToBytes(packed.indices).buffer), 1));
+        } else if (packed.idxType === 'uint32') {
+            geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(b64ToBytes(packed.indices).buffer), 1));
+        } else if (Array.isArray(packed.indices) && packed.indices.length && Array.isArray(packed.indices[0])) {
+            // 旧格式：嵌套数组 [[i,j,k],...]
+            geometry.setIndex(packed.indices.flat());
+        } else if (Array.isArray(packed.indices)) {
+            geometry.setIndex(packed.indices);
+        }
         geometry.computeVertexNormals();
         return geometry;
     }
