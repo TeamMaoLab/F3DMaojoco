@@ -108,25 +108,29 @@
         return bytes;
     }
 
-    // 从 geometry.json 构造 BufferGeometry（支持 Float32/Int16 positions + Uint16/Uint32/text indices）
+    // 从 geometry.json 构造 BufferGeometry（支持 Float32/Int16/base64/文本 positions + Uint16/Uint32/text indices）
     function geometryFromPacked(packed) {
         const geometry = new THREE.BufferGeometry();
         // positions
-        const bytes = b64ToBytes(packed.positions);
-        if (packed.posType === 'int16') {
-            // Int16 定点量化：value = q * scale + offset
-            const q = new Int16Array(bytes.buffer);
-            const scale = packed.posScale, off = packed.posOffset;
-            const f = new Float32Array(q.length);
-            for (let i = 0; i < q.length; i += 3) {
-                f[i]   = q[i]   * scale[0] + off[0];
-                f[i+1] = q[i+1] * scale[1] + off[1];
-                f[i+2] = q[i+2] * scale[2] + off[2];
-            }
-            geometry.setAttribute('position', new THREE.BufferAttribute(f, 3));
+        if (Array.isArray(packed.positions)) {
+            // 文本数组（BRep 网格）：直接用 Float32Array
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(packed.positions), 3));
         } else {
-            // Float32（无损）
-            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(bytes.buffer), 3));
+            // base64 编码（压缩格式）
+            const bytes = b64ToBytes(packed.positions);
+            if (packed.posType === 'int16') {
+                const q = new Int16Array(bytes.buffer);
+                const scale = packed.posScale, off = packed.posOffset;
+                const f = new Float32Array(q.length);
+                for (let i = 0; i < q.length; i += 3) {
+                    f[i]     = q[i]     * scale[0] + off[0];
+                    f[i + 1] = q[i + 1] * scale[1] + off[1];
+                    f[i + 2] = q[i + 2] * scale[2] + off[2];
+                }
+                geometry.setAttribute('position', new THREE.BufferAttribute(f, 3));
+            } else {
+                geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(bytes.buffer), 3));
+            }
         }
         // indices
         if (packed.idxType === 'uint16') {
@@ -154,15 +158,28 @@
         const geometryCache = new Map();
         const failedComponents = [];
 
-        // 尝试加载预打包的 geometry.json（优先，体积小加载快）
+        // 加载优先级：brep_geometry.json（BRep精确网格）> geometry.json（STL去重）> STL fetch
         let packedGeoms = null;
+        let packedSource = '';
         try {
-            const r = await fetch('geometry.json');
+            const r = await fetch('brep_geometry.json');
             if (r.ok) {
                 packedGeoms = (await r.json()).parts || {};
-                console.log(`geometry.json 已加载（${Object.keys(packedGeoms).length} 零件）`);
+                packedSource = 'brep_geometry.json (BRep精确网格)';
             }
-        } catch (e) { /* 降级回 STL */ }
+        } catch (e) { /* 降级 */ }
+        if (!packedGeoms) {
+            try {
+                const r = await fetch('geometry.json');
+                if (r.ok) {
+                    packedGeoms = (await r.json()).parts || {};
+                    packedSource = 'geometry.json (STL去重)';
+                }
+            } catch (e) { /* 降级回 STL */ }
+        }
+        if (packedGeoms) {
+            console.log(`几何源: ${packedSource}（${Object.keys(packedGeoms).length} 零件）`);
+        }
 
         for (const comp of components) {
             const stlPath = comp.stl_file;
@@ -173,9 +190,11 @@
             let geometry = geometryCache.get(stlPath);
             if (!geometry) {
                 try {
-                    if (packedGeoms && packedGeoms[stlPath]) {
-                        // 优先：从 geometry.json 解码
-                        geometry = geometryFromPacked(packedGeoms[stlPath]);
+                    // 路径归一化（Win 用 \，packed 用 /）+ 尝试多种 key
+                    const normPath = stlPath.replace(/\\/g, '/');
+                    const packed = packedGeoms && (packedGeoms[normPath] || packedGeoms[stlPath]);
+                    if (packed) {
+                        geometry = geometryFromPacked(packed);
                     } else {
                         // 降级：fetch STL + STLLoader
                         const file = fileMap.get(stlPath) || fileMap.get(stlPath.split('/').pop());

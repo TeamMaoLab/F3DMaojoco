@@ -18,6 +18,7 @@ from inf3d.joint_analyzer import JointAnalyzer
 from inf3d.stl_exporter import STLExporter
 from inf3d.data_serializer import DataSerializer
 from inf3d.export_analyzer import ExportAnalyzer
+from inf3d.brep_mesh_exporter import BRepMeshExporter
 from common.data_types import (
     ExportConfig, ExportData, ExportResult, MeshQuality,
     create_default_metadata
@@ -96,8 +97,16 @@ class FusionExportManager:
             self._export_stats['stl_files'] = stl_files
             log_progress(self.logger, len(stl_files), len(components), "STL文件导出完成")
 
-            # 注：STEP 导出已移除（BRep 曲面参数现在由 component_collector 直接提取，
-            # 存入 component_positions.json 的 brep_surfaces 字段，数学精确且体积远小于 STEP）
+            # 第三步（附加）：BRep 精确网格化导出（比 STL 默认网格更精细，网页端优先加载）
+            # 失败仅警告，不影响 STL/JSON 主流程
+            try:
+                self.logger.info("开始导出BRep精确网格")
+                brep_mesh_exporter = BRepMeshExporter(self.logger)
+                brep_out = brep_mesh_exporter.export_assembly(output_dir)
+                self._export_stats['brep_geometry'] = brep_out
+            except Exception as brep_err:
+                self.logger.warning(f"BRep 网格导出失败（不影响主流程）: {str(brep_err)}")
+                self._export_stats['brep_geometry'] = ''
 
             # 第四步：创建导出数据
             self.logger.info("开始创建导出数据")
