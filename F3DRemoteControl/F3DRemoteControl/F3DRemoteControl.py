@@ -143,19 +143,27 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 # 执行任意代码（调试用，仅 localhost）
                 # 用本模块 globals() 作上下文，暴露 __file__/SCRIPT_DIRS/sys 等
+                # 约定：代码末尾赋值 _result = ... 取返回值（保持原生类型）
                 try:
                     g = globals()
-                    # exec 返回 None，用 eval 兜底取最后一行表达式值
-                    try:
-                        result = exec(code, g)
-                    except SyntaxError:
-                        # 如果是表达式（如 result 字典），用 eval
-                        result = eval(code, g)
-                    # exec 不返回值；约定代码最后一行赋值给 _result 变量
-                    result = g.get('_result', result)
-                    self._json({'ok': True, 'result': str(result)})
+                    g.pop('_result', None)  # 清上次的残留
+                    exec(code, g)
+                    result = g.get('_result', None)
+                    self._json({'ok': True, 'result': result})
                 except Exception as e:
                     self._json({'ok': False, 'error': str(e), 'traceback': traceback.format_exc()}, 500)
+
+            elif path == '/export':
+                # 参数化导出：?dir=输出目录&quality=15
+                self._json(self._handle_export(params))
+
+            elif path == '/model':
+                # 查询装配体结构（零件/关节/BRep统计）
+                self._json(self._handle_model(params))
+
+            elif path == '/brep_stats':
+                # BRep 曲面类型分布（快速看模型复杂度）
+                self._json(self._handle_brep_stats(params))
 
             elif path == '/modules':
                 # 列出当前 sys.modules 里我们的模块
@@ -165,10 +173,172 @@ class Handler(BaseHTTPRequestHandler):
 
             else:
                 self._json({'ok': False, 'error': '未知路径: ' + path,
-                            'routes': ['/ping', '/reload', '/exec?code=...', '/modules']}, 404)
+                            'routes': ['/ping', '/reload', '/exec?code=...', '/export?dir=',
+                                       '/model', '/brep_stats', '/modules']}, 404)
 
         except Exception as e:
             self._json({'ok': False, 'error': str(e), 'traceback': traceback.format_exc()}, 500)
+
+    # ============ 专用端点处理函数 ============
+
+    def _ensure_path(self):
+        """确保脚本目录在 sys.path。"""
+        for d in SCRIPT_DIRS:
+            if d not in sys.path:
+                sys.path.insert(0, d)
+
+    def _handle_export(self, params):
+        """参数化导出：dir=输出目录 quality=精度(8/11/13/15)。
+
+        quality 枚举：8=Low 11=Normal 13=High 15=VeryHigh（默认）
+        """
+        try:
+            out_dir = params.get('dir', [''])[0]
+            if not out_dir:
+                return {'ok': False, 'error': '缺少 dir 参数，用法 /export?dir=路径&quality=15'}
+            quality = int(params.get('quality', ['15'])[0])
+
+            self._ensure_path()
+            # 清缓存确保用最新代码
+            _do_hot_reload()
+
+            from inf3d.fusion_export_manager import FusionExportManager
+            from common.data_types import MeshQuality
+            from inf3d.logger import initialize_logging
+
+            os.makedirs(out_dir, exist_ok=True)
+            logger = initialize_logging(out_dir)
+            mgr = FusionExportManager(mesh_quality=MeshQuality.MEDIUM)
+            mgr.set_logger(logger)
+            result = mgr.export_assembly(out_dir)
+
+            # 读 BRep 网格结果（如果有）
+            brep_path = os.path.join(out_dir, 'brep_geometry.json')
+            brep_info = None
+            if os.path.exists(brep_path):
+                brep_info = {
+                    'size_kb': round(os.path.getsize(brep_path) / 1024, 0),
+                    'quality': quality
+                }
+
+            return {
+                'ok': result.success,
+                'output_dir': result.output_directory,
+                'stl_count': len(result.stl_files) if result.stl_files else 0,
+                'brep_geometry': brep_info,
+                'error': result.error_message
+            }
+        except Exception as e:
+            return {'ok': False, 'error': str(e), 'traceback': traceback.format_exc()[-500:]}
+
+    def _handle_model(self, params):
+        """查询当前装配体结构：零件列表 + 关节数 + BRep 曲面统计。
+
+        不导出文件，直接读 Fusion API 返回 JSON。
+        """
+        try:
+            design = app.activeProduct
+            if not design or design.objectType != 'fusion::Design':
+                return {'ok': False, 'error': '无活动 Design'}
+            root = design.rootComponent
+
+            parts = []
+            joint_count = 0
+
+            def visit(occ, depth=0):
+                nonlocal joint_count
+                comp = occ.component
+                if not comp:
+                    return
+                if comp.name.startswith('COL_'):
+                    return
+                # 统计 BRep 曲面
+                face_types = {}
+                if comp.bRepBodies.count > 0:
+                    for bi in range(comp.bRepBodies.count):
+                        body = comp.bRepBodies.item(bi)
+                        for face in body.faces:
+                            geo = face.geometry
+                            if geo:
+                                t = geo.objectType.split('::')[-1]
+                                face_types[t] = face_types.get(t, 0) + 1
+                parts.append({
+                    'name': comp.name,
+                    'occurrence': occ.name,
+                    'bodies': comp.bRepBodies.count,
+                    'faces': sum(face_types.values()),
+                    'surface_types': face_types if face_types else None,
+                    'depth': depth,
+                })
+                # 关节
+                joint_count += comp.joints.count
+                for child in occ.childOccurrences:
+                    visit(child, depth + 1)
+
+            for occ in root.occurrences:
+                visit(occ)
+
+            return {
+                'ok': True,
+                'document': app.activeDocument.name if app.activeDocument else '无',
+                'root_component': root.name,
+                'parts': parts,
+                'part_count': len(parts),
+                'joint_count': joint_count,
+            }
+        except Exception as e:
+            return {'ok': False, 'error': str(e), 'traceback': traceback.format_exc()[-500:]}
+
+    def _handle_brep_stats(self, params):
+        """BRep 曲面类型分布统计（全装配体）。"""
+        try:
+            design = app.activeProduct
+            if not design:
+                return {'ok': False, 'error': '无活动 Design'}
+            root = design.rootComponent
+            type_stats = {}
+            total_faces = 0
+            part_count = 0
+
+            def visit(occ):
+                nonlocal total_faces, part_count
+                comp = occ.component
+                if not comp or comp.name.startswith('COL_'):
+                    return
+                if comp.bRepBodies.count == 0:
+                    for c in occ.childOccurrences:
+                        visit(c)
+                    return
+                part_count += 1
+                for bi in range(comp.bRepBodies.count):
+                    body = comp.bRepBodies.item(bi)
+                    for face in body.faces:
+                        geo = face.geometry
+                        if geo:
+                            t = geo.objectType.split('::')[-1]
+                            type_stats[t] = type_stats.get(t, 0) + 1
+                            total_faces += 1
+                for c in occ.childOccurrences:
+                    visit(c)
+
+            for occ in root.occurrences:
+                visit(occ)
+
+            # 按 数量降序 排
+            sorted_types = sorted(type_stats.items(), key=lambda x: -x[1])
+            return {
+                'ok': True,
+                'total_faces': total_faces,
+                'part_count': part_count,
+                'surface_types': {t: n for t, n in sorted_types},
+                'regular_pct': round(
+                    sum(n for t, n in type_stats.items()
+                        if t in ('Plane', 'Cylinder', 'Cone', 'Sphere', 'Torus'))
+                    / max(total_faces, 1) * 100, 1
+                ),
+            }
+        except Exception as e:
+            return {'ok': False, 'error': str(e), 'traceback': traceback.format_exc()[-500:]}
 
 
 def _start_server():
