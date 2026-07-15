@@ -300,17 +300,21 @@ class ComponentCollector:
                 for face in body.faces:
                     faces_found += 1
                     try:
-                        st = face.surfaceType
-                        if faces_found <= 6:  # 只打印前 6 个面避免刷屏
-                            self.logger.debug(f"    face[{faces_found-1}]: surfaceType={st}")
-                        if st != adsk.fusion.SurfaceTypes.CylinderSurfaceType:
+                        # BRepFace 没有 surfaceType 属性，用 face.geometry.objectType 判断
+                        geo = face.geometry
+                        if geo is None:
                             continue
+                        geo_type = geo.objectType  # 'Cylinder' / 'Plane' / 'Cone' 等
+                        if faces_found <= 6:
+                            self.logger.debug(f"    face[{faces_found-1}]: geometry.objectType={geo_type}")
+                        if geo_type != 'Cylinder':
+                            continue
+                        cyl = geo  # adsk.core.Cylinder
                     except Exception as fe:
-                        self.logger.debug(f"    face 读取 surfaceType 失败: {fe}")
+                        self.logger.debug(f"    face[{faces_found-1}] 读取 geometry 失败: {fe}")
                         continue
 
                     try:
-                        cyl = face.geometry  # adsk.core.Cylinder
                         radius_cm = cyl.radius
                         axis_local = cyl.axis
                         origin_local = cyl.origin
