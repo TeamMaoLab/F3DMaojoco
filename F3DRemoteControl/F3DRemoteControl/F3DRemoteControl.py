@@ -349,7 +349,7 @@ def run(context):
         _start_server()
         # 注册 CustomEvent（主线程调度）
         _custom_event = app.registerCustomEvent(_CUSTOM_EVENT_ID)
-        _custom_handler = _MainTaskHandler.create()
+        _custom_handler = _MainTaskHandler()
         _custom_event.add(_custom_handler)
         msg = (f'F3DRemoteControl 运行中 @ http://127.0.0.1:{PORT}\n'
                f'线程安全模式（CustomEvent 主线程调度）\n'

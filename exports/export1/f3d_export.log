@@ -559,3 +559,305 @@
 2026-07-15 21:59:17,890 - INFO -   - 发现 1 个警告
 2026-07-15 21:59:17,890 - INFO - 完成: 装配体导出 (耗时: 5.744秒)
 2026-07-15 21:59:17,891 - INFO - 导出完成: 13 个零部件, 8 个关节
+2026-07-15 22:03:33,223 - INFO - 日志系统启动 - 输出目录: \\wsl.localhost\Ubuntu-24.04\home\mg\AIMAO\F3DMaojoco\exports\export1
+2026-07-15 22:03:33,224 - INFO - 开始: 装配体导出
+2026-07-15 22:03:33,228 - INFO - 开始收集零部件信息
+2026-07-15 22:03:33,228 - INFO - 开始收集零部件信息
+2026-07-15 22:03:33,229 - INFO - 收集零部件: 用于绘制腿部结构的舵机组 v8
+2026-07-15 22:03:33,247 - INFO - BRep: 81 面零部件: servo_mg90s v2:2
+2026-07-15 22:03:33,248 - DEBUG - 变换矩阵 - servo_mg90s v2_world: Transform4D
+2026-07-15 22:03:33,248 - DEBUG - servo_mg90s v2: 装配体路径 = 用于绘制腿部结构的舵机组 v8/servo_mg90s v2:2
+2026-07-15 22:03:33,249 - DEBUG - servo_mg90s v2: 有子零部件 = False
+2026-07-15 22:03:33,249 - INFO - 创建零部件: servo_mg90s v2
+2026-07-15 22:03:33,264 - INFO - BRep: 81 面零部件: servo_mg90s v2:3
+2026-07-15 22:03:33,264 - DEBUG - 变换矩阵 - servo_mg90s v2_world: Transform4D
+2026-07-15 22:03:33,265 - DEBUG - servo_mg90s v2: 装配体路径 = 用于绘制腿部结构的舵机组 v8/servo_mg90s v2:3
+2026-07-15 22:03:33,265 - DEBUG - servo_mg90s v2: 有子零部件 = False
+2026-07-15 22:03:33,265 - INFO - 创建零部件: servo_mg90s v2
+2026-07-15 22:03:33,266 - DEBUG - 变换矩阵 - ONE-LEG_world: Transform4D
+2026-07-15 22:03:33,266 - DEBUG - ONE-LEG: 装配体路径 = 用于绘制腿部结构的舵机组 v8/ONE-LEG:1
+2026-07-15 22:03:33,266 - DEBUG - ONE-LEG: 有子零部件 = True
+2026-07-15 22:03:33,267 - INFO -   COL_GROUP body[0]: type=adsk::fusion::BRepBody, faces=3, isSurface=?, name=实体1
+2026-07-15 22:03:33,268 - DEBUG -     face[0]: geometry.objectType=adsk::core::Cylinder
+2026-07-15 22:03:33,268 - DEBUG -     face[1]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,269 - DEBUG -     face[2]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,269 - INFO -   COL_GROUP body[1]: type=adsk::fusion::BRepBody, faces=3, isSurface=?, name=实体2
+2026-07-15 22:03:33,270 - DEBUG -     face[0]: geometry.objectType=adsk::core::Cylinder
+2026-07-15 22:03:33,270 - DEBUG -     face[1]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,270 - DEBUG -     face[2]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,271 - INFO -   COL_GROUP body[2]: type=adsk::fusion::BRepBody, faces=3, isSurface=?, name=实体3
+2026-07-15 22:03:33,271 - DEBUG -     face[0]: geometry.objectType=adsk::core::Cylinder
+2026-07-15 22:03:33,272 - DEBUG -     face[1]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,272 - DEBUG -     face[2]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,272 - INFO -   COL_GROUP body[3]: type=adsk::fusion::BRepBody, faces=3, isSurface=?, name=实体4
+2026-07-15 22:03:33,273 - DEBUG -     face[0]: geometry.objectType=adsk::core::Cylinder
+2026-07-15 22:03:33,274 - DEBUG -     face[1]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,274 - DEBUG -     face[2]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,275 - INFO - 创建零部件: ONE-LEG
+2026-07-15 22:03:33,275 - INFO - ONE-LEG: 提取 4 个碰撞体
+2026-07-15 22:03:33,278 - INFO - BRep: 24 面零部件: 膝盖传动1:1
+2026-07-15 22:03:33,279 - DEBUG - 变换矩阵 - 膝盖传动1_world: Transform4D
+2026-07-15 22:03:33,279 - DEBUG - 膝盖传动1: 装配体路径 = 用于绘制腿部结构的舵机组 v8/ONE-LEG:1/膝盖传动1:1
+2026-07-15 22:03:33,279 - DEBUG - 膝盖传动1: 有子零部件 = False
+2026-07-15 22:03:33,280 - INFO - 创建零部件: 膝盖传动1
+2026-07-15 22:03:33,282 - INFO - BRep: 20 面零部件: 膝盖转动:1
+2026-07-15 22:03:33,283 - DEBUG - 变换矩阵 - 膝盖转动_world: Transform4D
+2026-07-15 22:03:33,283 - DEBUG - 膝盖转动: 装配体路径 = 用于绘制腿部结构的舵机组 v8/ONE-LEG:1/膝盖转动:1
+2026-07-15 22:03:33,283 - DEBUG - 膝盖转动: 有子零部件 = False
+2026-07-15 22:03:33,284 - INFO - 创建零部件: 膝盖转动
+2026-07-15 22:03:33,288 - INFO - BRep: 38 面零部件: 膝盖传动2:1
+2026-07-15 22:03:33,288 - DEBUG - 变换矩阵 - 膝盖传动2_world: Transform4D
+2026-07-15 22:03:33,288 - DEBUG - 膝盖传动2: 装配体路径 = 用于绘制腿部结构的舵机组 v8/ONE-LEG:1/膝盖传动2:1
+2026-07-15 22:03:33,289 - DEBUG - 膝盖传动2: 有子零部件 = False
+2026-07-15 22:03:33,290 - INFO - 创建零部件: 膝盖传动2
+2026-07-15 22:03:33,292 - INFO - BRep: 19 面零部件: 小腿:1
+2026-07-15 22:03:33,293 - DEBUG - 变换矩阵 - 小腿_world: Transform4D
+2026-07-15 22:03:33,293 - DEBUG - 小腿: 装配体路径 = 用于绘制腿部结构的舵机组 v8/ONE-LEG:1/小腿:1
+2026-07-15 22:03:33,294 - DEBUG - 小腿: 有子零部件 = False
+2026-07-15 22:03:33,294 - INFO - 创建零部件: 小腿
+2026-07-15 22:03:33,295 - DEBUG - 变换矩阵 - 大腿部分_world: Transform4D
+2026-07-15 22:03:33,295 - DEBUG - 大腿部分: 装配体路径 = 用于绘制腿部结构的舵机组 v8/ONE-LEG:1/大腿部分:1
+2026-07-15 22:03:33,296 - DEBUG - 大腿部分: 有子零部件 = True
+2026-07-15 22:03:33,296 - INFO -   COL_GROUP body[0]: type=adsk::fusion::BRepBody, faces=3, isSurface=?, name=实体1
+2026-07-15 22:03:33,297 - DEBUG -     face[0]: geometry.objectType=adsk::core::Cylinder
+2026-07-15 22:03:33,297 - DEBUG -     face[1]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,298 - DEBUG -     face[2]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,298 - INFO -   COL_GROUP body[1]: type=adsk::fusion::BRepBody, faces=3, isSurface=?, name=实体2
+2026-07-15 22:03:33,299 - DEBUG -     face[0]: geometry.objectType=adsk::core::Cylinder
+2026-07-15 22:03:33,299 - DEBUG -     face[1]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,300 - DEBUG -     face[2]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,300 - INFO -   COL_GROUP body[2]: type=adsk::fusion::BRepBody, faces=3, isSurface=?, name=实体3
+2026-07-15 22:03:33,300 - DEBUG -     face[0]: geometry.objectType=adsk::core::Cylinder
+2026-07-15 22:03:33,301 - DEBUG -     face[1]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,301 - DEBUG -     face[2]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,301 - INFO -   COL_GROUP body[3]: type=adsk::fusion::BRepBody, faces=3, isSurface=?, name=实体4
+2026-07-15 22:03:33,302 - DEBUG -     face[0]: geometry.objectType=adsk::core::Cylinder
+2026-07-15 22:03:33,302 - DEBUG -     face[1]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,303 - DEBUG -     face[2]: geometry.objectType=adsk::core::Plane
+2026-07-15 22:03:33,303 - INFO - 创建零部件: 大腿部分
+2026-07-15 22:03:33,304 - INFO - 大腿部分: 提取 4 个碰撞体
+2026-07-15 22:03:33,318 - INFO - BRep: 67 面零部件: 大腿主动力发生器:1
+2026-07-15 22:03:33,319 - DEBUG - 变换矩阵 - 大腿主动力发生器_world: Transform4D
+2026-07-15 22:03:33,319 - DEBUG - 大腿主动力发生器: 装配体路径 = 用于绘制腿部结构的舵机组 v8/ONE-LEG:1/大腿部分:1/大腿主动力发生器:1
+2026-07-15 22:03:33,319 - DEBUG - 大腿主动力发生器: 有子零部件 = False
+2026-07-15 22:03:33,320 - INFO - 创建零部件: 大腿主动力发生器
+2026-07-15 22:03:33,330 - INFO - BRep: 33 面零部件: 小腿保持架:1
+2026-07-15 22:03:33,331 - DEBUG - 变换矩阵 - 小腿保持架_world: Transform4D
+2026-07-15 22:03:33,331 - DEBUG - 小腿保持架: 装配体路径 = 用于绘制腿部结构的舵机组 v8/ONE-LEG:1/大腿部分:1/小腿保持架:1
+2026-07-15 22:03:33,331 - DEBUG - 小腿保持架: 有子零部件 = False
+2026-07-15 22:03:33,332 - INFO - 创建零部件: 小腿保持架
+2026-07-15 22:03:33,359 - INFO - BRep: 39 面零部件: 髋关节保持架:1
+2026-07-15 22:03:33,360 - DEBUG - 变换矩阵 - 髋关节保持架_world: Transform4D
+2026-07-15 22:03:33,360 - DEBUG - 髋关节保持架: 装配体路径 = 用于绘制腿部结构的舵机组 v8/ONE-LEG:1/大腿部分:1/髋关节保持架:1
+2026-07-15 22:03:33,361 - DEBUG - 髋关节保持架: 有子零部件 = False
+2026-07-15 22:03:33,361 - INFO - 创建零部件: 髋关节保持架
+2026-07-15 22:03:33,363 - INFO - BRep: 18 面零部件: 大腿盖板:1
+2026-07-15 22:03:33,364 - DEBUG - 变换矩阵 - 大腿盖板_world: Transform4D
+2026-07-15 22:03:33,364 - DEBUG - 大腿盖板: 装配体路径 = 用于绘制腿部结构的舵机组 v8/ONE-LEG:1/大腿部分:1/大腿盖板:1
+2026-07-15 22:03:33,364 - DEBUG - 大腿盖板: 有子零部件 = False
+2026-07-15 22:03:33,365 - INFO - 创建零部件: 大腿盖板
+2026-07-15 22:03:33,365 - DEBUG - 跳过碰撞体 occurrence: COL_GROUP:1
+2026-07-15 22:03:33,377 - INFO - BRep: 53 面零部件: 膝盖动力发生器:1
+2026-07-15 22:03:33,378 - DEBUG - 变换矩阵 - 膝盖动力发生器_world: Transform4D
+2026-07-15 22:03:33,378 - DEBUG - 膝盖动力发生器: 装配体路径 = 用于绘制腿部结构的舵机组 v8/ONE-LEG:1/膝盖动力发生器:1
+2026-07-15 22:03:33,379 - DEBUG - 膝盖动力发生器: 有子零部件 = False
+2026-07-15 22:03:33,379 - INFO - 创建零部件: 膝盖动力发生器
+2026-07-15 22:03:33,380 - INFO - 收集零部件: servo_mg90s v2
+2026-07-15 22:03:33,380 - INFO - 收集零部件: servo_mg90s v2
+2026-07-15 22:03:33,380 - INFO - 零部件收集完成，共收集 13 个零部件
+2026-07-15 22:03:33,381 - INFO - 进度: 13/13 (100.0%) - 零部件收集完成
+2026-07-15 22:03:33,381 - INFO - 开始分析关节信息
+2026-07-15 22:03:33,382 - INFO - 开始分析关节信息
+2026-07-15 22:03:33,383 - DEBUG - 处理关节: 旋转 1
+2026-07-15 22:03:33,383 - DEBUG - geo_one 类型: <class 'adsk.fusion.JointGeometry'>, geo_two 类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,384 - DEBUG - geo_one 找到 occurrence: 膝盖动力发生器:1
+2026-07-15 22:03:33,384 - DEBUG - geo_two 找到 occurrence: servo_mg90s v2:2
+2026-07-15 22:03:33,385 - DEBUG - 关节 旋转 1 连接信息: JointConnection(occurrence_one_name='膝盖动力发生器:1', occurrence_one_full_path='膝盖动力发生器:1', occurrence_one_component='膝盖动力发生器', occurrence_two_name='servo_mg90s v2:2', occurrence_two_full_path='servo_mg90s v2:2', occurrence_two_component='servo_mg90s v2')
+2026-07-15 22:03:33,386 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,386 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, 1.110223024625161e-16, 0.0, -10.900000000000007], [0.0, 1.0, -2.44929349141908e-16, 3.000000000000001], [0.0, -2.44929349141908e-16, -1.0, 14.399999999999999], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,387 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,388 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, -1.2246467991473537e-16, -3.944304526105059e-31, -10.9], [4.930380657631324e-32, 1.0, 8.721036339266858e-33, 3.500000000000001], [-3.944304526105059e-31, 1.922556626864841e-33, -1.0, 14.399999999999993], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,388 - DEBUG - 找到旋转限制: [0.000, 0.000] rad, rest=0.000
+2026-07-15 22:03:33,389 - DEBUG - 当前旋转角度: 0.000 rad
+2026-07-15 22:03:33,389 - INFO - 成功提取旋转关节 旋转 1 限制信息
+2026-07-15 22:03:33,390 - DEBUG - 旋转轴: Vector3D(x=1.1102230246251595e-16, y=1.0, z=-1.224646799147355e-16), 限制: [0.000, 0.000] rad
+2026-07-15 22:03:33,390 - WARNING - 旋转限制值无效: min >= max
+2026-07-15 22:03:33,391 - WARNING - 关节 旋转 1 的限制信息验证失败
+2026-07-15 22:03:33,391 - INFO - 关节: 旋转 1 (类型: revolute)
+2026-07-15 22:03:33,393 - DEBUG - 处理关节: 旋转 2
+2026-07-15 22:03:33,393 - DEBUG - geo_one 类型: <class 'adsk.fusion.JointGeometry'>, geo_two 类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,394 - DEBUG - geo_one 找到 occurrence: 大腿主动力发生器:1
+2026-07-15 22:03:33,394 - DEBUG - geo_two 找到 occurrence: servo_mg90s v2:2
+2026-07-15 22:03:33,395 - DEBUG - 关节 旋转 2 连接信息: JointConnection(occurrence_one_name='大腿主动力发生器:1', occurrence_one_full_path='大腿主动力发生器:1', occurrence_one_component='大腿主动力发生器', occurrence_two_name='servo_mg90s v2:2', occurrence_two_full_path='servo_mg90s v2:2', occurrence_two_component='servo_mg90s v2')
+2026-07-15 22:03:33,396 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,396 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, 0.0, 0.0, 0.0], [0.0, -1.0, 0.0, 3.0000000000000004], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,397 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,398 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, -1.2246467991473532e-16, 0.0, -9.817843340120827e-32], [-2.7369110631344083e-48, 1.0, -2.5407181807811912e-33, 3.5000000000000004], [0.0, -2.5407181807811967e-33, -1.0, -4.2862637970157386e-16], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,398 - DEBUG - 找到旋转限制: [0.000, 0.000] rad, rest=0.000
+2026-07-15 22:03:33,399 - DEBUG - 当前旋转角度: 0.000 rad
+2026-07-15 22:03:33,399 - INFO - 成功提取旋转关节 旋转 2 限制信息
+2026-07-15 22:03:33,399 - DEBUG - 旋转轴: Vector3D(x=-3.059169915255499e-32, y=1.0, z=-1.2246467991473537e-16), 限制: [0.000, 0.000] rad
+2026-07-15 22:03:33,400 - WARNING - 旋转限制值无效: min >= max
+2026-07-15 22:03:33,400 - WARNING - 关节 旋转 2 的限制信息验证失败
+2026-07-15 22:03:33,401 - INFO - 关节: 旋转 2 (类型: revolute)
+2026-07-15 22:03:33,402 - DEBUG - 处理关节: 旋转 2
+2026-07-15 22:03:33,402 - DEBUG - geo_one 类型: <class 'adsk.fusion.JointGeometry'>, geo_two 类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,403 - DEBUG - geo_one 找到 occurrence: 膝盖转动:1
+2026-07-15 22:03:33,403 - DEBUG - geo_two 找到 occurrence: 大腿主动力发生器:1
+2026-07-15 22:03:33,404 - DEBUG - 关节 旋转 2 连接信息: JointConnection(occurrence_one_name='膝盖转动:1', occurrence_one_full_path='膝盖转动:1', occurrence_one_component='膝盖转动', occurrence_two_name='大腿主动力发生器:1', occurrence_two_full_path='大腿主动力发生器:1', occurrence_two_component='大腿主动力发生器')
+2026-07-15 22:03:33,405 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,405 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, 0.0, 0.0, 0.0], [0.0, -1.0, 0.0, -1.0000000000000013], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,406 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,407 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, 0.0, 0.0, 0.0], [0.0, -1.0, 0.0, -1.1102230246251565e-15], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,408 - DEBUG - 找到旋转限制: [0.000, 0.000] rad, rest=0.000
+2026-07-15 22:03:33,409 - DEBUG - 当前旋转角度: 0.000 rad
+2026-07-15 22:03:33,409 - INFO - 成功提取旋转关节 旋转 2 限制信息
+2026-07-15 22:03:33,410 - DEBUG - 旋转轴: Vector3D(x=0.0, y=-1.0, z=0.0), 限制: [0.000, 0.000] rad
+2026-07-15 22:03:33,410 - WARNING - 旋转限制值无效: min >= max
+2026-07-15 22:03:33,410 - WARNING - 关节 旋转 2 的限制信息验证失败
+2026-07-15 22:03:33,411 - INFO - 关节: 旋转 2 (类型: revolute)
+2026-07-15 22:03:33,412 - DEBUG - 处理关节: 旋转 3
+2026-07-15 22:03:33,412 - DEBUG - geo_one 类型: <class 'adsk.fusion.JointGeometry'>, geo_two 类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,413 - DEBUG - geo_one 找到 occurrence: 大腿主动力发生器:1
+2026-07-15 22:03:33,414 - DEBUG - geo_two 找到 occurrence: 小腿:1
+2026-07-15 22:03:33,414 - DEBUG - 关节 旋转 3 连接信息: JointConnection(occurrence_one_name='大腿主动力发生器:1', occurrence_one_full_path='大腿主动力发生器:1', occurrence_one_component='大腿主动力发生器', occurrence_two_name='小腿:1', occurrence_two_full_path='小腿:1', occurrence_two_component='小腿')
+2026-07-15 22:03:33,415 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,416 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, 0.0, 0.0, 24.999999593604684], [0.0, 1.0, 0.0, -6.000000000000001], [0.0, 0.0, -1.0, -43.30127018922194], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,416 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,417 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[-0.9999999999999988, -5.079941328241823e-08, 0.0, 24.999999593610262], [5.0799413282418235e-08, -0.9999999999999988, 1.232595164407831e-32, -5.5000000000000195], [9.392266674999547e-40, -1.8488927466117442e-32, -1.0, -43.30127018921872], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,418 - DEBUG - 找到旋转限制: [0.000, 0.000] rad, rest=0.000
+2026-07-15 22:03:33,418 - DEBUG - 当前旋转角度: 0.000 rad
+2026-07-15 22:03:33,419 - INFO - 成功提取旋转关节 旋转 3 限制信息
+2026-07-15 22:03:33,419 - DEBUG - 旋转轴: Vector3D(x=-3.254023643281939e-16, y=-1.0000000000000004, z=1.8369702053174592e-16), 限制: [0.000, 0.000] rad
+2026-07-15 22:03:33,419 - WARNING - 旋转限制值无效: min >= max
+2026-07-15 22:03:33,419 - WARNING - 关节 旋转 3 的限制信息验证失败
+2026-07-15 22:03:33,420 - INFO - 关节: 旋转 3 (类型: revolute)
+2026-07-15 22:03:33,421 - DEBUG - 处理关节: 旋转 4
+2026-07-15 22:03:33,421 - DEBUG - geo_one 类型: <class 'adsk.fusion.JointGeometry'>, geo_two 类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,421 - DEBUG - geo_one 找到 occurrence: 膝盖转动:1
+2026-07-15 22:03:33,422 - DEBUG - geo_two 找到 occurrence: 膝盖传动2:1
+2026-07-15 22:03:33,423 - DEBUG - 关节 旋转 4 连接信息: JointConnection(occurrence_one_name='膝盖转动:1', occurrence_one_full_path='膝盖转动:1', occurrence_one_component='膝盖转动', occurrence_two_name='膝盖传动2:1', occurrence_two_full_path='膝盖传动2:1', occurrence_two_component='膝盖传动2')
+2026-07-15 22:03:33,424 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,424 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, 0.0, 0.0, 12.124355652982146], [0.0, -1.0, 0.0, -4.0], [0.0, 0.0, 1.0, 6.999999999999997], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,425 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,426 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, -5.999000866580277e-26, 0.0, 12.12435565298117], [5.889827473806316e-26, -1.0, 6.162975822039155e-33, -4.499999384089859], [0.0, 0.0, 1.0, 7.0000000000015525], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,426 - DEBUG - 找到旋转限制: [-1.920, 1.222] rad, rest=0.087
+2026-07-15 22:03:33,427 - DEBUG - 当前旋转角度: 0.000 rad
+2026-07-15 22:03:33,428 - INFO - 成功提取旋转关节 旋转 4 限制信息
+2026-07-15 22:03:33,428 - DEBUG - 旋转轴: Vector3D(x=5.0799412957015864e-08, y=-0.999999999999999, z=4.5458032502976415e-17), 限制: [-1.920, 1.222] rad
+2026-07-15 22:03:33,429 - INFO - 成功提取关节 旋转 4 的限制信息
+2026-07-15 22:03:33,429 - DEBUG - 限制摘要: {'type': 'revolute', 'min_angle_deg': -110.0, 'max_angle_deg': 70.0, 'rest_angle_deg': 5.000000000000002, 'has_limits': True, 'current_angle_deg': 2.831646840510158e-06, 'has_axis': True}
+2026-07-15 22:03:33,430 - INFO - 关节: 旋转 4 (类型: revolute)
+2026-07-15 22:03:33,431 - DEBUG - 处理关节: 旋转 5
+2026-07-15 22:03:33,431 - DEBUG - geo_one 类型: <class 'adsk.fusion.JointGeometry'>, geo_two 类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,432 - DEBUG - geo_one 找到 occurrence: 膝盖传动2:1
+2026-07-15 22:03:33,432 - DEBUG - geo_two 找到 occurrence: 小腿:1
+2026-07-15 22:03:33,433 - DEBUG - 关节 旋转 5 连接信息: JointConnection(occurrence_one_name='膝盖传动2:1', occurrence_one_full_path='膝盖传动2:1', occurrence_one_component='膝盖传动2', occurrence_two_name='小腿:1', occurrence_two_full_path='小腿:1', occurrence_two_component='小腿')
+2026-07-15 22:03:33,433 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,434 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, 5.999000866580277e-26, 0.0, 37.12435521484179], [5.889827473806316e-26, 1.0, -6.162975822039155e-33, -4.499998114104558], [0.0, 0.0, -1.0, -36.30127022221239], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,435 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,435 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, -6.4937412201049016e-24, 0.0, 37.124355189442106], [1.2370366879196048e-25, 1.0, 1.232595164407831e-32, -3.9999981141045593], [0.0, 1.8488927466117464e-32, -1.0, -36.30127022221237], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,436 - DEBUG - 找到旋转限制: [0.000, 0.000] rad, rest=0.000
+2026-07-15 22:03:33,437 - DEBUG - 当前旋转角度: 0.000 rad
+2026-07-15 22:03:33,437 - INFO - 成功提取旋转关节 旋转 5 限制信息
+2026-07-15 22:03:33,438 - DEBUG - 旋转轴: Vector3D(x=-5.0799412957015864e-08, y=0.999999999999999, z=-4.5458052355311116e-17), 限制: [0.000, 0.000] rad
+2026-07-15 22:03:33,438 - WARNING - 旋转限制值无效: min >= max
+2026-07-15 22:03:33,438 - WARNING - 关节 旋转 5 的限制信息验证失败
+2026-07-15 22:03:33,439 - INFO - 关节: 旋转 5 (类型: revolute)
+2026-07-15 22:03:33,440 - DEBUG - 处理关节: 旋转 6
+2026-07-15 22:03:33,441 - DEBUG - geo_one 类型: <class 'adsk.fusion.JointGeometry'>, geo_two 类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,442 - DEBUG - geo_one 找到 occurrence: 膝盖动力发生器:1
+2026-07-15 22:03:33,442 - DEBUG - geo_two 找到 occurrence: 膝盖传动1:1
+2026-07-15 22:03:33,443 - DEBUG - 关节 旋转 6 连接信息: JointConnection(occurrence_one_name='膝盖动力发生器:1', occurrence_one_full_path='膝盖动力发生器:1', occurrence_one_component='膝盖动力发生器', occurrence_two_name='膝盖传动1:1', occurrence_two_full_path='膝盖传动1:1', occurrence_two_component='膝盖传动1')
+2026-07-15 22:03:33,444 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,444 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, 0.0, 0.0, -21.29230484541327], [0.0, -1.0, 0.0, -4.000000000000002], [0.0, 0.0, 1.0, 8.399999999999991], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,445 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,445 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, 0.0, 0.0, -21.29230484541327], [0.0, 1.0, 0.0, -4.5], [0.0, 0.0, -1.0, 8.39999999999999], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,446 - DEBUG - 找到旋转限制: [-0.698, 1.134] rad, rest=0.000
+2026-07-15 22:03:33,447 - DEBUG - 当前旋转角度: 0.000 rad
+2026-07-15 22:03:33,447 - INFO - 成功提取旋转关节 旋转 6 限制信息
+2026-07-15 22:03:33,447 - DEBUG - 旋转轴: Vector3D(x=0.0, y=1.0, z=0.0), 限制: [-0.698, 1.134] rad
+2026-07-15 22:03:33,448 - INFO - 成功提取关节 旋转 6 的限制信息
+2026-07-15 22:03:33,448 - DEBUG - 限制摘要: {'type': 'revolute', 'min_angle_deg': -40.0, 'max_angle_deg': 65.0, 'rest_angle_deg': 0.0, 'has_limits': True, 'current_angle_deg': 0.0, 'has_axis': True}
+2026-07-15 22:03:33,448 - INFO - 关节: 旋转 6 (类型: revolute)
+2026-07-15 22:03:33,449 - DEBUG - 处理关节: 旋转 7
+2026-07-15 22:03:33,450 - DEBUG - geo_one 类型: <class 'adsk.fusion.JointGeometry'>, geo_two 类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,451 - DEBUG - geo_one 找到 occurrence: 膝盖传动1:1
+2026-07-15 22:03:33,451 - DEBUG - geo_two 找到 occurrence: 膝盖转动:1
+2026-07-15 22:03:33,452 - DEBUG - 关节 旋转 7 连接信息: JointConnection(occurrence_one_name='膝盖传动1:1', occurrence_one_full_path='膝盖传动1:1', occurrence_one_component='膝盖传动1', occurrence_two_name='膝盖转动:1', occurrence_two_full_path='膝盖转动:1', occurrence_two_component='膝盖转动')
+2026-07-15 22:03:33,452 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,453 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, 0.0, 0.0, -12.124355652982146], [0.0, 1.0, 0.0, -4.5], [0.0, 0.0, -1.0, -6.999999999999998], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,454 - DEBUG - 获取几何实体变换矩阵，类型: <class 'adsk.fusion.JointGeometry'>
+2026-07-15 22:03:33,454 - DEBUG - 从 JointGeometry 坐标系构建变换矩阵（已转换为毫米）: [[1.0, 0.0, 0.0, -12.124355652982146], [0.0, 1.0, 0.0, -4.0], [0.0, 0.0, -1.0, -6.999999999999998], [0.0, 0.0, 0.0, 1.0]]
+2026-07-15 22:03:33,455 - DEBUG - 找到旋转限制: [-2.531, 0.698] rad, rest=0.087
+2026-07-15 22:03:33,456 - DEBUG - 当前旋转角度: 0.000 rad
+2026-07-15 22:03:33,457 - INFO - 成功提取旋转关节 旋转 7 限制信息
+2026-07-15 22:03:33,458 - DEBUG - 旋转轴: Vector3D(x=0.0, y=1.0, z=0.0), 限制: [-2.531, 0.698] rad
+2026-07-15 22:03:33,458 - INFO - 成功提取关节 旋转 7 的限制信息
+2026-07-15 22:03:33,458 - DEBUG - 限制摘要: {'type': 'revolute', 'min_angle_deg': -145.0, 'max_angle_deg': 40.0, 'rest_angle_deg': 5.000000000000001, 'has_limits': True, 'current_angle_deg': 0.0, 'has_axis': True}
+2026-07-15 22:03:33,459 - INFO - 关节: 旋转 7 (类型: revolute)
+2026-07-15 22:03:33,461 - INFO - 关节分析完成，共分析 8 个关节
+2026-07-15 22:03:33,461 - INFO - 进度: 8/8 (100.0%) - 关节分析完成
+2026-07-15 22:03:33,461 - INFO - 开始导出STL文件
+2026-07-15 22:03:33,462 - INFO - 开始导出STL文件，网格质量: medium
+2026-07-15 22:03:33,464 - INFO - 进度: 1/13 (7.7%) - 导出 servo_mg90s v2
+2026-07-15 22:03:34,600 - INFO - STL导出成功零部件: servo_mg90s v2
+2026-07-15 22:03:34,601 - INFO - 进度: 2/13 (15.4%) - 导出 servo_mg90s v2
+2026-07-15 22:03:35,640 - INFO - STL导出成功零部件: servo_mg90s v2
+2026-07-15 22:03:35,641 - INFO - 进度: 3/13 (23.1%) - 导出 ONE-LEG
+2026-07-15 22:03:36,410 - INFO - STL导出成功零部件: ONE-LEG
+2026-07-15 22:03:36,411 - INFO - 进度: 4/13 (30.8%) - 导出 膝盖传动1
+2026-07-15 22:03:36,503 - INFO - STL导出成功零部件: 膝盖传动1
+2026-07-15 22:03:36,504 - INFO - 进度: 5/13 (38.5%) - 导出 膝盖转动
+2026-07-15 22:03:36,611 - INFO - STL导出成功零部件: 膝盖转动
+2026-07-15 22:03:36,611 - INFO - 进度: 6/13 (46.2%) - 导出 膝盖传动2
+2026-07-15 22:03:36,703 - INFO - STL导出成功零部件: 膝盖传动2
+2026-07-15 22:03:36,704 - INFO - 进度: 7/13 (53.8%) - 导出 小腿
+2026-07-15 22:03:36,797 - INFO - STL导出成功零部件: 小腿
+2026-07-15 22:03:36,797 - INFO - 进度: 8/13 (61.5%) - 导出 大腿部分
+2026-07-15 22:03:37,195 - INFO - STL导出成功零部件: 大腿部分
+2026-07-15 22:03:37,196 - INFO - 进度: 9/13 (69.2%) - 导出 大腿主动力发生器
+2026-07-15 22:03:37,327 - INFO - STL导出成功零部件: 大腿主动力发生器
+2026-07-15 22:03:37,327 - INFO - 进度: 10/13 (76.9%) - 导出 小腿保持架
+2026-07-15 22:03:37,466 - INFO - STL导出成功零部件: 小腿保持架
+2026-07-15 22:03:37,467 - INFO - 进度: 11/13 (84.6%) - 导出 髋关节保持架
+2026-07-15 22:03:37,624 - INFO - STL导出成功零部件: 髋关节保持架
+2026-07-15 22:03:37,624 - INFO - 进度: 12/13 (92.3%) - 导出 大腿盖板
+2026-07-15 22:03:37,711 - INFO - STL导出成功零部件: 大腿盖板
+2026-07-15 22:03:37,712 - INFO - 进度: 13/13 (100.0%) - 导出 膝盖动力发生器
+2026-07-15 22:03:37,838 - INFO - STL导出成功零部件: 膝盖动力发生器
+2026-07-15 22:03:37,838 - INFO - STL导出完成，成功导出 13 个文件
+2026-07-15 22:03:37,839 - INFO - 进度: 13/13 (100.0%) - STL文件导出完成
+2026-07-15 22:03:37,839 - INFO - 开始导出BRep精确网格
+2026-07-15 22:03:37,840 - INFO - [FM诊断] BRepMeshExporter类来源: inf3d.brep_mesh_exporter
+2026-07-15 22:03:37,840 - INFO - [FM诊断] BRepMeshExporter文件: 无__file__
+2026-07-15 22:03:37,841 - INFO - [FM诊断] 实例 angle_tolerance=1.0
+2026-07-15 22:03:37,841 - INFO - [FM诊断] 有 _tessellate_occurrence 方法: True
+2026-07-15 22:03:37,842 - INFO - [PY诊断] Python解释器: C:\Users\TheTi\AppData\Local\Autodesk\webdeploy\production\257040cabc1dffce734a8079453b19b0ffe2b735\Fusion360.exe
+2026-07-15 22:03:37,843 - INFO - [PY诊断] Python版本: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2026-07-15 22:03:37,843 - INFO - [PY诊断] MeshCalculator objectType=adsk::fusion::TriangleMeshCalculator
+2026-07-15 22:03:37,844 - INFO - [PY诊断] Calculator属性: ['calculate', 'cast', 'classType', 'isValid', 'maxAspectRatio', 'maxNormalDeviation', 'maxSideLength', 'objectType', 'parentMeshManager', 'setQuality', 'surfaceTolerance', 'this', 'thisown']
+2026-07-15 22:03:37,844 - INFO - [PY诊断]   读 angleTolerance 失败: 'TriangleMeshCalculator' object has no attribute 'angleTolerance'
+2026-07-15 22:03:37,845 - INFO - [PY诊断]   读 maxEdgeLength 失败: 'TriangleMeshCalculator' object has no attribute 'maxEdgeLength'
+2026-07-15 22:03:37,845 - INFO - [PY诊断]   读 surfaceTolerance = 0.0
+2026-07-15 22:03:37,846 - INFO - [PY诊断]   读 aspectRatio 失败: 'TriangleMeshCalculator' object has no attribute 'aspectRatio'
+2026-07-15 22:03:38,093 - INFO - BRep 网格导出完成: 10 零件, 21298 顶点, 23486 面, 755KB → \\wsl.localhost\Ubuntu-24.04\home\mg\AIMAO\F3DMaojoco\exports\export1\brep_geometry.json
+2026-07-15 22:03:38,094 - INFO - 开始创建导出数据
+2026-07-15 22:03:38,095 - INFO - 创建元数据: 零部件数=13, 关节数=8
+2026-07-15 22:03:38,095 - INFO - 开始序列化数据
+2026-07-15 22:03:38,096 - INFO - 开始序列化导出数据
+2026-07-15 22:03:38,099 - INFO - 保存导出数据到: \\wsl.localhost\Ubuntu-24.04\home\mg\AIMAO\F3DMaojoco\exports\export1\component_positions.json
+2026-07-15 22:03:38,105 - INFO - 导出数据保存成功
+2026-07-15 22:03:38,106 - INFO - 主要数据文件保存成功: component_positions.json
+2026-07-15 22:03:38,110 - INFO - 导出描述文件保存成功: export_description.md
+2026-07-15 22:03:38,110 - INFO - 数据序列化完成，文件保存在: \\wsl.localhost\Ubuntu-24.04\home\mg\AIMAO\F3DMaojoco\exports\export1
+2026-07-15 22:03:38,111 - INFO - 开始生成分析报告
+2026-07-15 22:03:38,111 - INFO - 开始分析导出结果
+2026-07-15 22:03:38,209 - INFO - 导出分析完成:
+2026-07-15 22:03:38,210 - INFO -   - 零部件: 13 个
+2026-07-15 22:03:38,211 - INFO -   - 关节: 8 个
+2026-07-15 22:03:38,211 - INFO -   - STL文件: 13 个
+2026-07-15 22:03:38,212 - INFO -   - 质量分数: 95.0/100
+2026-07-15 22:03:38,212 - INFO -   - 发现 1 个警告
+2026-07-15 22:03:38,213 - INFO - 完成: 装配体导出 (耗时: 4.988秒)
+2026-07-15 22:03:38,213 - INFO - 导出完成: 13 个零部件, 8 个关节
