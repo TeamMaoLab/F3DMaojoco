@@ -60,6 +60,10 @@ class STEPExporter:
         # 遍历所有零部件
         for i, component in enumerate(components):
             try:
+                # 碰撞体（COL_ 前缀）不导出 STEP
+                if component.name.startswith("COL_"):
+                    continue
+
                 log_progress(self.logger, i + 1, len(components), f"导出STEP {component.name}")
 
                 # 导出单个零部件

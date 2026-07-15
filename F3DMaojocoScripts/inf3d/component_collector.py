@@ -229,6 +229,35 @@ class ComponentCollector:
             self.logger.error(f"提取碰撞体时发生错误: {str(e)}")
         return colliders
 
+    def _accumulate_transform(self, occurrence: adsk.fusion.Occurrence) -> Optional['adsk.core.Matrix3D']:
+        """累加 occurrence 及其所有祖先的 transform，得到世界变换矩阵。
+
+        Fusion 的 occurrence.transform 是相对父级的局部变换。要从 body 局部坐标
+        转到世界坐标，需要从根向下累乘：world = root.local × ... × parent.local × this.local。
+        这里从当前 occurrence 往上收集所有局部 transform，再按从根到叶的顺序相乘。
+        """
+        try:
+            import adsk.core
+            # 收集从根到当前 occurrence 的局部变换链
+            chain = []
+            occ = occurrence
+            while occ is not None:
+                t = occ.transform
+                if t is not None:
+                    chain.append(t)
+                occ = occ.assemblyContext  # 父 occurrence（顶级为 None）
+            if not chain:
+                return None
+            # chain[0] 是最深的（当前），chain[-1] 是最浅的（根级）
+            # 世界变换 = 根.local × ... × 当前.local，所以要反序相乘
+            world = chain[-1].copy()
+            for i in range(len(chain) - 2, -1, -1):
+                world.transformBy(chain[i])
+            return world
+        except Exception as e:
+            self.logger.error(f"累加 transform 失败: {str(e)}")
+            return None
+
     def _extract_cylinder(self, collider_occ: adsk.fusion.Occurrence,
                           parent_name: str) -> Optional[CollisionShape]:
         """从 COL_ occurrence 提取圆柱几何（半径/轴/端点），转为世界坐标 mm。
@@ -264,8 +293,12 @@ class ComponentCollector:
             endpoints_local = []
             for edge in cyl_face.edges:
                 try:
-                    if edge.geometry.objectType == 'Circle3D':
-                        endpoints_local.append(edge.geometry.center)
+                    geo = edge.geometry
+                    if geo is None:
+                        continue
+                    # Circle3D 有 center 属性且 objectType 是 'Circle3D'
+                    if getattr(geo, 'objectType', '') == 'Circle3D':
+                        endpoints_local.append(geo.center)
                 except Exception:
                     continue
             # 去重（两端点）
@@ -282,9 +315,10 @@ class ComponentCollector:
                 end1, end2 = unique_ends[0], unique_ends[1]
                 length_cm = self._dist(end1, end2)
 
-            # 转世界坐标（应用 collider_occ.transform）+ cm→mm（×10）
-            transform = collider_occ.transform
-            if transform is None:
+            # 转世界坐标：累加 occurrence 及其所有祖先的 transform（嵌套装配体情况）
+            # Fusion 的 occurrence.transform 是相对父级的局部变换，要转世界必须沿父链累乘。
+            world_transform = self._accumulate_transform(collider_occ)
+            if world_transform is None:
                 self.logger.warning(f"碰撞体 {component.name} 无 transform，用局部坐标")
                 origin_world = origin_local
                 axis_world = axis_local
@@ -292,12 +326,12 @@ class ComponentCollector:
                 end2_world = end2
             else:
                 origin_world = origin_local.copy()
-                origin_world.transformBy(transform)
-                end1_world = end1.copy(); end1_world.transformBy(transform)
-                end2_world = end2.copy(); end2_world.transformBy(transform)
-                # axis 是向量，用 transform 的旋转部分（transformBy 对 Vector3D 只应用旋转）
+                origin_world.transformBy(world_transform)
+                end1_world = end1.copy(); end1_world.transformBy(world_transform)
+                end2_world = end2.copy(); end2_world.transformBy(world_transform)
+                # axis 是向量，transformBy 对 Vector3D 只应用旋转部分
                 axis_world = axis_local.copy()
-                axis_world.transformBy(transform)
+                axis_world.transformBy(world_transform)
                 axis_world.normalize()
 
             # cm → mm

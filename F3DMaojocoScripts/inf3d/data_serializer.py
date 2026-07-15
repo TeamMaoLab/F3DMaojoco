@@ -163,6 +163,7 @@ ExportData 是整个工具链的核心数据结构，包含：
 - **world_transform**: 世界坐标系变换矩阵
 - **bodies_count**: 实体数量
 - **has_children**: 是否包含子零部件
+- **colliders**: 碰撞体列表（从子级 `COL_` 前缀组件提取的圆柱几何，单位 mm，世界坐标）。每个碰撞体含 name/parent_component/shape_type/radius/length/axis/origin/endpoints
 
 ### 关节信息
 每个关节包含：
