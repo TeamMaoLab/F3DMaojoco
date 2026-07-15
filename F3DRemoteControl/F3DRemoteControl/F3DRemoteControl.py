@@ -141,9 +141,16 @@ def _do_exec(code):
 
 def _do_export(out_dir, quality):
     """执行导出。在主线程调用。"""
-    for d in SCRIPT_DIRS:
-        if d not in sys.path:
-            sys.path.insert(0, d)
+    # 优先用 Win 版（绝对导入），避免 Mac 版相对导入报错
+    win_dir = next((d for d in SCRIPT_DIRS if 'F3DMaojocoWin' in d), SCRIPT_DIRS[0] if SCRIPT_DIRS else None)
+    if win_dir:
+        # 移除其他 F3DMaojoco 脚本目录，防止 Mac 版相对导入干扰
+        for d in list(SCRIPT_DIRS):
+            if d != win_dir and d in sys.path:
+                sys.path.remove(d)
+        if win_dir in sys.path:
+            sys.path.remove(win_dir)
+        sys.path.insert(0, win_dir)
     _do_hot_reload()
     from inf3d.fusion_export_manager import FusionExportManager
     from common.data_types import MeshQuality
