@@ -487,7 +487,7 @@ class CollisionShape:
     length: Optional[float] = None                     # 长度 mm
     axis: Optional[List[float]] = None                 # 轴方向 [x,y,z]
     origin: Optional[List[float]] = None               # 轴上一点 [x,y,z] mm
-    endpoints: Optional[List[List[float]] = None       # 两端点 [[x,y,z],[x,y,z]] mm
+    endpoints: Optional[List[List[float]]] = None       # 两端点 [[x,y,z],[x,y,z]] mm
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -529,6 +529,7 @@ class ComponentInfo:
     - world_transform: 零部件在世界坐标系中的变换矩阵
     - bodies_count: 零部件包含的实体数量
     - has_children: 是否包含子零部件（是否为子装配体）
+    - colliders: 碰撞体列表（COL_ 前缀子组件提取的圆柱几何，用于 MuJoCo 碰撞检测）
     
     这些信息用于在MuJoCo中重建模型结构和位置关系
     
@@ -542,7 +543,8 @@ class ComponentInfo:
     world_transform: Optional[Transform4D] = None    # 世界坐标系变换
     bodies_count: int = 0                  # 实体数量
     has_children: bool = False             # 是否包含子零部件
-    
+    colliders: List[CollisionShape] = field(default_factory=list)  # 碰撞体（COL_ 组件提取）
+
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
         return {
@@ -553,7 +555,8 @@ class ComponentInfo:
             "stl_file": self.stl_file,
             "world_transform": transform4d_to_dict(self.world_transform) if self.world_transform else None,
             "bodies_count": self.bodies_count,
-            "has_children": self.has_children
+            "has_children": self.has_children,
+            "colliders": [c.to_dict() for c in self.colliders] if self.colliders else []
         }
     
     @classmethod
@@ -567,7 +570,8 @@ class ComponentInfo:
             stl_file=data.get("stl_file"),
             world_transform=transform4d_from_dict(data["world_transform"]) if data.get("world_transform") else None,
             bodies_count=data.get("bodies_count", 0),
-            has_children=data.get("has_children", False)
+            has_children=data.get("has_children", False),
+            colliders=[CollisionShape.from_dict(c) for c in data.get("colliders", [])]
         )
 
 

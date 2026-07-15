@@ -11,8 +11,11 @@ import adsk.core
 import adsk.fusion
 
 from .logger import log_component, log_transform
-from ..common.data_types import ComponentInfo
+from ..common.data_types import ComponentInfo, CollisionShape
 from ..common.geometry_math import Transform4D
+
+# 碰撞体命名前缀：以 COL_ 开头的 occurrence 被识别为碰撞体（不导出 STL，几何提取到父零件的 colliders）
+COLLIDER_PREFIX = "COL_"
 
 
 class ComponentCollector:
@@ -123,21 +126,31 @@ class ComponentCollector:
         try:
             if not occurrence.component:
                 return
-            
+
+            # COL_ 前缀的 occurrence 是碰撞体，不作为独立零件收集
+            # （它的圆柱几何会被父零件的 _collect_colliders 提取）
+            if occurrence.component.name.startswith(COLLIDER_PREFIX):
+                self.logger.debug(f"跳过碰撞体 occurrence: {occurrence.name}")
+                return
+
             # 构建完整路径
             full_path = f"{parent_path}/{occurrence.name}"
-            
+
             # 创建零部件信息
             component_info = self._create_component_info(occurrence, full_path)
-            
+
             if component_info:
+                # 提取挂在本 occurrence 下的 COL_ 子碰撞体
+                component_info.colliders = self._collect_colliders(occurrence)
                 components.append(component_info)
                 log_component(self.logger, component_info.name, "创建")
-            
+                if component_info.colliders:
+                    self.logger.info(f"{component_info.name}: 提取 {len(component_info.colliders)} 个碰撞体")
+
             # 递归处理子 occurrence
             for child_occurrence in occurrence.childOccurrences:
                 self._collect_from_occurrence(child_occurrence, components, full_path)
-            
+
         except Exception as e:
             self.logger.error(f"收集 occurrence {occurrence.name} 时发生错误: {str(e)}")
     
@@ -194,7 +207,160 @@ class ComponentCollector:
         except Exception as e:
             self.logger.error(f"创建零部件信息 {occurrence.name} 时发生错误: {str(e)}")
             return None
-    
+
+    def _collect_colliders(self, occurrence: adsk.fusion.Occurrence) -> List[CollisionShape]:
+        """递归遍历 occurrence 的子节点，提取所有 COL_ 前缀碰撞体的圆柱几何。
+
+        COL_ 组件的圆柱几何用其世界变换转到世界坐标（mm），
+        归属为当前 occurrence（父零件）。
+        """
+        colliders: List[CollisionShape] = []
+        try:
+            for child in occurrence.childOccurrences:
+                if not child.component:
+                    continue
+                if child.component.name.startswith(COLLIDER_PREFIX):
+                    shape = self._extract_cylinder(child, occurrence.component.name)
+                    if shape:
+                        colliders.append(shape)
+                # 递归更深层（COL_ 可能挂在子装配体下）
+                colliders.extend(self._collect_colliders(child))
+        except Exception as e:
+            self.logger.error(f"提取碰撞体时发生错误: {str(e)}")
+        return colliders
+
+    def _extract_cylinder(self, collider_occ: adsk.fusion.Occurrence,
+                          parent_name: str) -> Optional[CollisionShape]:
+        """从 COL_ occurrence 提取圆柱几何（半径/轴/端点），转为世界坐标 mm。
+
+        Fusion API 返回 body 局部坐标 + cm 单位；这里用 occurrence.transform
+        把 origin/axis/endpoints 转世界，再 ×10 转 mm。
+        """
+        try:
+            component = collider_occ.component
+            if not component or component.bRepBodies.count == 0:
+                return None
+
+            body = component.bRepBodies.item(0)
+            # 找圆柱侧面（surfaceType == CylinderSurfaceType）
+            cyl_face = None
+            for face in body.faces:
+                try:
+                    if face.surfaceType == adsk.fusion.SurfaceTypes.CylinderSurfaceType:
+                        cyl_face = face
+                        break
+                except Exception:
+                    continue
+            if cyl_face is None:
+                self.logger.warning(f"碰撞体 {component.name} 未找到圆柱面，跳过")
+                return None
+
+            cyl = cyl_face.geometry  # adsk.core.Cylinder
+            radius_cm = cyl.radius
+            axis_local = cyl.axis    # Vector3D，body 局部
+            origin_local = cyl.origin  # Point3D，body 局部
+
+            # 从圆形边提取两端点（每个端面有一条圆边，center 在轴上）
+            endpoints_local = []
+            for edge in cyl_face.edges:
+                try:
+                    if edge.geometry.objectType == 'Circle3D':
+                        endpoints_local.append(edge.geometry.center)
+                except Exception:
+                    continue
+            # 去重（两端点）
+            unique_ends = self._dedup_points(endpoints_local, tol=1e-4)
+            if len(unique_ends) != 2:
+                # 退化或非标准圆柱，用 origin + axis × boundingBox 长度兜底
+                self.logger.warning(
+                    f"碰撞体 {component.name} 圆边数={len(unique_ends)}（预期2），用 boundingBox 估算长度")
+                length_cm = self._estimate_length_from_bbox(body, axis_local)
+                # 沿轴两端点 = origin ± axis*length/2
+                end1 = self._point_along(origin_local, axis_local, length_cm / 2)
+                end2 = self._point_along(origin_local, axis_local, -length_cm / 2)
+            else:
+                end1, end2 = unique_ends[0], unique_ends[1]
+                length_cm = self._dist(end1, end2)
+
+            # 转世界坐标（应用 collider_occ.transform）+ cm→mm（×10）
+            transform = collider_occ.transform
+            if transform is None:
+                self.logger.warning(f"碰撞体 {component.name} 无 transform，用局部坐标")
+                origin_world = origin_local
+                axis_world = axis_local
+                end1_world = end1
+                end2_world = end2
+            else:
+                origin_world = origin_local.copy()
+                origin_world.transformBy(transform)
+                end1_world = end1.copy(); end1_world.transformBy(transform)
+                end2_world = end2.copy(); end2_world.transformBy(transform)
+                # axis 是向量，用 transform 的旋转部分（transformBy 对 Vector3D 只应用旋转）
+                axis_world = axis_local.copy()
+                axis_world.transformBy(transform)
+                axis_world.normalize()
+
+            # cm → mm
+            MM = 10.0
+            return CollisionShape(
+                name=component.name,
+                parent_component=parent_name,
+                shape_type="cylinder",
+                radius=round(radius_cm * MM, 4),
+                length=round(length_cm * MM, 4),
+                axis=[round(axis_world.x, 6), round(axis_world.y, 6), round(axis_world.z, 6)],
+                origin=[round(origin_world.x * MM, 4),
+                        round(origin_world.y * MM, 4),
+                        round(origin_world.z * MM, 4)],
+                endpoints=[[round(end1_world.x * MM, 4), round(end1_world.y * MM, 4), round(end1_world.z * MM, 4)],
+                           [round(end2_world.x * MM, 4), round(end2_world.y * MM, 4), round(end2_world.z * MM, 4)]],
+            )
+        except Exception as e:
+            self.logger.error(f"提取圆柱 {collider_occ.name} 时发生错误: {str(e)}")
+            return None
+
+    @staticmethod
+    def _dedup_points(points, tol=1e-4):
+        """去重 3D 点（距离 < tol 视为同一点）。"""
+        unique = []
+        for p in points:
+            is_dup = False
+            for u in unique:
+                if abs(p.x - u.x) < tol and abs(p.y - u.y) < tol and abs(p.z - u.z) < tol:
+                    is_dup = True
+                    break
+            if not is_dup:
+                unique.append(p)
+        return unique
+
+    @staticmethod
+    def _dist(a, b):
+        """两点距离（cm）。"""
+        import math
+        return math.sqrt((a.x - b.x)**2 + (a.y - b.y)**2 + (a.z - b.z)**2)
+
+    @staticmethod
+    def _point_along(origin, axis, distance):
+        """从 origin 沿 axis 方向偏移 distance 的点。"""
+        import adsk.core
+        return adsk.core.Point3D.create(
+            origin.x + axis.x * distance,
+            origin.y + axis.y * distance,
+            origin.z + axis.z * distance,
+        )
+
+    @staticmethod
+    def _estimate_length_from_bbox(body, axis):
+        """用 body 的 boundingBox 估算沿 axis 方向的长度（cm，近似）。"""
+        bbox = body.boundingBox
+        if not bbox:
+            return 0.0
+        # bbox 是轴对齐的，取 max(尺寸) 作为长度估计（圆柱长度是最长方向）
+        dx = bbox.maxPoint.x - bbox.minPoint.x
+        dy = bbox.maxPoint.y - bbox.minPoint.y
+        dz = bbox.maxPoint.z - bbox.minPoint.z
+        return max(dx, dy, dz)
+
     def _get_world_transform(self, occurrence: adsk.fusion.Occurrence) -> Optional[Transform4D]:
         """获取世界坐标系变换矩阵
         
