@@ -1,7 +1,7 @@
 # Fusion 360 → 网页：BRep 精确网格化 + 远程控制探索总结
 
 > 2026-07-15 第二阶段探索。在第一阶段（STL 网格 + geometry.json 序列化）基础上，
-> 解决了"STL 网格粗糙"和"改代码要重启 Fusion"两个核心痛点。
+> 解决了"STL 网格粗糙"、"改代码要重启 Fusion"、"Fusion API 线程安全"、"BRep 坐标系"四个核心问题。
 
 ---
 
@@ -161,3 +161,111 @@ _result = {"success": result.success, "stl": len(result.stl_files)}
 1. **精度可配**：导出时指定 `setQuality` 级别，按需选择精度/体积平衡
 2. **NURBS 处理**：39% 的面是 NurbsSurface，探索 NURBS 控制点导出（更小体积）
 3. **曲面参数重建**：规则几何（Plane/Cylinder）用参数重建，NURBS 用网格 fallback（混合方案）
+
+---
+
+## 第三阶段：线程安全 + 坐标系修复（实战收尾）
+
+### 坑 5：Fusion API 线程不安全 → 崩溃
+
+**现象**：通过 `/exec` 或 `/export` 触发导出后，Fusion 随机崩溃（有时成功写出数据才崩）。
+
+**根因**：HTTP handler 跑在后台线程（`threading.Thread`），而 **Fusion API 只允许主线程调用**。后台线程遍历 `body.faces`、调 `export_assembly` → 竞态条件 → 崩溃。
+
+**解决**：CustomEvent 主线程调度。
+```
+后台线程                          主线程
+────────                          ──────
+接 HTTP 请求
+_enqueue_main(fn)
+  → 放 _pending_tasks 队列
+  → app.fireCustomEvent(id)  ──→  CustomEventHandler.notify()
+  → Event.wait() 阻塞              _drain_queue() 执行 fn（调 Fusion API）
+                                   task['event'].set()
+  ← 拿到 result              ←────
+返回 HTTP 响应
+```
+
+关键 API：
+- `app.registerCustomEvent(eventId)` 注册事件
+- `_MainTaskHandler(CustomEventHandler)` 的 `notify` 在主线程被调用
+- `app.fireCustomEvent(eventId)` 从后台线程触发
+
+**端点分类**：
+- 纯 Python（后台线程直接执行）：`/ping` `/reload` `/modules`
+- Fusion API（走队列主线程执行）：`/exec` `/export` `/model` `/brep_stats`
+
+### 坑 6：BRep 网格坐标系错误 → 舵机旋转不对
+
+**现象**：网页里舵机朝向和 Fusion 里不一致（旋转看起来被"恢复"了）。
+
+**根因**：STL 导出的顶点在 **body 局部坐标**（Fusion 的 `createSTLExportOptions` 不 bake 变换），viewer.js 加载时用 `world_transform` 变换 mesh（转一次 = 正确）。但我的 BRep 导出**错误地提前应用了 world_transform**，viewer 又转一次 = **转两次 = 错误**。
+
+**数据证据**（servo 同一零件）：
+| | BRep（错误） | STL（正确基准） |
+|---|---|---|
+| X | [-21.6, 10.8] | [-6.2, 6.2] |
+| Z | [-6.2, 6.2] | [-10.8, 21.6] |
+
+X/Z 交换了 = 绕 Y 转 90°（world_transform 的旋转被应用了两次）。
+
+**修复**：BRep 网格导出时**不应用 world_transform**，保持 body 局部坐标（和 STL 一致），让 viewer 应用变换。
+
+### 坑 7：sys.path 混入 Mac 版（相对导入）
+
+**现象**：`/export` 报 `attempted relative import beyond top-level package`。
+
+**根因**：`_do_hot_reload` 把 SCRIPT_DIRS 里所有目录都加到 sys.path，Mac 版（F3DMaojocoScripts，用相对导入 `from .xxx`）排在前面，`import inf3d` 先找到 Mac 版。
+
+**修复**：path 只加 Win 版（F3DMaojocoWin，绝对导入 `from inf3d.xxx`），移除 Mac 版。
+
+### 坑 8：objectType 带命名空间前缀
+
+**现象**：`/model` 报"无活动 Design"，但 `/exec` 能读到 Design。
+
+**根因**：判断 `design.objectType != 'fusion::Design'`，但实际值是 `adsk::fusion::Design`。
+
+**修复**：用 `'Design' in str(design.objectType)` 模糊匹配。和坑 1 同源——Fusion API 的 objectType 总是带 `adsk::` 或 `adsk::core::` / `adsk::fusion::` 前缀。
+
+---
+
+## 最终验证结果
+
+| 测试项 | 结果 |
+|---|---|
+| `/ping` 线程安全版 | ✅ `thread_safe: true` |
+| `/exec` 主线程调度 | ✅ |
+| `/model` 装配体查询 | ✅ 13零件 6关节 |
+| `/brep_stats` 曲面统计 | ✅ 473面 61.1%规则几何 |
+| `/export` 参数化导出 | ✅ 13 STL + BRep 网格 |
+| **导出后 Fusion 不崩溃** | ✅ **线程安全修复成功** |
+| BRep 精度 | ✅ 21298顶点 23486面 756KB |
+| servo 局部坐标 | ✅ 和 STL 完全一致 |
+| 网页舵机旋转 | ✅ 正确（转一次） |
+
+## 最终架构图
+
+```
+Fusion 360（Python 3.14 主线程）
+├── F3DRemoteControl add-in（常驻）
+│   ├── HTTP 服务（后台线程，只接请求）
+│   │   ├── /ping /reload /modules（纯 Python，直接执行）
+│   │   └── /exec /export /model /brep_stats（→ 队列 → 主线程）
+│   └── CustomEventHandler（主线程，执行队列任务）
+│
+├── F3DMaojocoWin 导出脚本（Scripts，手动 Run）
+│   └── inf3d/ + common/（绝对导入）
+│       ├── component_collector（+ BRep 曲面参数提取）
+│       ├── stl_exporter（STL 网格）
+│       ├── brep_mesh_exporter（BRep 精确网格，body 局部坐标）
+│       └── fusion_export_manager（主流程编排）
+│
+└── exports/export1/
+    ├── component_positions.json（零件+关节+BRep曲面参数）
+    ├── stl_files/（STL 网格，fallback）
+    └── brep_geometry.json（BRep 精确网格，网页优先加载）
+
+WSL 命令行 / 浏览器
+└── curl http://127.0.0.1:9099/...（远程控制 Fusion）
+└── WebPreviewer/（Three.js 渲染，加载优先级 brep > stl）
+```
