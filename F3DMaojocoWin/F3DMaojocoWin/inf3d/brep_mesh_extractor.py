@@ -136,19 +136,42 @@ class BRepMeshExtractor:
             calc = mesh_manager.createMeshCalculator()
             if calc is None:
                 return None
-            # 尝试设置质量参数（API 版本兼容）
-            try:
-                calc.angleTolerance = self.angle_tolerance
-            except Exception:
-                pass
-            try:
-                calc.maxEdgeLength = self.max_edge_length
-            except Exception:
-                pass
+
+            # [诊断] 打印 calculator 可用的属性/方法，确认 API 接口
+            self.logger.info(f"  [BRep诊断] MeshCalculator type={calc.objectType}")
+            # 尝试列出属性
+            for attr_name in ['angleTolerance', 'maxEdgeLength', 'surfaceTolerance', 'aspectRatio']:
+                try:
+                    val = getattr(calc, attr_name)
+                    self.logger.info(f"  [BRep诊断]   {attr_name} (读) = {val}")
+                except Exception as e:
+                    self.logger.info(f"  [BRep诊断]   {attr_name} 不可读: {e}")
+
+            # 尝试设置质量参数（多种 API 形式）
+            set_ok = []
+            # 方式1: 直接属性赋值
+            for attr, val in [('angleTolerance', self.angle_tolerance),
+                              ('maxEdgeLength', self.max_edge_length)]:
+                try:
+                    setattr(calc, attr, val)
+                    set_ok.append(f'{attr}={val}(属性)')
+                except Exception as e:
+                    self.logger.info(f"  [BRep诊断]   {attr} 属性赋值失败: {e}")
+                    # 方式2: setter 方法
+                    setter = 'set' + attr[0].upper() + attr[1:]
+                    try:
+                        getattr(calc, setter)(val)
+                        set_ok.append(f'{attr}={val}(setter)')
+                    except Exception as e2:
+                        self.logger.info(f"  [BRep诊断]   {setter}() 也失败: {e2}")
+            self.logger.info(f"  [BRep诊断] 参数设置结果: {set_ok if set_ok else '全部失败（用默认精度）'}")
+
             mesh = calc.calculate()
-            # 兜底：calculate 不存在时试 computeMesh
             if mesh is None:
                 mesh = calc.mesh
+            if mesh is not None:
+                self.logger.info(f"  [BRep诊断] 网格生成: {len(mesh.nodeCoordinates)} 顶点, "
+                                 f"{len(mesh.nodeIndices)//3} 面")
             return mesh
         except Exception as e:
             log_error(self.logger, f"_tessellate_body 失败: {e}")
