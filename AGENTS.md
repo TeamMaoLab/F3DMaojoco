@@ -1,85 +1,129 @@
-# F3DMaojoco 项目状态（2026-07-14 重启）
+# F3DMaojoco 项目状态（2026-07-15）
 
 ## 项目目标
 让一个舵机四足单腿模型在浏览器里动起来。模型从 Fusion 360 导出，含 2 个主动关节（连舵机）+ 6 个被动关节 + 2 条闭环约束。
+**已达成**：Fusion 设计 → MuJoCo 离线求解解空间 → 浏览器 LUT 驱动交互渲染，全链路打通。
 
-## 已完成的工作（按时间顺序）
+## 架构全景
+```
+Fusion 360（Python 3.14 主线程）
+├── F3DRemoteControl add-in（常驻，HTTP 远程控制）
+│   ├── /ping /reload /modules（纯 Python）
+│   └── /exec /export /model /brep_stats（Fusion API，走主线程队列）
+├── F3DMaojocoWin 导出脚本（手动 Run）
+│   └── inf3d/ + common/（绝对导入）
+│       ├── component_collector（+ BRep 曲面参数提取）
+│       ├── stl_exporter（STL 网格）
+│       ├── brep_mesh_exporter（BRep 精确网格，body 局部坐标）
+│       └── fusion_export_manager（主流程编排）
+│
+└── exports/export1/
+    ├── component_positions.json（零件+关节+BRep曲面参数+碰撞体）
+    ├── stl_files/（STL 网格，fallback）
+    └── brep_geometry.json（BRep 精确网格，网页优先加载）
 
-### 1. 项目清理与文档诚实化（9dfbd51）
-- 删死代码：templates/viewer.py、兼容包装器、4 个死方法、重复方法
-- 5 个文档加状态声明，修虚假完成度
-- 8 处 TODO(重构) 标记
-- 修通 test_gui_modules.py（HEAD 原本是坏的）
+WSL 命令行 / 浏览器
+└── curl http://127.0.0.1:9099/...（远程控制 Fusion）
+└── WebPreviewer/（Three.js 渲染，加载优先级 brep > stl）
+└── scripts/（MuJoCo FK 求解 + LUT 生成 + 几何序列化）
+```
 
-### 2. WebPreviewer 导出物预览器（2fabae7）
-- 纯前端 Three.js，自动加载 exports/export1
-- 灰白半透明渲染所有零件
-- 修复装配体容器重复渲染（Z-fighting）
+## 已完成的工作
 
-### 3. 运动学树可视化 + 刚体分组（a1dd4ea）
-- 右侧面板：运动学树（缩进列表）+ STL 零件过滤
-- 点击刚体高亮 + 显示 XYZ 轴 + 三面坐标系框架
-- 孤立/隐藏/全部显示交互
-- **关键发现**：大腿是 4 零件的 Rigid Group，Fusion 导出脚本未读 rigidGroups
-- 硬编码运动学树（不追求通用性）：
-  ```
-  机架→[旋转1]→膝盖动力发生器→[旋转6]→膝盖传动1→[旋转7]→膝盖转动→[旋转4]→膝盖传动2
-  机架→[旋转2]→大腿刚体(4零件)→[旋转3]→小腿
-  闭环约束: 旋转2'(膝盖转动↔大腿刚体 J2重合) + 旋转5(膝盖传动2↔小腿 J5重合)
-  ```
+### 第一阶段：MuJoCo 求解 + 网页 LUT 驱动
+- **纯运动学牛顿迭代 FK**（fk_newton.py）：不用 MuJoCo 动力学/约束求解器，只用 mj_forward 当 FK 引擎，自己解闭环约束方程组（4被动角 + 2闭环anchor重合）
+- **BFS 连续追踪**（gen_workspace_lut.py）：解决闭环无穷多解的缠绕问题——从(0,0)种子 BFS 扩展 + 多初值 + 连续性选择，±180° 范围 32761 格点零缠绕
+- **全局连续性平滑**（refine_continuity）：消除大范围分支跳变（4095→474处）
+- **连通性分析**：flood fill 标记与原点连通的可达区，孤岛标黄拖不进
+- **碰撞检测**：Fusion COL_ 圆柱体导出 + MuJoCo contact pair 强制父子 body 碰撞
+- **网页**：LUT 双线性插值驱动 3D 腿 + 解空间四色地图（绿连通/黄孤岛/红碰撞/黑不可达）+ 连续拖动追踪（stepTowards 挡回红区）
 
-### 4. 树关节旋转滑块（050f13a）
-- 6 个滑块控制 6 个树关节角度
-- 手动模式：各滑块独立拖（会断开闭环，用于验证相对旋转）
-- 数学：C_child = C_parent · T(P)·Ry(θ)·T(-P)，P=关节点世界坐标
+### 第二阶段：STL→JSON 序列化
+- **geometry.json**（gen_geometry_json.py）：STL 顶点去重(83%) + base64(Float32/Int16) + Uint16 indices，5.2MB→1.65MB
+- **geometry-loader.js**：零依赖解码库，跨项目复用
 
-### 5. 闭环约束联立求解（c7a8787，进行中）
-- **关键发现**：分步圆交点求解错误——两条闭环通过"膝盖转动"耦合，必须联立
-- solveFKCoupled：牛顿迭代联立解 4 个被动角，Python 验证误差 0.000000mm
-- 约束模式：只拖 θ1/θ2，被动角自动求解
-- **当前问题**：JS 端连续追踪初值在某些角度跳跃后无法恢复，负方向(θ2<0)分支不稳定
-
-## 正在做的事
-闭环约束求解器的 JS 端稳定性优化。Python 逻辑已验证正确（联立牛顿迭代），但 JS 移植后：
-- θ2 正方向(0→30°)：闭环基本闭合 ✓
-- θ2 负方向：跳分支，J5 误差 40+mm ✗
-- 根因：连续追踪初值(lastSolverX0)在大角度变化后失效
-
-## 下一步
-1. 修 JS solveFKCoupled 的分支追踪稳定性（可能需要限制每步角度变化幅度，或用多初值）
-2. 约束模式稳定后，验证整个工作空间（拖动 θ1/θ2 组合，看腿运动是否正确）
-3. 最终验证：用 MuJoCo 对照（之前建的 mujoco_leg/leg.xml）
+### 第三阶段：BRep 精确网格 + 远程控制
+- **BRep 精确网格**（brep_mesh_exporter.py）：TriangleMeshCalculator + setQuality(15=VeryHigh)，圆柱面圆滑，21298顶点/756KB
+- **F3DRemoteControl add-in**：HTTP 远程控制 Fusion（热重载/exec/导出/查询）
+- **线程安全**：CustomEvent 主线程调度（后台线程接请求→队列→主线程执行 Fusion API）
+- **坐标系修复**：BRep 用 body 局部坐标（和 STL 一致，让 viewer 应用 world_transform 转一次）
 
 ## 关键技术点
-- **运动学树**：硬编码（不追求通用），在 WebPreviewer/app.js 的 buildTreeData
-- **闭环求解**：solveFKCoupled 在 WebPreviewer/solver.js，4 个未知数 + 4 个约束方程(2 闭环 × 2D)
-- **渲染**：applyJointRotations 在 WebPreviewer/viewer.js，子累积 = 父累积 × 相对旋转
-- **机构数据**：exports/export1/component_positions.json（7 关节点，XZ 平面，绕 Y 轴）
+
+### MuJoCo FK 求解（scripts/fk_newton.py）
+- 只用 mj_forward 算 body 世界坐标，不用约束求解器
+- 牛顿迭代解 4 被动角：数值雅可比(4×4) + J·dx=−f，残差 < 1e-8mm
+- **初值决定分支**：闭环三角方程有无穷多解，连续追踪(邻居解作初值)是关键
+
+### BRep 网格化（F3DMaojocoWin/inf3d/brep_mesh_exporter.py）
+- body.meshManager.createMeshCalculator() → setQuality(15) → calculate()
+- **body 局部坐标**（cm→mm），不应用 world_transform（viewer 会转）
+- API 属性名：setQuality/surfaceTolerance/maxNormalDeviation/maxSideLength（非 angleTolerance）
+
+### 远程控制线程安全（F3DRemoteControl/）
+- CustomEvent：app.registerCustomEvent + CustomEventHandler.notify（主线程）
+- 后台线程 fireCustomEvent 通知 + Event.wait 阻塞等结果
+- 纯 Python 端点直接执行，Fusion API 端点走队列
+
+### 渲染（WebPreviewer/）
+- 加载优先级：brep_geometry.json > geometry.json > STL fetch
+- viewer.js：mesh.matrix = world_transform（matrixAutoUpdate=false），applyJointRotations 按树深度累积旋转
+- 组件按运动学树刚体配色（与 MuJoCo 对齐）
 
 ## 文件结构
 ```
+F3DMaojocoScripts/          # Mac 版导出插件（相对导入，原始开发）
+F3DMaojocoWin/F3DMaojocoWin/ # Win 版导出插件（绝对导入，含 manifest）
+F3DRemoteControl/F3DRemoteControl/ # 远程控制 add-in（HTTP + CustomEvent）
+mujoco_leg/leg.xml          # MuJoCo 模型（运动学树+闭环约束+碰撞体）
+scripts/
+├── fk_newton.py            # 纯运动学牛顿迭代 FK 求解器
+├── gen_workspace_lut.py    # LUT 生成（BFS+平滑+连通性）
+├── gen_geometry_json.py    # STL→geometry.json 序列化
+├── plot_workspace.py       # 解空间地图 PNG
+└── leg_viewer.py           # MuJoCo 交互查看器（验证用）
 WebPreviewer/
-├── index.html      # UI（工具栏 + 3D画布 + 右侧三段面板）
-├── app.js          # 主逻辑（加载模型/树渲染/滑块/模式切换）
-├── solver.js       # FK 求解器（solveFK 分步版 + solveFKCoupled 联立版）
-├── viewer.js       # 3D 渲染（addComponent/applyJointRotations/highlightBody）
-└── heatmap-worker.js  # 工作空间热力图（旧，基于分步 solver，待更新）
-mujoco_leg/leg.xml  # MuJoCo 对照模型（运动学树正确，动力学求解器有局部解问题）
-scripts/verify_fk_solver.py  # Python FK 验证脚本（联立求解原型）
-exports/export1/    # 测试数据（舵机四足单腿，gitignore）
+├── app.js                  # 主逻辑（LUT插值/拖动/解空间地图）
+├── viewer.js               # Three.js 渲染（配色/材质/坐标轴）
+├── geometry-loader.js      # geometry.json 解码库（零依赖）
+├── brep_geometry.json      # BRep 精确网格（生成物）
+└── workspace_lut.json      # 关节角查找表（生成物）
+docs/
+├── fusion_to_web_workflow.md           # 全流程经验总结（14条可复用经验）
+└── brep_mesh_and_remote_control.md     # BRep+远程控制探索（8个坑+架构图）
 ```
-
-## 已知问题
-1. F3DMaojocoScripts 导出脚本不读 Fusion Rigid Group（大腿刚体信息丢失）
-2. MaojocoConverter 处理闭链时崩溃（limits bug + 闭环转树逻辑）
-3. solveFKCoupled 的 JS 分支追踪不稳定（当前重点）
-4. heatmap-worker.js 还用旧的 solveFK（分步版），需更新为 solveFKCoupled
 
 ## 运行方式
+
+### 网页预览
 ```bash
-cd /Users/maoge/Documents/JLGLMaolab/F3DMaojoco
-python3 -m http.server 8000
-# 浏览器打开 http://localhost:8000/WebPreviewer/index.html
-# 页面自动加载 exports/export1
-# 右侧"关节旋转"面板：手动模式拖各滑块 / 约束模式只拖θ1θ2
+python3 -m http.server 8766
+# 浏览器 http://localhost:8766/WebPreviewer/index.html
 ```
+
+### 远程控制 Fusion（add-in 先在 Fusion Add-Ins 里 Run）
+```bash
+curl http://127.0.0.1:9099/ping                              # 连通
+curl http://127.0.0.1:9099/reload                           # 热重载（不用重启Fusion）
+curl http://127.0.0.1:9099/model                             # 查装配体结构
+curl http://127.0.0.1:9099/brep_stats                        # BRep曲面统计
+curl -G http://127.0.0.1:9099/export --data-urlencode 'dir=路径'  # 导出
+```
+
+### 重新生成解空间 LUT
+```bash
+.venv/bin/python scripts/gen_workspace_lut.py   # ~1.5min，输出到 WebPreviewer/
+```
+
+## 已知问题 / 待办
+1. F3DMaojocoScripts(Mac) 和 F3DMaojocoWin(Win) 两份代码需手动同步（改一个要 cp 到另一个 + 改导入风格）
+2. NURBS 面（39%）仍用网格，未探索控制点导出
+3. 解空间边缘（距原点≥88°）有 474 处分支跳变（物理真实的多构型，非 bug）
+4. geometry-loader.js 的 `/exec` 复杂代码避免 URL 特殊字符（用临时文件 + exec(open())）
+
+## 关键经验（详见 docs/）
+- 闭环无穷多解：初值决定分支，连续追踪是关键（不是调参问题）
+- Fusion API：objectType 带命名空间前缀（adsk::fusion::xxx），用 endswith/模糊匹配
+- Fusion Python 3.14：模块缓存进程级隔离，热重载要倒序删+清__dict__+invalidate_caches
+- Fusion API 非线程安全：必须 CustomEvent 主线程调度
+- STL/BRep 顶点都是 body 局部坐标，viewer 应用 world_transform 转一次
