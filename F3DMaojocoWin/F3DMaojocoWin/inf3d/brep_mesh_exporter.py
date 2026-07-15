@@ -195,31 +195,30 @@ class BRepMeshExporter:
                         self.logger.info("[PY诊断]   读 %s 失败: %s" % (a, e))
                 self._diag_logged = True
 
-            # 设置精度（正确的 API 属性名，来自 dir() 诊断）
-            # maxNormalDeviation: 法线偏差（弧度，越小越精细）
-            # maxSideLength: 最大边长（cm）
-            # maxAspectRatio: 最大长宽比
+            # 设置精度：先用 setQuality 设基准（枚举 8/11/13/15，越大越精细），
+            # 再手动覆盖 surfaceTolerance（cm，越小越精细）做额外控制。
+            # API 文档（adsk/defs/adsk/fusion.py TriangleMeshCalculator）：
+            #   surfaceTolerance: 网格偏离真实曲面的最大距离（cm）
+            #   maxNormalDeviation: 相邻顶点法线最大角度（弧度，0=不限）
+            #   maxSideLength: 三角形最大边长（cm，0=不限）
+            #   setQuality: 用 LOD 枚举一次性调好所有参数
             try:
-                calc.maxNormalDeviation = math.radians(self.angle_tolerance)
+                # 15 = VeryHighQualityTriangleMesh（最精细枚举档）
+                ok = calc.setQuality(15)
+                if not self._diag_logged:
+                    self.logger.info("[PY诊断] setQuality(15) 返回: " + str(ok))
             except Exception as e:
                 if not self._diag_logged:
-                    self.logger.info("[PY诊断] 设 maxNormalDeviation 失败: " + str(e))
+                    self.logger.info("[PY诊断] setQuality 失败: " + str(e))
             try:
-                calc.maxSideLength = self.max_edge_length
-            except Exception as e:
-                if not self._diag_logged:
-                    self.logger.info("[PY诊断] 设 maxSideLength 失败: " + str(e))
+                # 额外精细：surfaceTolerance 0.001cm = 0.01mm（极精细）
+                calc.surfaceTolerance = 0.001
+            except Exception:
+                pass
 
             mesh = calc.calculate()
             if mesh is None:
                 mesh = calc.mesh
-            # 诊断：设完后读回确认
-            if not self._diag_logged:
-                try:
-                    self.logger.info("[PY诊断] 设后 maxNormalDeviation=" + str(calc.maxNormalDeviation))
-                    self.logger.info("[PY诊断] 设后 maxSideLength=" + str(calc.maxSideLength))
-                except Exception:
-                    pass
             return mesh
         except Exception as e:
             log_error(self.logger, f"_tessellate_body 失败: {e}")
