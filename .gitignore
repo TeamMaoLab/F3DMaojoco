@@ -210,8 +210,6 @@ __marimo__/
 .claude
 .zcode/
 tmp-output/
-# Fusion 360 导出产物（component_positions.json + stl_files 等），属生成物不纳入版本控制
-exports/
 # Three.js 本地副本（CDN fallback，按需从 unpkg 下载）
 WebPreviewer/vendor/
 .DS_Store
