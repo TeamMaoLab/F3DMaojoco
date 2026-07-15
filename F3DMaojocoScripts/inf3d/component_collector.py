@@ -284,12 +284,29 @@ class ComponentCollector:
             # 遍历所有 body
             for body_idx in range(component.bRepBodies.count):
                 body = component.bRepBodies.item(body_idx)
+                # 详细诊断：body 类型 + face 数 + 属性
+                try:
+                    body_type = body.objectType
+                    face_count = body.faces.count
+                    is_surf = getattr(body, 'isSurface', '?')
+                    body_name = getattr(body, 'name', '?')
+                    self.logger.info(f"  {component.name} body[{body_idx}]: type={body_type}, "
+                                     f"faces={face_count}, isSurface={is_surf}, name={body_name}")
+                except Exception as be:
+                    self.logger.warning(f"  {component.name} body[{body_idx}] 诊断失败: {be}")
+
                 # 遍历所有面，找圆柱面
+                faces_found = 0
                 for face in body.faces:
+                    faces_found += 1
                     try:
-                        if face.surfaceType != adsk.fusion.SurfaceTypes.CylinderSurfaceType:
+                        st = face.surfaceType
+                        if faces_found <= 6:  # 只打印前 6 个面避免刷屏
+                            self.logger.debug(f"    face[{faces_found-1}]: surfaceType={st}")
+                        if st != adsk.fusion.SurfaceTypes.CylinderSurfaceType:
                             continue
-                    except Exception:
+                    except Exception as fe:
+                        self.logger.debug(f"    face 读取 surfaceType 失败: {fe}")
                         continue
 
                     try:
@@ -356,19 +373,8 @@ class ComponentCollector:
                         continue
 
             if not shapes:
-                # 诊断：列出所有面的类型，帮助排查为什么没找到圆柱面
-                face_types = {}
-                for body_idx in range(component.bRepBodies.count):
-                    body = component.bRepBodies.item(body_idx)
-                    for face in body.faces:
-                        try:
-                            t = str(face.surfaceType)
-                            face_types[t] = face_types.get(t, 0) + 1
-                        except Exception:
-                            pass
                 self.logger.warning(
-                    f"碰撞体 {component.name}（{component.bRepBodies.count} 个实体）未找到圆柱面，跳过。"
-                    f"实际面类型分布: {face_types}")
+                    f"碰撞体 {component.name}（{component.bRepBodies.count} 个实体）未找到圆柱面，跳过")
         except Exception as e:
             self.logger.error(f"提取圆柱 {collider_occ.name} 时发生错误: {str(e)}")
         return shapes
