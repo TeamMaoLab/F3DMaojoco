@@ -1,0 +1,1611 @@
+{
+  "meta": {
+    "export_time": "2026-07-15 12:37:49",
+    "geometry_unit": "millimeters",
+    "position_unit": "millimeters",
+    "matrix_storage": "4x4_array",
+    "count_components": 13,
+    "count_joints": 8,
+    "format_version": "1.0"
+  },
+  "components": [
+    {
+      "name": "servo_mg90s v2",
+      "occurrence_name": "servo_mg90s v2:2",
+      "full_path_name": "用于绘制腿部结构的舵机组 v7/servo_mg90s v2:2",
+      "component_id": "servo_mg90s v2",
+      "stl_file": "stl_files/servo_mg90s v2_servo_mg90s v2.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            2.4980018054065973e-16,
+            8.687957029205475e-96,
+            -1.0000000000000004,
+            0.0
+          ],
+          [
+            2.1570415377137162e-32,
+            1.0,
+            4.930380657631326e-32,
+            0.0
+          ],
+          [
+            1.0000000000000004,
+            5.473822126268817e-48,
+            2.498001805406601e-16,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 2,
+      "has_children": false,
+      "colliders": []
+    },
+    {
+      "name": "servo_mg90s v2",
+      "occurrence_name": "servo_mg90s v2:3",
+      "full_path_name": "用于绘制腿部结构的舵机组 v7/servo_mg90s v2:3",
+      "component_id": "servo_mg90s v2",
+      "stl_file": "stl_files/servo_mg90s v2_servo_mg90s v2.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            -2.4841240175987885e-15,
+            1.1102230246251564e-16,
+            1.0000000000000013,
+            -10.900000000000002
+          ],
+          [
+            -2.4492935982947094e-16,
+            1.0,
+            -1.1102230246251627e-16,
+            7.771561172376141e-16
+          ],
+          [
+            -1.0000000000000013,
+            -2.44929359829471e-16,
+            -2.470246229790974e-15,
+            14.399999999999995
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 2,
+      "has_children": false,
+      "colliders": []
+    },
+    {
+      "name": "ONE-LEG",
+      "occurrence_name": "ONE-LEG:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v7/ONE-LEG:1",
+      "component_id": "ONE-LEG",
+      "stl_file": "stl_files/ONE-LEG_ONE-LEG.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 0,
+      "has_children": true,
+      "colliders": [
+        {
+          "name": "COL_小腿传动",
+          "parent_component": "膝盖传动1",
+          "shape_type": "cylinder",
+          "radius": 3.0,
+          "length": 7.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            12.1244,
+            -6.5,
+            7.0
+          ],
+          "endpoints": [
+            [
+              12.1244,
+              0.5,
+              7.0
+            ],
+            [
+              12.1244,
+              -6.5,
+              7.0
+            ]
+          ]
+        },
+        {
+          "name": "COL_膝盖动力连接",
+          "parent_component": "膝盖转动",
+          "shape_type": "cylinder",
+          "radius": 3.0,
+          "length": 7.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            -12.1244,
+            -6.5,
+            -7.0
+          ],
+          "endpoints": [
+            [
+              -12.1244,
+              0.5,
+              -7.0
+            ],
+            [
+              -12.1244,
+              -6.5,
+              -7.0
+            ]
+          ]
+        },
+        {
+          "name": "COL_小腿连接",
+          "parent_component": "小腿",
+          "shape_type": "cylinder",
+          "radius": 3.0,
+          "length": 7.0,
+          "axis": [
+            -0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            37.1244,
+            -6.5,
+            -36.3013
+          ],
+          "endpoints": [
+            [
+              37.1244,
+              0.5,
+              -36.3013
+            ],
+            [
+              37.1244,
+              -6.5,
+              -36.3013
+            ]
+          ]
+        },
+        {
+          "name": "COL_圆柱实体组",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 2.0,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "origin": [
+            12.0448,
+            -5.0,
+            -7.136
+          ],
+          "endpoints": [
+            [
+              12.0448,
+              -1.0,
+              -7.136
+            ],
+            [
+              12.0448,
+              -5.0,
+              -7.136
+            ]
+          ]
+        },
+        {
+          "name": "COL_圆柱实体组_1",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 9.9943,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "origin": [
+            -0.0,
+            -5.0,
+            0.0
+          ],
+          "endpoints": [
+            [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            [
+              -0.0,
+              -5.0,
+              0.0
+            ]
+          ]
+        },
+        {
+          "name": "COL_圆柱实体组_2",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 2.0,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            22.9639,
+            -5.0,
+            -29.426
+          ],
+          "endpoints": [
+            [
+              22.9639,
+              -1.0,
+              -29.426
+            ],
+            [
+              22.9639,
+              -5.0,
+              -29.426
+            ]
+          ]
+        },
+        {
+          "name": "COL_圆柱实体组_3",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 2.0,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            8.6024,
+            -5.0,
+            -11.0453
+          ],
+          "endpoints": [
+            [
+              8.6024,
+              -1.0,
+              -11.0453
+            ],
+            [
+              8.6024,
+              -5.0,
+              -11.0453
+            ]
+          ]
+        },
+        {
+          "name": "COL_膝盖动力发生",
+          "parent_component": "膝盖动力发生器",
+          "shape_type": "cylinder",
+          "radius": 3.0,
+          "length": 7.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            -21.2923,
+            -6.5,
+            8.4
+          ],
+          "endpoints": [
+            [
+              -21.2923,
+              0.5,
+              8.4
+            ],
+            [
+              -21.2923,
+              -6.5,
+              8.4
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "膝盖传动1",
+      "occurrence_name": "膝盖传动1:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v7/ONE-LEG:1/膝盖传动1:1",
+      "component_id": "膝盖传动1",
+      "stl_file": "stl_files/膝盖传动1_膝盖传动1.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": true,
+      "colliders": [
+        {
+          "name": "COL_小腿传动",
+          "parent_component": "膝盖传动1",
+          "shape_type": "cylinder",
+          "radius": 3.0,
+          "length": 7.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            12.1244,
+            -6.5,
+            7.0
+          ],
+          "endpoints": [
+            [
+              12.1244,
+              0.5,
+              7.0
+            ],
+            [
+              12.1244,
+              -6.5,
+              7.0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "膝盖转动",
+      "occurrence_name": "膝盖转动:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v7/ONE-LEG:1/膝盖转动:1",
+      "component_id": "膝盖转动",
+      "stl_file": "stl_files/膝盖转动_膝盖转动.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": true,
+      "colliders": [
+        {
+          "name": "COL_膝盖动力连接",
+          "parent_component": "膝盖转动",
+          "shape_type": "cylinder",
+          "radius": 3.0,
+          "length": 7.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            -12.1244,
+            -6.5,
+            -7.0
+          ],
+          "endpoints": [
+            [
+              -12.1244,
+              0.5,
+              -7.0
+            ],
+            [
+              -12.1244,
+              -6.5,
+              -7.0
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "膝盖传动2",
+      "occurrence_name": "膝盖传动2:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v7/ONE-LEG:1/膝盖传动2:1",
+      "component_id": "膝盖传动2",
+      "stl_file": "stl_files/膝盖传动2_膝盖传动2.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            0.9999999999999991,
+            -5.0799412957015864e-08,
+            1.3196789513904886e-09,
+            -2.3783607658263119e-07
+          ],
+          [
+            5.0799412957493464e-08,
+            0.999999999999999,
+            1.1166966865111713e-16,
+            -1.3178494876615844e-14
+          ],
+          [
+            -1.319679173435097e-09,
+            -4.5458032502976415e-17,
+            1.0000000000000007,
+            1.6001810032438912e-08
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": []
+    },
+    {
+      "name": "小腿",
+      "occurrence_name": "小腿:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v7/ONE-LEG:1/小腿:1",
+      "component_id": "小腿",
+      "stl_file": "stl_files/小腿_小腿.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            0.9999999999999987,
+            -5.0799412957015864e-08,
+            2.7212710160220145e-09,
+            -1.8695638460650438e-07
+          ],
+          [
+            5.0799412957015844e-08,
+            0.999999999999999,
+            1.836970191574493e-16,
+            -1.5350397147554458e-06
+          ],
+          [
+            -2.721270960510869e-09,
+            -4.5458052355311116e-17,
+            1.0,
+            6.803498766045686e-08
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": true,
+      "colliders": [
+        {
+          "name": "COL_小腿连接",
+          "parent_component": "小腿",
+          "shape_type": "cylinder",
+          "radius": 3.0,
+          "length": 7.0,
+          "axis": [
+            -0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            37.1244,
+            -6.5,
+            -36.3013
+          ],
+          "endpoints": [
+            [
+              37.1244,
+              0.5,
+              -36.3013
+            ],
+            [
+              37.1244,
+              -6.5,
+              -36.3013
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "大腿部分",
+      "occurrence_name": "大腿部分:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v7/ONE-LEG:1/大腿部分:1",
+      "component_id": "大腿部分",
+      "stl_file": "stl_files/大腿部分_大腿部分.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 0,
+      "has_children": true,
+      "colliders": [
+        {
+          "name": "COL_圆柱实体组",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 2.0,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "origin": [
+            12.0448,
+            -5.0,
+            -7.136
+          ],
+          "endpoints": [
+            [
+              12.0448,
+              -1.0,
+              -7.136
+            ],
+            [
+              12.0448,
+              -5.0,
+              -7.136
+            ]
+          ]
+        },
+        {
+          "name": "COL_圆柱实体组_1",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 9.9943,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            -0.0
+          ],
+          "origin": [
+            -0.0,
+            -5.0,
+            0.0
+          ],
+          "endpoints": [
+            [
+              -0.0,
+              -1.0,
+              0.0
+            ],
+            [
+              -0.0,
+              -5.0,
+              0.0
+            ]
+          ]
+        },
+        {
+          "name": "COL_圆柱实体组_2",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 2.0,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            22.9639,
+            -5.0,
+            -29.426
+          ],
+          "endpoints": [
+            [
+              22.9639,
+              -1.0,
+              -29.426
+            ],
+            [
+              22.9639,
+              -5.0,
+              -29.426
+            ]
+          ]
+        },
+        {
+          "name": "COL_圆柱实体组_3",
+          "parent_component": "大腿部分",
+          "shape_type": "cylinder",
+          "radius": 2.0,
+          "length": 4.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            8.6024,
+            -5.0,
+            -11.0453
+          ],
+          "endpoints": [
+            [
+              8.6024,
+              -1.0,
+              -11.0453
+            ],
+            [
+              8.6024,
+              -5.0,
+              -11.0453
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "大腿主动力发生器",
+      "occurrence_name": "大腿主动力发生器:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v7/ONE-LEG:1/大腿部分:1/大腿主动力发生器:1",
+      "component_id": "大腿主动力发生器",
+      "stl_file": "stl_files/大腿主动力发生器_大腿主动力发生器.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": []
+    },
+    {
+      "name": "小腿保持架",
+      "occurrence_name": "小腿保持架:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v7/ONE-LEG:1/大腿部分:1/小腿保持架:1",
+      "component_id": "小腿保持架",
+      "stl_file": "stl_files/小腿保持架_小腿保持架.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": []
+    },
+    {
+      "name": "髋关节保持架",
+      "occurrence_name": "髋关节保持架:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v7/ONE-LEG:1/大腿部分:1/髋关节保持架:1",
+      "component_id": "髋关节保持架",
+      "stl_file": "stl_files/髋关节保持架_髋关节保持架.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": []
+    },
+    {
+      "name": "大腿盖板",
+      "occurrence_name": "大腿盖板:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v7/ONE-LEG:1/大腿部分:1/大腿盖板:1",
+      "component_id": "大腿盖板",
+      "stl_file": "stl_files/大腿盖板_大腿盖板.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": false,
+      "colliders": []
+    },
+    {
+      "name": "膝盖动力发生器",
+      "occurrence_name": "膝盖动力发生器:1",
+      "full_path_name": "用于绘制腿部结构的舵机组 v7/ONE-LEG:1/膝盖动力发生器:1",
+      "component_id": "膝盖动力发生器",
+      "stl_file": "stl_files/膝盖动力发生器_膝盖动力发生器.stl",
+      "world_transform": {
+        "matrix": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "bodies_count": 1,
+      "has_children": true,
+      "colliders": [
+        {
+          "name": "COL_膝盖动力发生",
+          "parent_component": "膝盖动力发生器",
+          "shape_type": "cylinder",
+          "radius": 3.0,
+          "length": 7.0,
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "origin": [
+            -21.2923,
+            -6.5,
+            8.4
+          ],
+          "endpoints": [
+            [
+              -21.2923,
+              0.5,
+              8.4
+            ],
+            [
+              -21.2923,
+              -6.5,
+              8.4
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "joints": [
+    {
+      "name": "旋转 1",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "膝盖动力发生器:1",
+        "occurrence_one_full_path": "膝盖动力发生器:1",
+        "occurrence_one_component": "膝盖动力发生器",
+        "occurrence_two_name": "servo_mg90s v2:2",
+        "occurrence_two_full_path": "servo_mg90s v2:2",
+        "occurrence_two_component": "servo_mg90s v2"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              1.110223024625161e-16,
+              0.0,
+              -10.900000000000007
+            ],
+            [
+              0.0,
+              1.0,
+              -2.44929349141908e-16,
+              3.000000000000001
+            ],
+            [
+              0.0,
+              -2.44929349141908e-16,
+              -1.0,
+              14.399999999999999
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              -1.2246467991473537e-16,
+              -3.944304526105059e-31,
+              -10.9
+            ],
+            [
+              4.930380657631324e-32,
+              1.0,
+              8.721036339266858e-33,
+              3.500000000000001
+            ],
+            [
+              -3.944304526105059e-31,
+              1.922556626864841e-33,
+              -1.0,
+              14.399999999999993
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 2",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "大腿主动力发生器:1",
+        "occurrence_one_full_path": "大腿主动力发生器:1",
+        "occurrence_one_component": "大腿主动力发生器",
+        "occurrence_two_name": "servo_mg90s v2:2",
+        "occurrence_two_full_path": "servo_mg90s v2:2",
+        "occurrence_two_component": "servo_mg90s v2"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -1.0,
+              0.0,
+              3.0000000000000004
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              -1.2246467991473532e-16,
+              0.0,
+              -9.817843340120827e-32
+            ],
+            [
+              -2.7369110631344083e-48,
+              1.0,
+              -2.5407181807811912e-33,
+              3.5000000000000004
+            ],
+            [
+              0.0,
+              -2.5407181807811967e-33,
+              -1.0,
+              -4.2862637970157386e-16
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 2",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "膝盖转动:1",
+        "occurrence_one_full_path": "膝盖转动:1",
+        "occurrence_one_component": "膝盖转动",
+        "occurrence_two_name": "大腿主动力发生器:1",
+        "occurrence_two_full_path": "大腿主动力发生器:1",
+        "occurrence_two_component": "大腿主动力发生器"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -1.0,
+              0.0,
+              -1.0000000000000013
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              -1.0,
+              0.0,
+              -1.1102230246251565e-15
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 3",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "大腿主动力发生器:1",
+        "occurrence_one_full_path": "大腿主动力发生器:1",
+        "occurrence_one_component": "大腿主动力发生器",
+        "occurrence_two_name": "小腿:1",
+        "occurrence_two_full_path": "小腿:1",
+        "occurrence_two_component": "小腿"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              24.999999593604684
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              -6.000000000000001
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              -43.30127018922194
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              -0.9999999999999988,
+              -5.079941328241823e-08,
+              0.0,
+              24.999999593610262
+            ],
+            [
+              5.0799413282418235e-08,
+              -0.9999999999999988,
+              1.232595164407831e-32,
+              -5.5000000000000195
+            ],
+            [
+              9.392266674999547e-40,
+              -1.8488927466117442e-32,
+              -1.0,
+              -43.30127018921872
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 4",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "膝盖转动:1",
+        "occurrence_one_full_path": "膝盖转动:1",
+        "occurrence_one_component": "膝盖转动",
+        "occurrence_two_name": "膝盖传动2:1",
+        "occurrence_two_full_path": "膝盖传动2:1",
+        "occurrence_two_component": "膝盖传动2"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              12.124355652982146
+            ],
+            [
+              0.0,
+              -1.0,
+              0.0,
+              -4.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              6.999999999999997
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              -5.999000866580277e-26,
+              0.0,
+              12.12435565298117
+            ],
+            [
+              5.889827473806316e-26,
+              -1.0,
+              6.162975822039155e-33,
+              -4.499999384089859
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              7.0000000000015525
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": {
+        "revolute_limits": {
+          "rotation_limits": {
+            "minimum_value": -1.9198621771937625,
+            "maximum_value": 1.2217304763960306,
+            "rest_value": 0.0872664625997165,
+            "has_limits": true
+          },
+          "current_angle": 4.942156062059701e-08,
+          "rotation_axis": {
+            "x": 5.0799412957015864e-08,
+            "y": -0.999999999999999,
+            "z": 4.5458032502976415e-17
+          }
+        },
+        "ball_limits": null
+      }
+    },
+    {
+      "name": "旋转 5",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "膝盖传动2:1",
+        "occurrence_one_full_path": "膝盖传动2:1",
+        "occurrence_one_component": "膝盖传动2",
+        "occurrence_two_name": "小腿:1",
+        "occurrence_two_full_path": "小腿:1",
+        "occurrence_two_component": "小腿"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              5.999000866580277e-26,
+              0.0,
+              37.12435521484179
+            ],
+            [
+              5.889827473806316e-26,
+              1.0,
+              -6.162975822039155e-33,
+              -4.499998114104558
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              -36.30127022221239
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              -6.4937412201049016e-24,
+              0.0,
+              37.124355189442106
+            ],
+            [
+              1.2370366879196048e-25,
+              1.0,
+              1.232595164407831e-32,
+              -3.9999981141045593
+            ],
+            [
+              0.0,
+              1.8488927466117464e-32,
+              -1.0,
+              -36.30127022221237
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": null
+    },
+    {
+      "name": "旋转 6",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "膝盖动力发生器:1",
+        "occurrence_one_full_path": "膝盖动力发生器:1",
+        "occurrence_one_component": "膝盖动力发生器",
+        "occurrence_two_name": "膝盖传动1:1",
+        "occurrence_two_full_path": "膝盖传动1:1",
+        "occurrence_two_component": "膝盖传动1"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              -21.29230484541327
+            ],
+            [
+              0.0,
+              -1.0,
+              0.0,
+              -4.000000000000002
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              8.399999999999991
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              -21.29230484541327
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              -4.5
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              8.39999999999999
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": {
+        "revolute_limits": {
+          "rotation_limits": {
+            "minimum_value": -0.6981317007977318,
+            "maximum_value": 1.1344640137963142,
+            "rest_value": 0.0,
+            "has_limits": true
+          },
+          "current_angle": 0.0,
+          "rotation_axis": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+          }
+        },
+        "ball_limits": null
+      }
+    },
+    {
+      "name": "旋转 7",
+      "joint_type": "revolute",
+      "connection": {
+        "occurrence_one_name": "膝盖传动1:1",
+        "occurrence_one_full_path": "膝盖传动1:1",
+        "occurrence_one_component": "膝盖传动1",
+        "occurrence_two_name": "膝盖转动:1",
+        "occurrence_two_full_path": "膝盖转动:1",
+        "occurrence_two_component": "膝盖转动"
+      },
+      "geometry": {
+        "geometry_one_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              -12.124355652982146
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              -4.5
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              -6.999999999999998
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "geometry_two_transform": {
+          "matrix": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              -12.124355652982146
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              -4.0
+            ],
+            [
+              0.0,
+              0.0,
+              -1.0,
+              -6.999999999999998
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "is_suppressed": false,
+      "is_light_bulb_on": true,
+      "limits": {
+        "revolute_limits": {
+          "rotation_limits": {
+            "minimum_value": -2.530727415391778,
+            "maximum_value": 0.6981317007977318,
+            "rest_value": 0.08726646259971649,
+            "has_limits": true
+          },
+          "current_angle": 0.0,
+          "rotation_axis": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0
+          }
+        },
+        "ball_limits": null
+      }
+    }
+  ]
+}
