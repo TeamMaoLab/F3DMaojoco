@@ -177,11 +177,21 @@ class BRepMeshExporter:
             if calc is None:
                 return None
 
-            # 诊断：只第一个零件打一次，看 API 接口
+            # 诊断：只第一个零件打一次
             if not self._diag_logged:
-                self.logger.info("[BRep诊断] MeshCalculator objectType=" + str(calc.objectType))
-                self.logger.info("[BRep诊断] 目标精度: angle=%s° edge=%scm" %
-                                 (self.angle_tolerance, self.max_edge_length))
+                import sys
+                self.logger.info("[PY诊断] Python解释器: " + sys.executable)
+                self.logger.info("[PY诊断] Python版本: " + sys.version)
+                self.logger.info("[PY诊断] MeshCalculator objectType=" + str(calc.objectType))
+                # 列出 calculator 所有可用属性
+                all_attrs = [a for a in dir(calc) if not a.startswith('_')]
+                self.logger.info("[PY诊断] Calculator属性: " + str(all_attrs))
+                # 读当前精度值（设之前）
+                for a in ['angleTolerance', 'maxEdgeLength', 'surfaceTolerance', 'aspectRatio']:
+                    try:
+                        self.logger.info("[PY诊断]   读 %s = %s" % (a, getattr(calc, a)))
+                    except Exception as e:
+                        self.logger.info("[PY诊断]   读 %s 失败: %s" % (a, e))
                 self._diag_logged = True
 
             # 尝试设置精度（多种 API 形式）
