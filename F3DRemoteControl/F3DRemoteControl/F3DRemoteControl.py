@@ -169,7 +169,7 @@ def _do_export(out_dir, quality):
 def _do_model():
     """查询装配体结构。在主线程调用。"""
     design = app.activeProduct
-    if not design or design.objectType != 'fusion::Design':
+    if not design or 'Design' not in str(design.objectType):
         return {'ok': False, 'error': '无活动 Design'}
     root = design.rootComponent
     parts = []
