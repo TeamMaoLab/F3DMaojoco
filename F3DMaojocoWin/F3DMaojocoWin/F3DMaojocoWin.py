@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """F3DMaojocoWin - Fusion 360 导出插件（Windows 版）
 
-从 F3DMaojocoScripts（Mac 版）迁移。业务逻辑完全一致，区别：
-- 绝对导入（from inf3d.xxx / from common.xxx）适配 Windows 加载方式
-- run() 里注入脚本目录到 sys.path，确保子包可被 import
-- 保留 .manifest + ScriptIcon.svg（Windows Fusion 需要）
+热重载：run() 开头清除本插件的模块缓存（sys.modules），
+这样每次运行都从磁盘重新读 .py，改代码后不用重启 Fusion。
 """
 import os
 import sys
@@ -13,21 +11,48 @@ import traceback
 import adsk.core
 import adsk.fusion
 
-# 脚本所在目录注入 sys.path（Windows 下 Fusion 不自动加脚本目录）
+# 脚本所在目录注入 sys.path
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
-from inf3d.fusion_export_manager import FusionExportManager
-from common.data_types import MeshQuality
-from inf3d.logger import get_logger, log_performance_start, log_performance_end, initialize_logging
-
 app = adsk.core.Application.get()
 ui = app.userInterface
+
+# 需要热重载的模块前缀（本插件自己的，不含 adsk/标准库）
+_HOT_RELOAD_PREFIXES = ('inf3d', 'common')
+
+
+def _hot_reload():
+    """清除本插件模块的 sys.modules 缓存，强制下次 import 从磁盘重读。"""
+    removed = []
+    for key in list(sys.modules.keys()):
+        if any(key == p or key.startswith(p + '.') for p in _HOT_RELOAD_PREFIXES):
+            del sys.modules[key]
+            removed.append(key)
+    # 清 .pyc 缓存目录，防止 Python 用旧字节码
+    for sub in ('inf3d', 'common'):
+        pyc_dir = os.path.join(_SCRIPT_DIR, sub, '__pycache__')
+        if os.path.isdir(pyc_dir):
+            import shutil
+            shutil.rmtree(pyc_dir, ignore_errors=True)
+    return removed
 
 
 def run(_context):
     """运行装配体导出"""
+    # 热重载：每次运行清除旧模块缓存，从磁盘重读最新代码
+    purged = _hot_reload()
+    if purged:
+        app.log(f'[热重载] 清除 {len(purged)} 个模块缓存，重新从磁盘加载')
+
+    # import 放在 run 内部（热重载后才能拿到最新代码）
+    from inf3d.fusion_export_manager import FusionExportManager
+    from common.data_types import MeshQuality
+    from inf3d.logger import get_logger, log_performance_start, log_performance_end, initialize_logging
+
+    # logger 在 try 内初始化，异常处理里兜底
+    logger = None
     # logger 在 try 内初始化，异常处理里兜底
     logger = None
     try:
