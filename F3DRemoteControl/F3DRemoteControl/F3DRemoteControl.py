@@ -13,7 +13,8 @@ API:
   GET /ping            → 连通测试（纯 Python，不走队列）
   GET /reload          → 热重载模块缓存（纯 Python，不走队列）
   GET /exec?code=...   → 执行任意代码（走队列，主线程执行）
-  GET /export?dir=...  → 参数化导出（走队列）
+  GET /export?dir=...  → 参数化导出（走队列，用 F3DMaojocoWin 那套）
+  GET /export_assembly?dir=... → 一键导出装配体：STL+世界变换→parts_world.json（走队列，occurrence-centric）
   GET /model           → 查询装配体结构（走队列）
   GET /brep_stats      → BRep 曲面统计（走队列）
   GET /modules         → 列出已加载模块（纯 Python，不走队列）
@@ -180,6 +181,172 @@ def _do_export(out_dir, quality):
     }
 
 
+def _do_export_assembly(out_dir):
+    """一键导出装配体：所有可见零件的 STL + 世界变换 → parts_world.json。在主线程调用。
+
+    occurrence-centric 导出（已验证位置正确）：
+      - 用 full_path 唯一标识每个 occurrence
+      - 过滤 isVisible=False（自动排除废弃/隐藏结构）
+      - 每个有实体的 occurrence 导出 STL（component 局部坐标）+ 记录 transform2 世界变换
+      - COL_ 开头标记 is_collider（碰撞体，viewer 端自行决定显示）
+    """
+    import math
+    design = app.activeProduct
+    if not design or 'Design' not in str(design.objectType):
+        return {'ok': False, 'error': '无活动 Design'}
+    root = design.rootComponent
+
+    os.makedirs(out_dir, exist_ok=True)
+    stl_dir = os.path.join(out_dir, 'stl_files')
+    os.makedirs(stl_dir, exist_ok=True)
+
+    def safe_filename(name):
+        out = ""
+        for ch in name:
+            if ch.isalnum() or ch in "._-":
+                out += ch
+            else:
+                out += "_"
+        return out
+
+    def mat4(mat):
+        a = mat.asArray()
+        return [[round(a[i], 6) for i in [0, 1, 2, 3]],
+                [round(a[i], 6) for i in [4, 5, 6, 7]],
+                [round(a[i], 6) for i in [8, 9, 10, 11]],
+                [0, 0, 0, 1]]
+
+    def t_mm(m):
+        return [round(m[0][3] * 10, 3), round(m[1][3] * 10, 3), round(m[2][3] * 10, 3)]
+
+    def full_path(o):
+        chain = []
+        x = o
+        while x is not None:
+            chain.append(x.name)
+            x = x.assemblyContext
+        return "/".join(reversed(chain))
+
+    parts = []
+    exported = 0
+    failed = 0
+    skipped_invisible = 0
+    used_names = {}
+    em = design.exportManager
+
+    def walk(o, depth):
+        nonlocal exported, failed, skipped_invisible
+
+        # visibility 过滤：不可见的整个子树跳过
+        try:
+            if not o.isVisible:
+                skipped_invisible += 1
+                return
+        except Exception:
+            pass
+
+        comp = o.component
+        nb = comp.bRepBodies.count if comp else 0
+
+        # 无实体的容器节点：不导 STL，但继续递归子节点
+        if nb == 0:
+            for c in o.childOccurrences:
+                walk(c, depth + 1)
+            return
+
+        fp = full_path(o)
+        parent = o.assemblyContext
+        parent_fp = full_path(parent) if parent else ""
+
+        # STL 文件名：occurrence 名 + 实例序号去重
+        base = safe_filename(o.name)
+        if base in used_names:
+            used_names[base] += 1
+            fname = "{}_{}.stl".format(base, used_names[base])
+        else:
+            used_names[base] = 1
+            fname = "{}.stl".format(base)
+        fpath = os.path.join(stl_dir, fname)
+
+        # 世界变换（transform2 已验证正确：累乘 root→此处）
+        world = mat4(o.transform2)
+
+        # 导出 STL（occurrence 级，镜像 occurrence 自动导镜像几何）
+        ok = False
+        try:
+            opt = em.createSTLExportOptions(o, fpath)
+            try:
+                opt.angleTolerance = math.radians(8)
+                opt.surfaceTolerance = 0.05
+            except Exception:
+                pass
+            ok = em.execute(opt)
+        except Exception:
+            ok = False
+
+        if ok:
+            exported += 1
+            parts.append({
+                'full_path': fp,
+                'occurrence': o.name,
+                'component': comp.name,
+                'stl_file': 'stl_files/' + fname,
+                'world_t_mm': t_mm(world),
+                'world_rot': [world[0][:3], world[1][:3], world[2][:3]],
+                'bodies': nb,
+                'is_collider': o.name.startswith('COL'),
+                'depth': depth,
+                'parent': parent_fp,
+            })
+        else:
+            failed += 1
+            parts.append({
+                'full_path': fp,
+                'occurrence': o.name,
+                'component': comp.name,
+                'stl_file': None,
+                'error': 'STL导出失败',
+                'world_t_mm': t_mm(world),
+                'world_rot': [world[0][:3], world[1][:3], world[2][:3]],
+                'bodies': nb,
+                'is_collider': o.name.startswith('COL'),
+                'depth': depth,
+                'parent': parent_fp,
+            })
+
+        for c in o.childOccurrences:
+            walk(c, depth + 1)
+
+    for o in root.occurrences:
+        walk(o, 0)
+
+    # 写 parts_world.json（格式和 quad_stl_viewer.html 一致）
+    out_path = os.path.join(out_dir, 'parts_world.json')
+    out_data = {
+        'document': app.activeDocument.name if app.activeDocument else '?',
+        'count': len(parts),
+        'stl_ok': exported,
+        'stl_failed': failed,
+        'skipped_invisible': skipped_invisible,
+        'note': 'occurrence-centric 导出。STL顶点=component局部坐标(mm)，加载时用 world_t_mm+world_rot 摆放。is_collider 标记碰撞体(COL_)。',
+        'parts': parts,
+    }
+    with open(out_path, 'w', encoding='utf-8') as f:
+        json.dump(out_data, f, ensure_ascii=False, indent=1)
+
+    return {
+        'ok': True,
+        'document': out_data['document'],
+        'output_dir': out_dir,
+        'parts': len(parts),
+        'stl_ok': exported,
+        'stl_failed': failed,
+        'skipped_invisible': skipped_invisible,
+        'colliders': sum(1 for p in parts if p.get('is_collider')),
+        'parts_world_json': out_path,
+    }
+
+
 def _do_model():
     """查询装配体结构。在主线程调用。"""
     design = app.activeProduct
@@ -330,6 +497,18 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     self._json(result)
 
+            elif path == '/export_assembly':
+                out_dir = params.get('dir', [''])[0]
+                if not out_dir:
+                    self._json({'ok': False, 'error': '缺少 dir 参数'}, 400)
+                    return
+                result, error = _enqueue_main(lambda: _do_export_assembly(out_dir))
+                if error:
+                    self._json({'ok': False, 'error': str(error),
+                                'traceback': traceback.format_exc()}, 500)
+                else:
+                    self._json(result)
+
             elif path == '/model':
                 result, error = _enqueue_main(_do_model)
                 self._json(result if not error else {'ok': False, 'error': str(error)})
@@ -341,7 +520,8 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self._json({'ok': False, 'error': '未知路径: ' + path,
                             'routes': ['/ping', '/reload', '/exec?code=',
-                                       '/export?dir=', '/model', '/brep_stats', '/modules']}, 404)
+                                       '/export?dir=', '/export_assembly?dir=',
+                                       '/model', '/brep_stats', '/modules']}, 404)
 
         except Exception as e:
             self._json({'ok': False, 'error': str(e), 'traceback': traceback.format_exc()}, 500)

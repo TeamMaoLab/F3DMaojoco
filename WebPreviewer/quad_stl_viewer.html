@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>四足 STL 装配查看器</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #1a1a1a; color: #ddd; overflow: hidden; }
+  #layout { display: flex; height: 100vh; }
+  #viewport { flex: 1; position: relative; }
+  canvas { display: block; }
+  #panel { width: 300px; background: #252525; padding: 12px; overflow-y: auto; border-left: 1px solid #444; }
+  h2 { font-size: 15px; margin-bottom: 6px; color: #fff; }
+  h3 { font-size: 13px; margin: 10px 0 4px; color: #9cf; }
+  .hint { font-size: 11px; color: #888; margin: 4px 0; line-height: 1.6; }
+  button { background: #36a; color: #fff; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 11px; margin: 2px; }
+  button:hover { background: #48c; }
+  button.active { background: #5a5; }
+  #status { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.75); padding: 6px 10px; border-radius: 4px; font-size: 12px; max-width: 60%; }
+  #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,0.85); padding: 15px 25px; border-radius: 6px; font-size: 14px; }
+  .part-item { padding: 3px 8px; margin: 1px 0; cursor: pointer; border-radius: 3px; font-size: 10px; }
+  .part-item:hover { background: #3a3a3a; }
+  .part-item.selected { background: #446; color: #fff; }
+  .group { color: #fa0; font-weight: bold; font-size: 11px; margin-top: 8px; padding: 2px 0; border-bottom: 1px solid #333; }
+</style>
+</head>
+<body>
+<div id="layout">
+  <div id="viewport">
+    <div id="status">加载中...</div>
+    <div id="loading">加载零件中...</div>
+  </div>
+  <div id="panel">
+    <h2>四足 STL 装配</h2>
+    <div class="hint">STL 顶点 = component 局部坐标。
+        每个零件先按 <b>world_rot 旋转</b>，再按 <b>world_t_mm 平移</b>，
+        摆到累乘父亲变换后的世界位置。</div>
+    <div style="margin:6px 0">
+      <button onclick="resetView()">重置视角</button>
+      <button onclick="toggleFrames()" id="btn-frames">显示坐标系</button>
+      <button onclick="toggleWireframe()" id="btn-wire">线框</button>
+    </div>
+    <div class="hint">点零件名高亮（黄色）。4 腿配色：FR红 RR橙 FL青 RL紫。</div>
+    <h3>零件清单（按腿分组）</h3>
+    <div id="list"></div>
+  </div>
+</div>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/examples/js/loaders/STLLoader.js"></script>
+<script src="vendor/examples/js/controls/OrbitControls.js"></script>
+<script>
+const DATA = '../exports/quad_v4/parts_world.json';
+const STL_BASE = '../exports/quad_v4/stl_files/';
+
+let scene, camera, renderer, controls;
+const loader = new THREE.STLLoader();
+const meshes = [];          // 所有 mesh
+const meshesByLeg = {};     // legKey → [meshes]
+let frameGroup = null;
+let framesVisible = false;
+let wireframe = false;
+let selectedMesh = null;
+
+// 4 腿配色 + 机身色
+function legColor(fullPath) {
+  if ('舵机组 v8:1' in Object({'x':1}) && fullPath.includes('舵机组 v8:1')) return 0xee5555; // FR
+  // 用 full_path 判断
+  if (fullPath.includes('舵机组 v8(镜像) (1):1')) return 0x44ccff; // FL
+  if (fullPath.includes('舵机组 v8(镜像) (1):2')) return 0xcc66ff; // RL
+  if (fullPath.includes('舵机组 v8:1')) return 0xee5555;           // FR
+  if (fullPath.includes('舵机组 v8:2')) return 0xee9922;           // RR
+  return 0x888899; // 机身
+}
+function legKey(fullPath) {
+  if (fullPath.includes('舵机组 v8(镜像) (1):1')) return 'FL';
+  if (fullPath.includes('舵机组 v8(镜像) (1):2')) return 'RL';
+  if (fullPath.includes('舵机组 v8:1')) return 'FR';
+  if (fullPath.includes('舵机组 v8:2')) return 'RR';
+  return '机身';
+}
+
+function init() {
+  const vp = document.getElementById('viewport');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1e1e22);
+  camera = new THREE.PerspectiveCamera(45, vp.clientWidth/vp.clientHeight, 0.1, 5000);
+  camera.up.set(0, 0, 1);
+  camera.position.set(200, -280, 160);
+  renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(vp.clientWidth, vp.clientHeight);
+  vp.appendChild(renderer.domElement);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0x666666));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.85); dl.position.set(150,-150,250); scene.add(dl);
+  const dl2 = new THREE.DirectionalLight(0xffffff, 0.35); dl2.position.set(-100,100,80); scene.add(dl2);
+
+  // 地面网格（Z=0，腿根高度）
+  const grid = new THREE.GridHelper(300, 15, 0x333355, 0x222233);
+  grid.rotation.x = Math.PI/2;
+  scene.add(grid);
+  // 坐标轴（root 处）
+  scene.add(new THREE.AxesHelper(20));
+
+  loadParts();
+  window.addEventListener('resize', onResize);
+  animate();
+}
+
+function loadParts() {
+  fetch(DATA).then(r => r.json()).then(data => {
+    setStatus(`加载 ${data.count} 个零件...`);
+    let loaded = 0;
+    data.parts.forEach((p, i) => {
+      loader.load(STL_BASE + encodeURIComponent(p.stl_file.split('/').pop()), geo => {
+        const color = legColor(p.full_path);
+        const mat = new THREE.MeshPhongMaterial({color, shininess: 25, transparent: true, opacity: 0.92, side: THREE.DoubleSide});
+        const mesh = new THREE.Mesh(geo, mat);
+
+        // ★ 核心：STL 顶点是 component 局部坐标，应用世界变换
+        // 1. 平移到世界位置
+        mesh.position.set(p.world_t_mm[0], p.world_t_mm[1], p.world_t_mm[2]);
+        // 2. 应用世界旋转（world_rot 是 3x3 行优先）
+        const R = p.world_rot;
+        const M = new THREE.Matrix4();
+        M.set(R[0][0],R[0][1],R[0][2],0,
+              R[1][0],R[1][1],R[1][2],0,
+              R[2][0],R[2][1],R[2][2],0,
+              0,0,0,1);
+        mesh.setRotationFromMatrix(M);
+
+        mesh.userData = { part: p, idx: i, baseColor: color };
+        scene.add(mesh);
+        meshes.push(mesh);
+
+        const lk = legKey(p.full_path);
+        if (!meshesByLeg[lk]) meshesByLeg[lk] = [];
+        meshesByLeg[lk].push(mesh);
+
+        loaded++;
+        if (loaded % 10 === 0 || loaded === data.count) {
+          setStatus(`已加载 ${loaded}/${data.count}`);
+          if (loaded === data.count) {
+            document.getElementById('loading').style.display = 'none';
+            fitView();
+            buildPanel(data.parts);
+          }
+        }
+      }, undefined, () => setStatus(`加载失败: ${p.stl_file}`));
+    });
+  });
+}
+
+function buildPanel(parts) {
+  const c = document.getElementById('list');
+  c.innerHTML = '';
+  // 按腿分组
+  const groups = {};
+  parts.forEach((p, i) => {
+    const lk = legKey(p.full_path);
+    if (!groups[lk]) groups[lk] = [];
+    groups[lk].push({...p, idx: i});
+  });
+  ['机身','FR','RR','FL','RL'].forEach(lk => {
+    if (!groups[lk]) return;
+    const g = document.createElement('div');
+    g.className = 'group';
+    g.textContent = `${lk} (${groups[lk].length})`;
+    c.appendChild(g);
+    groups[lk].forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'part-item';
+      el.textContent = p.occurrence;
+      el.onclick = () => selectMesh(p.idx);
+      el.id = 'pi-' + p.idx;
+      c.appendChild(el);
+    });
+  });
+}
+
+function selectMesh(i) {
+  if (selectedMesh && selectedMesh.material) {
+    selectedMesh.material.color.setHex(selectedMesh.userData.baseColor);
+    selectedMesh.material.emissive.setHex(0);
+  }
+  selectedMesh = meshes[i];
+  selectedMesh.material.emissive.setHex(0x444400);
+  document.querySelectorAll('.part-item').forEach(e => e.classList.remove('selected'));
+  const el = document.getElementById('pi-'+i);
+  if (el) el.classList.add('selected');
+  const p = selectedMesh.userData.part;
+  setStatus(`选中: ${p.component}  世界=(${p.world_t_mm.join(',')})  STL=${p.stl_file}`);
+}
+
+function toggleFrames() {
+  framesVisible = !framesVisible;
+  document.getElementById('btn-frames').classList.toggle('active', framesVisible);
+  if (!frameGroup) {
+    // 从 parts_world 的世界坐标画 4 腿根坐标系
+    frameGroup = new THREE.Group();
+    fetch(DATA).then(r=>r.json()).then(d => {
+      // 只画腿根
+      d.parts.forEach(p => {
+        if (!p.occurrence.startsWith('用于绘制腿部结构的舵机组')) return;
+        const g = new THREE.Group();
+        g.position.set(p.world_t_mm[0], p.world_t_mm[1], p.world_t_mm[2]);
+        const R = p.world_rot;
+        const xAxis = new THREE.Vector3(R[0][0],R[1][0],R[2][0]);
+        const yAxis = new THREE.Vector3(R[0][1],R[1][1],R[2][1]);
+        const zAxis = new THREE.Vector3(R[0][2],R[1][2],R[2][2]);
+        g.add(new THREE.ArrowHelper(xAxis, new THREE.Vector3(), 25, 0xee5555, 6, 3));
+        g.add(new THREE.ArrowHelper(yAxis, new THREE.Vector3(), 25, 0x55ee55, 6, 3));
+        g.add(new THREE.ArrowHelper(zAxis, new THREE.Vector3(), 25, 0x5555ee, 6, 3));
+        frameGroup.add(g);
+      });
+      scene.add(frameGroup);
+      frameGroup.visible = framesVisible;
+    });
+  } else {
+    frameGroup.visible = framesVisible;
+  }
+}
+
+function toggleWireframe() {
+  wireframe = !wireframe;
+  document.getElementById('btn-wire').classList.toggle('active', wireframe);
+  meshes.forEach(m => { m.material.wireframe = wireframe; });
+}
+
+function fitView() {
+  if (meshes.length === 0) return;
+  const bb = new THREE.Box3();
+  meshes.forEach(m => bb.expandByObject(m));
+  const center = bb.getCenter(new THREE.Vector3());
+  const size = bb.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  camera.position.set(center.x + maxDim*0.8, center.y - maxDim*1.3, center.z + maxDim*0.9);
+  controls.target.copy(center);
+}
+function resetView() { fitView(); }
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+function onResize() {
+  const vp = document.getElementById('viewport');
+  camera.aspect = vp.clientWidth/vp.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(vp.clientWidth, vp.clientHeight);
+}
+function setStatus(s) { document.getElementById('status').textContent = s; }
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>

@@ -213,3 +213,8 @@ tmp-output/
 # Three.js 本地副本（CDN fallback，按需从 unpkg 下载）
 WebPreviewer/vendor/
 .DS_Store
+# 导出数据（运行时生成，不进 git；但保留 parts_world.json 作数据快照）
+exports/**/*
+!exports/quad_v4/
+exports/quad_v4/**
+!exports/quad_v4/parts_world.json
