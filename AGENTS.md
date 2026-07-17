@@ -1,9 +1,27 @@
-# F3DMaojoco 项目状态（2026-07-16）
+# F3DMaojoco 项目状态（2026-07-17）
 
 让舵机四足机器人从 Fusion 360 设计 → 浏览器 3D 复原。
-当前进度：**四足位置对齐已完成**，51 个零件按累乘父亲变换在网页正确摆放。
+当前进度：**四足 LUT 分控驱动已完成**，4 条腿可在网页独立运动（含预设步态）。
 
 ## 当前进展
+
+### ✅ 已完成：4 腿分控 LUT 驱动 + 镜像运动学（2026-07-17）
+在静态装配基础上加关节运动，4 条腿独立控制：
+- **核心突破**：把单腿 LUT（θ1,θ2 → 6 关节角）扩展到 4 腿，每条腿独立 (t1,t2) 状态
+- **镜像腿三层处理**（详见 docs/quad_mirror_kinematics.md，每个坑都踩过）：
+  - 腿根 Group 加 `Rx(π)`（180°绕X）
+  - 关节角取负（`Rx(π)·Ry(θ)·Rx(π)⁻¹ = Ry(-θ)`，数值验证误差 0）
+  - joint_anchor 的 Z 取负（不然关节跑到头顶飞天）
+- **舵机简化**：固定件直接世界变换挂 scene，不再算 rootRotInv 局部旋转
+- **UI**：全局滑块联动 4 腿 + 4 张分控卡片（每腿独立 θ1/θ2）+ 预设动作（站立/对角小步/侧倾/挥手）
+- 查看：`http://localhost:8766/WebPreviewer/quad_leg_viewer.html`
+
+### ✅ 已完成：坐标系骨架反推（2026-07-17）
+从 parts_world.json（只含叶子零件世界变换）反推出 13 个中间节点（机身根/舵机组/ONE-LEG/大腿部分）的世界变换：
+- 方法：中间节点世界变换 = 它所有后代叶子世界位置的众数
+- 算出所有 62 节点的局部变换 `L = W_parent⁻¹ · W_self`
+- 自顶向下累乘验证：62 节点全部误差 0.000000（数学恒等式）
+- 产物：`exports/quad_v4/nodes_world.json`，查看：`quad_frames_viewer.html`
 
 ### ✅ 已完成：四足位置对齐 + 导出封装（2026-07-16）
 从 Fusion「2dof动力腿 v4」文档导出 49 个零件，在 Three.js 里按世界坐标复原：
@@ -19,9 +37,9 @@
 - **单腿 FK 求解器**（scripts/fk_newton.py）：纯运动学牛顿迭代解 4 被动角 + 闭环约束，第一阶段成果，四足可复用
 
 ### ⏳ 待做
-- 腿内 ONE-LEG 机构的关节角（当前零件按默认姿态叠在一起，还没摆成腿形）
 - MuJoCo 四足模型（运动学树 + 闭环约束 + 驱动）
-- 浏览器交互（关节拖动 / LUT 驱动）
+- 更多步态预设（walk/bound/原地踏步等）
+- 关节轴/足端轨迹可视化
 
 ## 架构全景
 ```
@@ -91,13 +109,18 @@ scripts/
 └── verify_mujoco_leg.py     # 单腿 MuJoCo 模型验证
 
 exports/quad_v4/             # ★ 四足当前数据
-├── parts_world.json         # 零件 STL + 世界变换（网页用）
+├── parts_world.json         # 零件 STL + 世界变换（49 叶子，网页摆放用）
+├── nodes_world.json         # ★ 62 节点坐标系骨架（含中间节点反推 + 局部变换）
+├── leg_kinematic.json       # 单腿运动学树（6 body + joint_anchor_mm）
 ├── parts_manifest.json      # STL 文件名 + 层级
 └── stl_files/               # 59 个 STL
 
 WebPreviewer/
-├── quad_stl_viewer.html     # ★ 四足 STL 装配查看（当前主线）
+├── quad_leg_viewer.html     # ★ 四足 LUT 分控 viewer（当前主线，4 腿独立运动 + 预设步态）
+├── quad_frames_viewer.html  # 坐标系骨架可视化（62 节点三轴 + 叠加 STL）
+├── quad_stl_viewer.html     # 四足 STL 静态装配（已验证位置对齐）
 ├── index.html + app.js + viewer.js  # 单腿 LUT 渲染（第一阶段）
+├── workspace_lut.json       # 单腿 LUT（32761 格，θ1,θ2 → 6 关节角）
 ├── geometry-loader.js       # geometry.json 解码库（零依赖）
 └── vendor/                  # three.min.js + STLLoader + OrbitControls
 
@@ -107,7 +130,8 @@ F3DMaojocoWin/               # Win 版导出插件（STL + BRep）
 F3DMaojocoScripts/           # Mac 版导出插件（相对导入）
 
 docs/
-├── quad_v4_alignment.md            # ★ 四足位置对齐经验（核心方法+5个坑）
+├── quad_mirror_kinematics.md       # ★ 镜像腿运动学（取负+anchor Z 取负+数学推导，3 个坑全记录）
+├── quad_v4_alignment.md            # 四足位置对齐经验（核心方法+5个坑）
 ├── quad_v4_tree.md                 # 四足坐标系树结构
 ├── fusion_coordinate_system.md     # Fusion 坐标系原理
 ├── fusion_to_web_workflow.md       # 单腿全流程经验（14条）

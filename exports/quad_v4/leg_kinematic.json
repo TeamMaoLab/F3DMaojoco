@@ -1,0 +1,108 @@
+{
+ "bodies": [
+  {
+   "name": "knee_driver",
+   "en": "膝盖动力发生器",
+   "parent": null,
+   "pos_mm": [
+    -10.9,
+    0,
+    14.4
+   ],
+   "joint": "t1",
+   "joint_anchor_mm": [
+    -10.9,
+    0,
+    14.4
+   ]
+  },
+  {
+   "name": "knee_link1",
+   "en": "膝盖传动1",
+   "parent": "knee_driver",
+   "pos_mm": [
+    -10.39,
+    0,
+    -6
+   ],
+   "joint": "t6",
+   "joint_anchor_mm": [
+    -21.29,
+    0,
+    8.4
+   ]
+  },
+  {
+   "name": "knee_rotor",
+   "en": "膝盖转动",
+   "parent": "knee_link1",
+   "pos_mm": [
+    9.17,
+    0,
+    -15.4
+   ],
+   "joint": "t7",
+   "joint_anchor_mm": [
+    -12.12,
+    0,
+    -7.0
+   ]
+  },
+  {
+   "name": "knee_link2",
+   "en": "膝盖传动2",
+   "parent": "knee_rotor",
+   "pos_mm": [
+    24.24,
+    0,
+    14
+   ],
+   "joint": "t4",
+   "joint_anchor_mm": [
+    12.12,
+    0,
+    7.0
+   ]
+  },
+  {
+   "name": "thigh_rigid",
+   "en": "大腿刚体",
+   "parent": null,
+   "pos_mm": [
+    0,
+    0,
+    0
+   ],
+   "joint": "t2",
+   "joint_anchor_mm": [
+    0,
+    0,
+    0
+   ],
+   "parts": [
+    "大腿主动力发生器",
+    "小腿保持架",
+    "髋关节保持架",
+    "大腿盖板"
+   ]
+  },
+  {
+   "name": "shin",
+   "en": "小腿",
+   "parent": "thigh_rigid",
+   "pos_mm": [
+    25,
+    0,
+    -43.3
+   ],
+   "joint": "t3",
+   "joint_anchor_mm": [
+    25,
+    0,
+    -43.3
+   ]
+  }
+ ],
+ "joints_axis": "Y",
+ "note": "关节点坐标相对腿根(mm)。t1/t2主动，t3/t4/t6/t7被动(LUT解)。大腿刚体4零件固连。"
+}

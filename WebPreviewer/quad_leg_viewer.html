@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>四足 LUT 驱动</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #1a1a1a; color: #ddd; overflow: hidden; }
+  #layout { display: flex; height: 100vh; }
+  #viewport { flex: 1; position: relative; }
+  canvas { display: block; }
+  #panel { width: 340px; background: #252525; padding: 12px; overflow-y: auto; border-left: 1px solid #444; }
+  h2 { font-size: 15px; margin-bottom: 6px; color: #fff; }
+  h3 { font-size: 12px; margin: 12px 0 4px; color: #9cf; border-bottom: 1px solid #3a3a3a; padding-bottom: 3px; }
+  .hint { font-size: 11px; color: #888; margin: 4px 0; line-height: 1.6; }
+  .slider-row { margin: 8px 0; }
+  .slider-row label { font-size: 12px; color: #aaa; display: flex; justify-content: space-between; }
+  .slider-row label .val { color: #4ec9b0; font-weight: bold; }
+  input[type=range] { width: 100%; margin-top: 3px; }
+  .passive { font-size: 11px; color: #9cf; margin-top: 6px; line-height: 1.6; }
+  button { background: #36a; color: #fff; border: none; padding: 4px 9px; border-radius: 3px; cursor: pointer; font-size: 11px; margin: 2px 2px 2px 0; }
+  button:hover { background: #48c; }
+  button.active { background: #5a5; }
+  button.danger { background: #933; }
+  button.danger:hover { background: #b44; }
+  /* 单腿分组 */
+  .leg-card { background: #2c2c2c; border-left: 3px solid #555; padding: 7px 9px; margin: 6px 0; border-radius: 3px; }
+  .leg-card.FL, .leg-card.RL { border-left-color: #666; }  /* 镜像腿标记 */
+  .leg-card .leg-title { font-size: 11px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .leg-card .leg-title .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: middle; margin-right: 5px; }
+  .leg-card .mini-slider { margin: 4px 0; }
+  .leg-card .mini-slider label { font-size: 10px; color: #999; display: flex; justify-content: space-between; }
+  .leg-card .mini-slider label .v { color: #4ec9b0; }
+  .leg-card .mini-slider input[type=range] { margin-top: 2px; }
+  .leg-card.compact { padding: 5px 9px; }
+  #status { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.75); padding: 6px 10px; border-radius: 4px; font-size: 12px; max-width: 55%; }
+  #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,0.9); padding: 15px 25px; border-radius: 6px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="layout">
+  <div id="viewport">
+    <div id="status">加载中...</div>
+    <div id="loading">加载中...</div>
+  </div>
+  <div id="panel">
+    <h2>四足 LUT 分控驱动</h2>
+    <div class="hint">4 条腿独立控制。全局滑块联动全部，分控滑块覆盖单腿。
+        镜像腿(FL/RL)关节角自动取负（Rx(π)·Ry(θ)·Rx(π)⁻¹=Ry(-θ)）。</div>
+
+    <h3>全局控制</h3>
+    <div class="slider-row">
+      <label>θ1 膝盖舵机 <span class="val" id="t1val">0°</span></label>
+      <input type="range" id="t1Slider" min="-90" max="60" value="0" step="1">
+    </div>
+    <div class="slider-row">
+      <label>θ2 大腿舵机 <span class="val" id="t2val">0°</span></label>
+      <input type="range" id="t2Slider" min="-60" max="60" value="0" step="1">
+    </div>
+    <div class="passive" id="passiveInfo">
+      全局被动角（LUT 解）：<br>
+      t3=<span id="p_t3">0.0</span>° t4=<span id="p_t4">0.0</span>°<br>
+      t6=<span id="p_t6">0.0</span>° t7=<span id="p_t7">0.0</span>°
+    </div>
+    <div style="margin-top:8px">
+      <button onclick="resetAllPose()">全部复位</button>
+      <button onclick="standAllPose()">全部站姿</button>
+      <button onclick="resetView()">重置视角</button>
+    </div>
+
+    <h3>分腿控制</h3>
+    <div id="legCards"></div>
+
+    <h3>预设动作</h3>
+    <div style="margin-top:4px">
+      <button onclick="presetStanding()">站立</button>
+      <button onclick="presetTrot()">对角小步</button>
+      <button onclick="presetLean()">侧倾</button>
+      <button onclick="presetWave()">挥手</button>
+      <button class="danger" onclick="stopPreset()">停止</button>
+    </div>
+    <div class="hint" style="margin-top:6px">对角小步/挥手是循环动画（再点停止）。</div>
+  </div>
+</div>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/examples/js/loaders/STLLoader.js"></script>
+<script src="vendor/examples/js/controls/OrbitControls.js"></script>
+<script>
+const PARTS_URL = '../exports/quad_v4/parts_world.json';
+const KIN_URL = '../exports/quad_v4/leg_kinematic.json';
+const LUT_URL = 'workspace_lut.json';
+const STL_BASE = '../exports/quad_v4/stl_files/';
+
+let scene, camera, renderer, controls;
+const stlLoader = new THREE.STLLoader();
+let lutData = null;
+let kinematic = null;
+let partsData = null;
+
+// 4 腿配置：腿根世界坐标(mm) + 是否镜像
+const LEGS = [
+  { key:'FR', root:[0,-47,0],   mirror:false, color:0xee5555 },
+  { key:'RR', root:[115,-47,0], mirror:false, color:0xee9900 },
+  { key:'FL', root:[0,47,0],    mirror:true,  color:0x44ccff },
+  { key:'RL', root:[115,47,0],  mirror:true,  color:0xcc66ff },
+];
+
+// 运动学树（从 leg_kinematic.json 加载后填充）
+let bodyTree = null;
+// legGroups: key → { group: THREE.Group(腿根), bodies: {bodyName: THREE.Group(关节group)} }
+const legGroups = {};
+
+function init() {
+  const vp = document.getElementById('viewport');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1e1e22);
+  camera = new THREE.PerspectiveCamera(45, vp.clientWidth/vp.clientHeight, 0.1, 5000);
+  camera.up.set(0,0,1);
+  camera.position.set(180, -250, 140);
+  renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(vp.clientWidth, vp.clientHeight);
+  vp.appendChild(renderer.domElement);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(57, 0, -30);
+
+  scene.add(new THREE.AmbientLight(0x666666));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.85); dl.position.set(150,-150,250); scene.add(dl);
+  const dl2 = new THREE.DirectionalLight(0xffffff, 0.35); dl2.position.set(-100,100,80); scene.add(dl2);
+
+  const grid = new THREE.GridHelper(300, 15, 0x333355, 0x222233);
+  grid.rotation.x = Math.PI/2;
+  grid.position.z = -79;  // 地面在足端高度
+  scene.add(grid);
+  scene.add(new THREE.AxesHelper(25));
+
+  loadData();
+  bindSliders();
+  window.addEventListener('resize', onResize);
+  // 调试用：暴露给自动化测试读取场景状态
+  window.scene = scene;
+  window.THREE = THREE;
+  window.legGroups = legGroups;
+  window.legState = legState;
+  animate();
+}
+
+async function loadData() {
+  setStatus('加载 LUT...');
+  lutData = await (await fetch(LUT_URL)).json();
+  setStatus('加载运动学...');
+  kinematic = await (await fetch(KIN_URL)).json();
+  bodyTree = kinematic.bodies;
+  setStatus('加载零件...');
+  partsData = await (await fetch(PARTS_URL)).json();
+
+  // 加载机身零件（非腿）
+  loadChassis();
+
+  // 构建 4 条腿
+  let legsLoaded = 0;
+  for (const leg of LEGS) {
+    buildLeg(leg, () => {
+      legsLoaded++;
+      setStatus(`加载腿 ${legsLoaded}/4`);
+      if (legsLoaded >= LEGS.length) {
+        document.getElementById('loading').style.display = 'none';
+        buildLegCards();
+        globalUpdate(0, 0);
+        setStatus('就绪。全局滑块联动 4 腿，分控滑块独立调单腿。');
+      }
+    });
+  }
+}
+
+function loadChassis() {
+  // 机身零件（零部件5/电池/电路板）
+  const chassisNames = ['零部件5','假电池 v1','假电路板 v1'];
+  for (const p of partsData.parts) {
+    if (chassisNames.some(n => p.component === n) || chassisNames.some(n => p.component.includes(n))) {
+      if (p.component.includes('镜像')) continue;
+      loadSTL(p, mesh => {
+        mesh.material = new THREE.MeshPhongMaterial({color:0x888899, transparent:true, opacity:0.5});
+        scene.add(mesh);
+      });
+    }
+  }
+}
+
+function loadSTL(part, cb) {
+  const url = STL_BASE + encodeURIComponent(part.stl_file.split('/').pop());
+  stlLoader.load(url, geo => {
+    const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({color:0x999999, shininess:20, transparent:true, opacity:0.9, side:THREE.DoubleSide}));
+    mesh.position.set(part.world_t_mm[0], part.world_t_mm[1], part.world_t_mm[2]);
+    const R = part.world_rot;
+    const M = new THREE.Matrix4();
+    M.set(R[0][0],R[0][1],R[0][2],0, R[1][0],R[1][1],R[1][2],0, R[2][0],R[2][1],R[2][2],0, 0,0,0,1);
+    mesh.setRotationFromMatrix(M);
+    cb(mesh);
+  }, undefined, err => {
+    console.error('STL加载失败:', part.stl_file, err);
+    setStatus('STL加载失败: ' + part.stl_file);
+  });
+}
+
+// 为每条腿找对应的 parts_world 零件（镜像腿用镜像 STL）
+function findLegParts(leg) {
+  const legOcc = {
+    FR: '舵机组 v8:1', RR: '舵机组 v8:2',
+    FL: '舵机组 v8(镜像) (1):1', RL: '舵机组 v8(镜像) (1):2'
+  }[leg.key];
+  return partsData.parts.filter(p => p.full_path.includes(legOcc));
+}
+
+function buildLeg(leg, onDone) {
+  // 腿根 Group：世界位置 + 镜像腿加 diag(1,-1,-1)（180°绕X）
+  const rootGroup = new THREE.Group();
+  rootGroup.position.set(leg.root[0], leg.root[1], leg.root[2]);
+  if (leg.mirror) rootGroup.rotation.set(Math.PI, 0, 0);
+  scene.add(rootGroup);
+
+  // 各腿用自己的零件（镜像腿用镜像 STL，保证静态几何左右镜像）
+  const legParts = findLegParts(leg);
+
+  // 运动学树 anchor：镜像腿 Z 取负（Rx(π) 局部系下，原版 anchor 会翻到头顶）
+  // 镜像 anchor 经 Rx(π) 变换后回到地面方向，和原版腿对称
+  const tree = bodyTree.map(b => {
+    const ja = leg.mirror
+      ? [b.joint_anchor_mm[0], b.joint_anchor_mm[1], -b.joint_anchor_mm[2]]
+      : b.joint_anchor_mm.slice();
+    return { ...b, anchor: ja };
+  });
+
+  // 运动学树：构建嵌套关节 Group
+  // 每个 body 的 group 原点 = 它的关节点（相对父 body）
+  const bodies = {};
+  legGroups[leg.key] = { group: rootGroup, bodies, mirror: leg.mirror, color: leg.color };
+
+  for (const b of tree) {
+    const jg = new THREE.Group();
+    // group position = 相对父关节点的偏移
+    // parent=None 时用 anchor（相对腿根）；否则用 (本关节点 - 父关节点)
+    let pos;
+    if (b.parent) {
+      const parentB = tree.find(x => x.name === b.parent);
+      pos = [
+        b.anchor[0] - parentB.anchor[0],
+        b.anchor[1] - parentB.anchor[1],
+        b.anchor[2] - parentB.anchor[2],
+      ];
+    } else {
+      pos = b.anchor;
+    }
+    jg.position.set(pos[0], pos[1], pos[2]);
+    bodies[b.name] = { group: jg, def: b };
+  }
+  // 父子挂载
+  for (const b of tree) {
+    if (b.parent) bodies[b.parent].group.add(bodies[b.name].group);
+    else rootGroup.add(bodies[b.name].group);
+  }
+
+  // 零件 STL → body 映射
+  const cnMap = {
+    knee_driver:'膝盖动力发生器', knee_link1:'膝盖传动1',
+    knee_rotor:'膝盖转动', knee_link2:'膝盖传动2', shin:'小腿',
+  };
+  const thighParts = ['大腿主动力发生器','小腿保持架','髋关节保持架','大腿盖板'];
+
+  const partsToLoad = [];
+  for (const b of bodyTree) {
+    const cns = b.name === 'thigh_rigid' ? thighParts : [cnMap[b.name]];
+    for (const cn of cns) {
+      // 精确匹配：component 去掉镜像/版本后缀后 == cn
+      const p = legParts.find(pp => {
+        const base = pp.component.replace(/\(镜像\).*$/, '').replace(/\(2\).*$/, '').replace(/\(3\).*$/, '').trim();
+        return base === cn;
+      });
+      if (p) partsToLoad.push({ bodyName: b.name, part: p });
+    }
+  }
+
+  // 舵机壳（固定在腿根，不跟随关节）
+  const servos = legParts.filter(p => p.component.includes('servo'));
+  let total = partsToLoad.length + servos.length;
+  let loaded = 0;
+  const done = () => { if (++loaded >= total && onDone) onDone(); };
+
+  // 加载动件 STL
+  // STL 顶点是「相对腿根」的坐标（零件建模原点在腿根）。
+  // body group 原点在关节点（相对腿根坐标系）。
+  // 所以 mesh 挂到 body group 时，position = -(body的世界累积偏移) 让顶点回到腿根坐标系。
+  // 但因为父 group 已经累积了偏移，这里只需补偿本 body 相对腿根的总关节点位置。
+  for (const item of partsToLoad) {
+    const b = tree.find(x => x.name === item.bodyName);
+    stlLoader.load(STL_BASE + encodeURIComponent(item.part.stl_file.split('/').pop()), geo => {
+      const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
+        color: leg.color, shininess:20, transparent:true, opacity:0.92, side:THREE.DoubleSide
+      }));
+      // STL 顶点相对腿根，body group 原点在关节点（相对腿根）
+      // mesh.position = -anchor 让顶点回到腿根坐标系
+      // 顶点世界 = body_group_world × mesh.position + 顶点
+      // body_group 在关节点，所以 mesh.position = -(本body关节点相对腿根)
+      mesh.position.set(-b.anchor[0], -b.anchor[1], -b.anchor[2]);
+      bodies[item.bodyName].group.add(mesh);
+      done();
+    }, undefined, () => done());
+  }
+
+  // 舵机壳：固定件，直接用世界变换挂 scene（和 quad_stl_viewer 一致）
+  // 不跟关节动，也不需要算 rootRotInv × world_rot——世界变换就是最终答案
+  for (const p of servos) {
+    stlLoader.load(STL_BASE + encodeURIComponent(p.stl_file.split('/').pop()), geo => {
+      const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
+        color:0x555555, transparent:true, opacity:0.9, side:THREE.DoubleSide
+      }));
+      mesh.position.set(p.world_t_mm[0], p.world_t_mm[1], p.world_t_mm[2]);
+      const R = p.world_rot;
+      const M = new THREE.Matrix4();
+      M.set(R[0][0],R[0][1],R[0][2],0, R[1][0],R[1][1],R[1][2],0, R[2][0],R[2][1],R[2][2],0, 0,0,0,1);
+      mesh.setRotationFromMatrix(M);
+      scene.add(mesh);
+      done();
+    }, undefined, () => done());
+  }
+}
+
+// LUT 查表 + 双线性插值
+function lookupLUT(t1, t2) {
+  const cells = lutData.cells;
+  const angles = lutData.angles;
+  const step = lutData._meta.step || 2;
+
+  // 双线性插值
+  const t1l = Math.floor(t1/step)*step;
+  const t1h = t1l + step;
+  const t2l = Math.floor(t2/step)*step;
+  const t2h = t2l + step;
+  const fx = (t1 - t1l)/step;
+  const fy = (t2 - t2l)/step;
+
+  const c00 = cells[`${t1l},${t2l}`];
+  const c10 = cells[`${t1h},${t2l}`];
+  const c01 = cells[`${t1l},${t2h}`];
+  const c11 = cells[`${t1h},${t2h}`];
+  if (!c00 || !c10 || !c01 || !c11) return null;
+
+  function lerp(a,b,f){return a+(b-a)*f;}
+  function bl(k){
+    return lerp(lerp(c00[k],c10[k],fx), lerp(c01[k],c11[k],fx), fy);
+  }
+  return { t1:bl('t1'),t2:bl('t2'),t3:bl('t3'),t4:bl('t4'),t6:bl('t6'),t7:bl('t7') };
+}
+
+// === 状态管理 ===
+// 每条腿独立姿态：legState[key] = {t1, t2}
+const legState = {};
+LEGS.forEach(l => legState[l.key] = {t1:0, t2:0});
+
+// 应用单条腿姿态（只动这条腿）
+function applyLeg(legKey, t1Deg, t2Deg) {
+  const leg = LEGS.find(l => l.key === legKey);
+  const lg = legGroups[legKey];
+  if (!leg || !lg) return null;
+  const lut = lookupLUT(t1Deg, t2Deg);
+  if (!lut) return null;  // 无解
+  // 镜像腿关节角取负：数值验证 Rx(π)·Ry(θ)·Rx(π)⁻¹ = Ry(-θ)
+  const sign = leg.mirror ? -1 : 1;
+  for (const b of bodyTree) {
+    const bg = lg.bodies[b.name].group;
+    const angle = lut[b.joint] * sign;
+    bg.rotation.set(0, angle * Math.PI/180, 0);
+  }
+  return lut;
+}
+
+// 全局滑块 → 4 腿同步（更新状态 + UI + 渲染）
+function globalUpdate(v1, v2) {
+  document.getElementById('t1val').textContent = v1 + '°';
+  document.getElementById('t2val').textContent = v2 + '°';
+  // 全局 LUT 被动角
+  const lut = lookupLUT(v1, v2);
+  if (lut) {
+    document.getElementById('p_t3').textContent = lut.t3.toFixed(1);
+    document.getElementById('p_t4').textContent = lut.t4.toFixed(1);
+    document.getElementById('p_t6').textContent = lut.t6.toFixed(1);
+    document.getElementById('p_t7').textContent = lut.t7.toFixed(1);
+  }
+  // 同步到 4 腿状态 + 分控滑块 UI
+  for (const leg of LEGS) {
+    legState[leg.key].t1 = v1;
+    legState[leg.key].t2 = v2;
+    syncLegCardUI(leg.key);
+    applyLeg(leg.key, v1, v2);
+  }
+}
+
+// 单腿滑块 → 只动这条腿
+function legUpdate(legKey, v1, v2) {
+  legState[legKey].t1 = v1;
+  legState[legKey].t2 = v2;
+  applyLeg(legKey, v1, v2);
+}
+
+// 把某腿的分控滑块/数值同步到 legState
+function syncLegCardUI(legKey) {
+  const s1 = document.getElementById('leg_'+legKey+'_t1');
+  const s2 = document.getElementById('leg_'+legKey+'_t2');
+  const v1 = document.getElementById('leg_'+legKey+'_t1v');
+  const v2 = document.getElementById('leg_'+legKey+'_t2v');
+  const st = legState[legKey];
+  if (s1) s1.value = st.t1;
+  if (s2) s2.value = st.t2;
+  if (v1) v1.textContent = st.t1 + '°';
+  if (v2) v2.textContent = st.t2 + '°';
+}
+
+// === 构建 4 腿分控卡片 ===
+function buildLegCards() {
+  const c = document.getElementById('legCards');
+  c.innerHTML = '';
+  for (const leg of LEGS) {
+    const card = document.createElement('div');
+    card.className = 'leg-card compact ' + leg.key;
+    const hex = '#' + leg.color.toString(16).padStart(6,'0');
+    card.innerHTML = `
+      <div class="leg-title">
+        <span><span class="dot" style="background:${hex}"></span>${leg.key} ${leg.mirror?'(镜像)':''}</span>
+        <span style="font-size:10px;color:#777">root=[${leg.root.join(',')}]</span>
+      </div>
+      <div class="mini-slider">
+        <label>θ1 膝盖 <span class="v" id="leg_${leg.key}_t1v">0°</span></label>
+        <input type="range" id="leg_${leg.key}_t1" min="-90" max="60" value="0" step="1">
+      </div>
+      <div class="mini-slider">
+        <label>θ2 大腿 <span class="v" id="leg_${leg.key}_t2v">0°</span></label>
+        <input type="range" id="leg_${leg.key}_t2" min="-60" max="60" value="0" step="1">
+      </div>
+    `;
+    c.appendChild(card);
+    // 绑定事件
+    const s1 = card.querySelector('#leg_'+leg.key+'_t1');
+    const s2 = card.querySelector('#leg_'+leg.key+'_t2');
+    const v1 = card.querySelector('#leg_'+leg.key+'_t1v');
+    const v2 = card.querySelector('#leg_'+leg.key+'_t2v');
+    const onChange = () => {
+      stopPreset();
+      const a = parseInt(s1.value), b = parseInt(s2.value);
+      v1.textContent = a + '°';
+      v2.textContent = b + '°';
+      legUpdate(leg.key, a, b);
+    };
+    s1.addEventListener('input', onChange);
+    s2.addEventListener('input', onChange);
+  }
+}
+
+// === 滑块绑定 ===
+function bindSliders() {
+  const t1 = document.getElementById('t1Slider');
+  const t2 = document.getElementById('t2Slider');
+  const update = () => {
+    stopPreset();
+    globalUpdate(parseInt(t1.value), parseInt(t2.value));
+  };
+  t1.addEventListener('input', update);
+  t2.addEventListener('input', update);
+}
+
+// === 复位/站姿 ===
+function resetAllPose() {
+  stopPreset();
+  document.getElementById('t1Slider').value = 0;
+  document.getElementById('t2Slider').value = 0;
+  globalUpdate(0, 0);
+}
+function standAllPose() {
+  stopPreset();
+  document.getElementById('t1Slider').value = -24;
+  document.getElementById('t2Slider').value = 8;
+  globalUpdate(-24, 8);
+}
+function resetView() {
+  camera.position.set(180, -250, 140);
+  controls.target.set(57, 0, -30);
+  controls.update();
+}
+
+// === 预设动作（循环动画用 requestAnimationFrame）===
+let presetHandle = null;
+function stopPreset() {
+  if (presetHandle) {
+    cancelAnimationFrame(presetHandle);
+    presetHandle = null;
+    setStatus('已停止预设');
+  }
+}
+function runLoop(fn) {
+  stopPreset();
+  const start = performance.now();
+  const tick = (now) => {
+    const t = (now - start) / 1000;  // 秒
+    fn(t);
+    presetHandle = requestAnimationFrame(tick);
+  };
+  presetHandle = requestAnimationFrame(tick);
+}
+// 设置单腿姿态（不更新全局 UI，只动这条腿 + 这条腿的分控滑块）
+function setLegQuiet(legKey, t1, t2) {
+  legState[legKey].t1 = Math.round(t1);
+  legState[legKey].t2 = Math.round(t2);
+  syncLegCardUI(legKey);
+  applyLeg(legKey, t1, t2);
+}
+
+// 站立（静态）
+function presetStanding() {
+  stopPreset();
+  for (const leg of LEGS) setLegQuiet(leg.key, -24, 8);
+  setStatus('预设：站立');
+}
+// 对角小步（trot）：FR+RL 一组，FL+RR 一组，反相
+function presetTrot() {
+  const base1 = [-24, 8], base2 = [-10, -4];  // 抬腿/落腿两个姿态
+  const amp = 1;
+  runLoop(t => {
+    const phase = Math.sin(t * 2.5);  // 频率
+    const grpA = phase > 0 ? amp : 0;   // FR, RL
+    const grpB = phase < 0 ? amp : 0;   // FL, RR
+    // 在 base1/base2 间插值
+    const f = (Math.sin(t * 2.5) + 1) / 2;  // 0..1
+    const a = base1.map((v,i)=>v*(1-f) + base2[i]*f);
+    setLegQuiet('FR', a[0], a[1]);
+    setLegQuiet('RL', a[0], a[1]);
+    const b = base1.map((v,i)=>v*f + base2[i]*(1-f));
+    setLegQuiet('FL', b[0], b[1]);
+    setLegQuiet('RR', b[0], b[1]);
+    setStatus('预设：对角小步 t='+t.toFixed(1)+'s');
+  });
+}
+// 侧倾：左右腿不同角度
+function presetLean() {
+  stopPreset();
+  for (const leg of LEGS) {
+    if (leg.key==='FR'||leg.key==='RR') setLegQuiet(leg.key, -24, 25);   // 右侧伸长
+    else setLegQuiet(leg.key, -24, -15);                                 // 左侧收缩
+  }
+  setStatus('预设：侧倾');
+}
+// 挥手：三条腿站立，FL 腿挥动
+function presetWave() {
+  runLoop(t => {
+    setLegQuiet('FR', -24, 8);
+    setLegQuiet('RR', -24, 8);
+    setLegQuiet('RL', -24, 8);
+    // FL 挥动：θ2 大幅摆
+    const swing = Math.sin(t * 3) * 35;
+    setLegQuiet('FL', -40, 30 + swing);
+    setStatus('预设：FL 挥手 t='+t.toFixed(1)+'s');
+  });
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+function onResize() {
+  const vp = document.getElementById('viewport');
+  camera.aspect = vp.clientWidth/vp.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(vp.clientWidth, vp.clientHeight);
+}
+function setStatus(s) { document.getElementById('status').textContent = s; }
+
+window.addEventListener('error', e => {
+  setStatus('❌ 错误: ' + e.message + ' (行' + (e.lineno||'?') + ')');
+  document.getElementById('loading').textContent = '❌ ' + e.message;
+  console.error(e.error || e);
+});
+window.addEventListener('unhandledrejection', e => {
+  setStatus('❌ Promise错误: ' + (e.reason && e.reason.message || e.reason));
+  console.error('unhandledrejection:', e.reason);
+});
+window.addEventListener('load', init);
+</script>
+</body>
+</html>

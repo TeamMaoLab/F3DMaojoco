@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>四足坐标系骨架</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #1a1a1a; color: #ddd; overflow: hidden; }
+  #layout { display: flex; height: 100vh; }
+  #viewport { flex: 1; position: relative; }
+  canvas { display: block; }
+  #panel { width: 380px; background: #252525; padding: 12px; overflow-y: auto; border-left: 1px solid #444; }
+  h2 { font-size: 15px; margin-bottom: 6px; color: #fff; }
+  h3 { font-size: 12px; margin: 10px 0 4px; color: #9cf; }
+  .hint { font-size: 11px; color: #888; line-height: 1.6; margin: 4px 0; }
+  .ctrl { margin: 6px 0; font-size: 11px; }
+  .ctrl label { display: block; color: #aaa; margin-bottom: 2px; }
+  button { background: #36a; color: #fff; border: none; padding: 4px 9px; border-radius: 3px; cursor: pointer; font-size: 11px; margin: 2px 2px 2px 0; }
+  button:hover { background: #48c; }
+  button.active { background: #5a5; }
+  .node-row { padding: 3px 6px; margin: 1px 0; border-radius: 3px; font-size: 10px; cursor: pointer; white-space: nowrap; }
+  .node-row:hover { background: #333; }
+  .node-row.leaf { color: #ddd; }
+  .node-row.mid { color: #fa0; font-weight: bold; }
+  .node-row.selected { background: #446; }
+  .legend { font-size: 10px; color: #888; line-height: 1.8; margin-top: 6px; }
+  .swatch { display: inline-block; width: 10px; height: 2px; vertical-align: middle; margin-right: 3px; }
+  #status { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.75); padding: 6px 10px; border-radius: 4px; font-size: 12px; max-width: 55%; }
+</style>
+</head>
+<body>
+<div id="layout">
+  <div id="viewport">
+    <div id="status">加载中...</div>
+  </div>
+  <div id="panel">
+    <h2>四足坐标系骨架</h2>
+    <div class="hint">从 parts_world 反推的 62 节点坐标系树。每个节点一个三轴坐标系（X红 Y绿 Z蓝）。腿根是大节点，ONE-LEG/大腿部分是纯组织节点。</div>
+
+    <h3>显示控制</h3>
+    <div class="ctrl">
+      <button onclick="toggleAll()" id="btn-all">全部显示</button>
+      <button onclick="toggleLegsOnly()" id="btn-legs">只腿根</button>
+      <button onclick="toggleLeaves()" id="btn-leaves">叶节点</button>
+      <button onclick="toggleMid()" id="btn-mid">中间节点</button>
+    </div>
+    <div class="ctrl">
+      <label>轴长度 <span id="lenVal">15</span>mm</label>
+      <input type="range" id="lenSlider" min="3" max="40" value="15" style="width:100%">
+    </div>
+    <div class="ctrl">
+      <label>透明叠加 STL（验证对齐）</label>
+      <button onclick="toggleSTL()" id="btn-stl">叠加 STL</button>
+    </div>
+
+    <div class="legend">
+      <div><span class="swatch" style="background:#ee5555"></span>X 前</div>
+      <div><span class="swatch" style="background:#55ee55"></span>Y 左</div>
+      <div><span class="swatch" style="background:#5555ee"></span>Z 上</div>
+      <div style="margin-top:4px"><b style="color:#fa0">●</b> 中间节点（无几何）　<b style="color:#ddd">○</b> 叶节点（有 STL）</div>
+    </div>
+
+    <h3>节点列表（点选高亮）</h3>
+    <div id="list" style="font-family: monospace;"></div>
+  </div>
+</div>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/examples/js/loaders/STLLoader.js"></script>
+<script src="vendor/examples/js/controls/OrbitControls.js"></script>
+<script>
+const NODES_URL = '../exports/quad_v4/nodes_world.json';
+const PARTS_URL = '../exports/quad_v4/parts_world.json';
+const STL_BASE  = '../exports/quad_v4/stl_files/';
+
+let scene, camera, renderer, controls;
+let nodeData = null, partsData = null;
+const frameByPath = {};   // full_path → ArrowHelper group
+const stlMeshes = [];
+let showSTL = false;
+let selectedPath = null;
+let axisLen = 15;
+
+// 配色：腿根配色（其他默认白）
+function colorFor(n) {
+  const fp = n.full_path;
+  if (fp.includes('舵机组 v8:1'))            return 0xee5555; // FR
+  if (fp.includes('舵机组 v8:2'))            return 0xee9900; // RR
+  if (fp.includes('舵机组 v8(镜像) (1):1'))  return 0x44ccff; // FL
+  if (fp.includes('舵机组 v8(镜像) (1):2'))  return 0xcc66ff; // RL
+  if (n.is_leaf) return 0xaaaaaa;
+  return 0xfaaa00;
+}
+
+function init() {
+  const vp = document.getElementById('viewport');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1e1e22);
+  camera = new THREE.PerspectiveCamera(45, vp.clientWidth/vp.clientHeight, 0.1, 5000);
+  camera.up.set(0,0,1);
+  camera.position.set(150, -200, 130);
+  renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(vp.clientWidth, vp.clientHeight);
+  vp.appendChild(renderer.domElement);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(57, 0, -10);
+
+  scene.add(new THREE.AmbientLight(0x777777));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.7); dl.position.set(150,-150,250); scene.add(dl);
+
+  const grid = new THREE.GridHelper(300, 15, 0x333355, 0x222233);
+  grid.rotation.x = Math.PI/2;
+  scene.add(grid);
+  scene.add(new THREE.AxesHelper(30));  // 世界根
+
+  loadData();
+  document.getElementById('lenSlider').addEventListener('input', e => {
+    axisLen = parseInt(e.target.value);
+    document.getElementById('lenVal').textContent = axisLen;
+    rebuildFrames();
+  });
+  window.addEventListener('resize', onResize);
+  animate();
+}
+
+async function loadData() {
+  nodeData = await (await fetch(NODES_URL)).json();
+  partsData = await (await fetch(PARTS_URL)).json();
+  rebuildFrames();
+  buildList();
+  document.getElementById('status').textContent = `已加载 ${nodeData.nodes.length} 个节点`;
+}
+
+function rebuildFrames() {
+  // 清掉旧的
+  Object.values(frameByPath).forEach(g => scene.remove(g));
+  for (const k in frameByPath) delete frameByPath[k];
+
+  for (const n of nodeData.nodes) {
+    const g = new THREE.Group();
+    g.position.set(n.world_t_mm[0], n.world_t_mm[1], n.world_t_mm[2]);
+    const R = n.world_rot;
+    const xAxis = new THREE.Vector3(R[0][0],R[1][0],R[2][0]);
+    const yAxis = new THREE.Vector3(R[0][1],R[1][1],R[2][1]);
+    const zAxis = new THREE.Vector3(R[0][2],R[1][2],R[2][2]);
+    // 腿根 / 中间节点 用更长更粗
+    const len = n.is_leaf ? axisLen*0.6 : axisLen;
+    const head = n.is_leaf ? len*0.18 : len*0.3;
+    const r = n.is_leaf ? 1.5 : 2.5;
+    g.add(new THREE.ArrowHelper(xAxis, new THREE.Vector3(), len, 0xee5555, head, r));
+    g.add(new THREE.ArrowHelper(yAxis, new THREE.Vector3(), len, 0x55ee55, head, r));
+    g.add(new THREE.ArrowHelper(zAxis, new THREE.Vector3(), len, 0x5555ee, head, r));
+    g.userData = { node: n };
+    scene.add(g);
+    frameByPath[n.full_path] = g;
+  }
+  applyFilter();
+}
+
+let filterMode = 'all';
+function applyFilter() {
+  for (const n of nodeData.nodes) {
+    const g = frameByPath[n.full_path];
+    if (!g) continue;
+    let show = true;
+    if (filterMode === 'legs')   show = n.occurrence.includes('舵机组');
+    if (filterMode === 'leaves') show = n.is_leaf;
+    if (filterMode === 'mid')    show = !n.is_leaf;
+    g.visible = show;
+    // 选中态高亮
+    const isSel = n.full_path === selectedPath;
+    g.children.forEach(ah => {
+      if (isSel && ah.setColor) ah.setColor(0xffff00);
+    });
+  }
+}
+function toggleAll()   { filterMode='all';    applyFilter(); markBtn('btn-all'); }
+function toggleLegsOnly(){ filterMode='legs'; applyFilter(); markBtn('btn-legs'); }
+function toggleLeaves(){ filterMode='leaves'; applyFilter(); markBtn('btn-leaves'); }
+function toggleMid()   { filterMode='mid';    applyFilter(); markBtn('btn-mid'); }
+function markBtn(id) {
+  ['btn-all','btn-legs','btn-leaves','btn-mid'].forEach(b =>
+    document.getElementById(b).classList.toggle('active', b===id));
+}
+
+function toggleSTL() {
+  showSTL = !showSTL;
+  document.getElementById('btn-stl').classList.toggle('active', showSTL);
+  if (showSTL && stlMeshes.length===0) loadSTLMeshes();
+  stlMeshes.forEach(m => m.visible = showSTL);
+}
+function loadSTLMeshes() {
+  const stlLoader = new THREE.STLLoader();
+  partsData.parts.forEach(p => {
+    stlLoader.load(STL_BASE + encodeURIComponent(p.stl_file.split('/').pop()), geo => {
+      const m = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
+        color: 0x888899, transparent:true, opacity:0.35, side:THREE.DoubleSide
+      }));
+      m.position.set(p.world_t_mm[0], p.world_t_mm[1], p.world_t_mm[2]);
+      const R = p.world_rot;
+      const M = new THREE.Matrix4();
+      M.set(R[0][0],R[0][1],R[0][2],0, R[1][0],R[1][1],R[1][2],0, R[2][0],R[2][1],R[2][2],0, 0,0,0,1);
+      m.setRotationFromMatrix(M);
+      m.visible = showSTL;
+      scene.add(m);
+      stlMeshes.push(m);
+    });
+  });
+}
+
+function buildList() {
+  const c = document.getElementById('list');
+  c.innerHTML = '';
+  const sorted = [...nodeData.nodes].sort((a,b) =>
+    (a.full_path.split('/').length - b.full_path.split('/').length) || a.full_path.localeCompare(b.full_path));
+  for (const n of sorted) {
+    const depth = n.full_path.split('/').length - 1;
+    const el = document.createElement('div');
+    el.className = 'node-row ' + (n.is_leaf ? 'leaf' : 'mid');
+    el.style.paddingLeft = (6 + depth*12) + 'px';
+    const lt = n.local_t;
+    const isUnit = Math.abs(lt[0])<0.1 && Math.abs(lt[1])<0.1 && Math.abs(lt[2])<0.1;
+    const ltStr = isUnit ? '0' : `[${lt[0].toFixed(1)},${lt[1].toFixed(1)},${lt[2].toFixed(1)}]`;
+    const mark = n.is_leaf ? '○' : '●';
+    el.textContent = `${mark} ${n.occurrence}  local=${ltStr}`;
+    el.title = `world=${JSON.stringify(n.world_t_mm)}\nlocal_R diag=${n.local_R[0][0].toFixed(0)},${n.local_R[1][1].toFixed(0)},${n.local_R[2][2].toFixed(0)}\n${n.inferred}`;
+    el.onclick = () => selectNode(n.full_path);
+    el.id = 'nr-' + n.full_path;
+    c.appendChild(el);
+  }
+}
+function selectNode(path) {
+  selectedPath = path;
+  document.querySelectorAll('.node-row').forEach(e => e.classList.remove('selected'));
+  const el = document.getElementById('nr-' + path);
+  if (el) el.classList.add('selected');
+  // 相机看向该节点
+  const n = nodeData.nodes.find(x => x.full_path === path);
+  if (n) {
+    controls.target.set(n.world_t_mm[0], n.world_t_mm[1], n.world_t_mm[2]);
+    document.getElementById('status').textContent =
+      `${n.occurrence}  world=[${n.world_t_mm.map(v=>v.toFixed(1))}]  local_t=[${n.local_t.map(v=>v.toFixed(2))}]`;
+  }
+  applyFilter();
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+function onResize() {
+  const vp = document.getElementById('viewport');
+  camera.aspect = vp.clientWidth/vp.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(vp.clientWidth, vp.clientHeight);
+}
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
