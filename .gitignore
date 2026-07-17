@@ -220,3 +220,4 @@ exports/quad_v4/**
 !exports/quad_v4/parts_world.json
 !exports/quad_v4/nodes_world.json
 !exports/quad_v4/leg_kinematic.json
+!exports/quad_v4/foot_lut.json
