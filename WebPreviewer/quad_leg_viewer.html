@@ -83,10 +83,11 @@
     <h3>预设动作</h3>
     <div style="margin-top:4px">
       <button onclick="presetStanding()">站立</button>
-      <button onclick="presetLean()">侧倾</button>
       <button onclick="presetWave()">挥手</button>
+      <button onclick="presetMarch()">原地踏步</button>
       <button class="danger" onclick="stopPreset()">停止</button>
     </div>
+    <div class="hint" style="margin-top:4px">挥手/原地踏步 = 足端轨迹驱动，机身静止。侧倾/坐下需要机身动，待做。</div>
 
     <h3>trot 步态参数</h3>
     <div class="slider-row">
@@ -665,16 +666,19 @@ function setLegImmediate(legKey, t1, t2) {
   drawPointer(legKey);
 }
 
-// 静默跳（预设循环用）：只动 3D，不碰 DOM/canvas（避免每帧重画 4 个 canvas 卡顿）
-// UI/canvas 由调用方降频更新（如 presetTrot 每 100ms 调一次 refreshLegUI）
-function setLegSilent(legKey, t1, t2) {
+// 静默设目标（预设循环用）：只动 3D，不碰 DOM/canvas
+// 不直接跳到 (t1,t2)，而是用低通滤波平滑追过去，消除 IK 反查的网格跳变（2-4°阶跃）
+// alpha：每帧追向目标的比例（0.15 默认慢追；挥手等大范围动作可用更大值）
+const SILENT_ALPHA = 0.15;
+function setLegSilent(legKey, t1, t2, alpha) {
   const ctrl = legCtrl[legKey];
   ctrl.targetT1 = t1;
   ctrl.targetT2 = t2;
-  ctrl.safeT1 = t1;
-  ctrl.safeT2 = t2;
+  const a = alpha || SILENT_ALPHA;
+  ctrl.safeT1 += (t1 - ctrl.safeT1) * a;
+  ctrl.safeT2 += (t2 - ctrl.safeT2) * a;
   ctrl.stepping = false;
-  applyLeg(legKey, t1, t2);
+  applyLeg(legKey, ctrl.safeT1, ctrl.safeT2);
 }
 
 // 批量刷新腿的 UI/canvas（降频调用）
@@ -892,26 +896,88 @@ function presetTrot() {
     setStatus(`trot t=${t.toFixed(1)}s stride=${stride} swing=${swingHeight} T=${T.toFixed(1)}s`);
   });
 }
-// 侧倾：右侧腿伸长，左侧腿收缩（直接到位）
-function presetLean() {
-  stopPreset();
-  for (const leg of LEGS) {
-    if (leg.key==='FR'||leg.key==='RR') setLegImmediate(leg.key, STAND[0], STAND[1]-15);
-    else setLegImmediate(leg.key, STAND[0], STAND[1]+15);
-  }
-  setStatus('预设：侧倾');
-}
-// 挥手：三条腿站立，FL 腿挥动（直接到位，碰撞由 applyLeg 守卫）
+// 挥手：3 腿站立，FL 腿先伸到 (60,77) 对应的足端位置，然后在该位置小范围戳戳
+// 两段式：t<reach 移动阶段（从站立位插值到目标），t>=reach 戳戳阶段（小幅度振荡）
 function presetWave() {
+  if (!footLut) { setStatus('❌ 足端表未加载'); return; }
+  const baseX = footLut.samples[0].foot[0];  // 站立足端 X ≈ -7
+  const baseZ = footLut.samples[0].foot[1];  // 站立足端 Z ≈ -79
+  // 目标足端位置（θ=(60,77) 对应，腿前伸高举）
+  const reachX = -84, reachZ = -33;
+  const reachTime = 1.0;   // 移动阶段时长（秒）
+  const jabAmp = 6;        // 戳戳振幅 mm（小范围）
+  const jabFreq = 4;       // 戳戳频率 Hz
+  let lastUI = 0;
   runLoop(t => {
-    setLegImmediate('FR', STAND[0], STAND[1]);
-    setLegImmediate('RR', STAND[0], STAND[1]);
-    setLegImmediate('RL', STAND[0], STAND[1]);
-    // FL 挥动：θ2 围绕 20 振荡 ±15（保证在可达区）
-    const swing = Math.sin(t * 2.0) * 15;
-    setLegImmediate('FL', -10, 20 + swing);
-    setStatus('预设：FL 挥手 t='+t.toFixed(1)+'s');
+    // 3 腿站立支撑
+    setLegSilent('FR', 0, 0);
+    setLegSilent('RR', 0, 0);
+    setLegSilent('RL', 0, 0);
+    // FL 足端目标
+    let fx, fz;
+    if (t < reachTime) {
+      // 移动阶段：从站立位平滑插值到 reach 位（用 smoothstep 缓动）
+      const f = t / reachTime;
+      const s = f * f * (3 - 2 * f);  // smoothstep
+      fx = baseX + (reachX - baseX) * s;
+      fz = baseZ + (reachZ - baseZ) * s;
+    } else {
+      // 戳戳阶段：在 reach 位小范围振荡（沿 X 方向戳）
+      const jab = Math.sin((t - reachTime) * jabFreq * 2 * Math.PI) * jabAmp;
+      fx = reachX + jab;
+      fz = reachZ;
+    }
+    const theta = footToTheta(fx, fz);
+    if (theta) setLegSilent('FL', theta[0], theta[1], 0.4);
+    if (t - lastUI > 0.1) { lastUI = t; for (const leg of LEGS) refreshLegUI(leg.key); }
+    const stage = t < reachTime ? `伸到位 ${(t/reachTime*100).toFixed(0)}%` : '戳戳中';
+    setStatus(`预设：FL 挥手 [${stage}] t=${t.toFixed(1)}s`);
   });
+}
+
+// 原地踏步（march）：4 腿依次抬放，任一时刻 ≥3 腿撑地
+// 占空比 0.75（撑地 75%），相位顺序错开 0.25
+// 足端轨迹：撑地相贴地不动（原地踏步，不前进），摆动相抬起 + 原地小步前后
+function presetMarch() {
+  if (!footLut) { setStatus('❌ 足端表未加载'); return; }
+  const stride = Math.min(parseInt(document.getElementById('trotStride').value), 10);  // 原地踏步步幅小
+  const swingHeight = parseInt(document.getElementById('trotSwing').value);
+  const T = parseInt(document.getElementById('trotPeriod').value) / 10;
+  const cfg = {
+    stride, swingHeight, T,
+    standFootX: footLut.samples[0].foot[0],
+    standFootZ: footLut.samples[0].foot[1],
+  };
+  // 相位顺序：FR=0, RR=0.25, FL=0.5, RL=0.75（依次抬腿）
+  const phaseOffset = { FR:0, RR:0.25, FL:0.5, RL:0.75 };
+  let lastUI = 0;
+  runLoop(t => {
+    for (const leg of LEGS) {
+      const [fx, fz] = marchFoot(t, cfg, phaseOffset[leg.key]);
+      const theta = footToTheta(fx, fz);
+      if (theta) setLegSilent(leg.key, theta[0], theta[1]);
+    }
+    if (t - lastUI > 0.1) { lastUI = t; for (const leg of LEGS) refreshLegUI(leg.key); }
+    setStatus(`预设：原地踏步 t=${t.toFixed(1)}s`);
+  });
+}
+
+// march 足端轨迹：占空比 0.75
+// phase 0..0.75 撑地（贴地不动），0.75..1 摆动（抬起 + 小幅前后）
+function marchFoot(t, cfg, offset) {
+  const phase = (((t / cfg.T) + offset) % 1 + 1) % 1;  // 0..1
+  const baseX = cfg.standFootX;
+  const baseZ = cfg.standFootZ;
+  if (phase < 0.75) {
+    // 撑地相：足端贴地，原地不动（不前后推）
+    return [baseX, baseZ];
+  } else {
+    // 摆动相：抬起 + 小幅前后（前摆准备落地）
+    const f = (phase - 0.75) / 0.25;  // 0..1
+    const x = baseX + cfg.stride * Math.sin(Math.PI * f);  // 中间最前，两端回 baseX
+    const z = baseZ + cfg.swingHeight * Math.sin(Math.PI * f);
+    return [x, z];
+  }
 }
 
 function animate() {

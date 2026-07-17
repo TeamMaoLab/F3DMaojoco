@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 四足舵机机器人 MuJoCo 模型（自动生成，请勿手改；改 scripts/gen_quad_mujoco.py） -->
+<!-- 模式: dyn  | 生成自 leg_kinematic.json + parts_world.json -->
+<!-- 运动学：4 腿 × (2 主动舵机 + 4 被动关节 + 2 闭环 connect 约束) -->
+<!-- 镜像腿 (FL/RL): 腿根 quat=0 1 0 0 (绕X转180°) + anchor Z 取负 + 镜像 STL -->
+
+<mujoco model="servo_quadruped">
+
+  <compiler angle="radian" coordinate="local" autolimits="true"/>
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast" iterations="50"/>
+
+  <default>
+    <joint type="hinge" axis="0 1 0" damping="2.0" armature="0.0001"/>
+    <geom type="mesh" rgba="0.6 0.6 0.7 1" contype="0" conaffinity="0" group="2"/>
+    <default class="collider">
+      <geom type="capsule" condim="3" contype="1" conaffinity="1" group="3" rgba="1 0.4 0.1 1"/>
+    </default>
+  </default>
+
+  <asset>
+    <mesh name="FL_servo_1" file="../exports/quad_v4/stl_files/servo_mg90s_v2_镜像___3__1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="FL_servo_2" file="../exports/quad_v4/stl_files/servo_mg90s_v2_镜像___3__2.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="FR_servo_2" file="../exports/quad_v4/stl_files/servo_mg90s_v2_2.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="FR_servo_3" file="../exports/quad_v4/stl_files/servo_mg90s_v2_3.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="RL_servo_1" file="../exports/quad_v4/stl_files/servo_mg90s_v2_镜像___3__1_2.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="RL_servo_2" file="../exports/quad_v4/stl_files/servo_mg90s_v2_镜像___3__2_2.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="RR_servo_2" file="../exports/quad_v4/stl_files/servo_mg90s_v2_2_2.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="RR_servo_3" file="../exports/quad_v4/stl_files/servo_mg90s_v2_3_2.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_driver" file="../exports/quad_v4/stl_files/膝盖动力发生器_1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_driver_mir" file="../exports/quad_v4/stl_files/膝盖动力发生器_镜像___2__1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_link1" file="../exports/quad_v4/stl_files/膝盖传动1_1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_link1_mir" file="../exports/quad_v4/stl_files/膝盖传动1_镜像___2__1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_link2" file="../exports/quad_v4/stl_files/膝盖传动2_1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_link2_mir" file="../exports/quad_v4/stl_files/膝盖传动2_镜像___2__1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_rotor" file="../exports/quad_v4/stl_files/膝盖转动_1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="knee_rotor_mir" file="../exports/quad_v4/stl_files/膝盖转动_镜像___2__1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="shin" file="../exports/quad_v4/stl_files/小腿_1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="shin_mir" file="../exports/quad_v4/stl_files/小腿_镜像___2__1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="thigh_大腿主动力发生器" file="../exports/quad_v4/stl_files/大腿主动力发生器_1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="thigh_大腿主动力发生器_mir" file="../exports/quad_v4/stl_files/大腿主动力发生器_镜像___2__1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="thigh_大腿盖板" file="../exports/quad_v4/stl_files/大腿盖板_1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="thigh_大腿盖板_mir" file="../exports/quad_v4/stl_files/大腿盖板_镜像___2__1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="thigh_小腿保持架" file="../exports/quad_v4/stl_files/小腿保持架_1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="thigh_小腿保持架_mir" file="../exports/quad_v4/stl_files/小腿保持架_镜像___2__1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="thigh_髋关节保持架" file="../exports/quad_v4/stl_files/髋关节保持架_1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="thigh_髋关节保持架_mir" file="../exports/quad_v4/stl_files/髋关节保持架_镜像___2__1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="假电池 v1" file="../exports/quad_v4/stl_files/假电池_v1_1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="假电路板 v1" file="../exports/quad_v4/stl_files/假电路板_v1_1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="零部件5" file="../exports/quad_v4/stl_files/零部件5_1.stl" scale="0.001 0.001 0.001"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 -0.5 0.3" dir="0 0.95 -0.3" diffuse="0.8 0.8 0.8"/>
+    <light pos="0 0.5 0.3" dir="0 -0.95 -0.3" diffuse="0.4 0.4 0.4"/>
+    <geom name="floor" type="plane" pos="0 0 0" size="3 3 0.1" rgba="0.5 0.5 0.5 1" friction="0.8 0.02 0.01" contype="1" conaffinity="1" solref="0.02 1"/>
+    <body name="base" pos="0 0 0.090">
+      <freejoint name="root_joint"/>
+      <inertial pos="0 0 0" mass="0.07" diaginertia="6e-5 6e-5 6e-5"/>
+      <geom rgba="0.6 0.6 0.7 1" mesh="零部件5" contype="0" conaffinity="0" group="2"/>
+      <body name="chassis_假电池 v1" pos="0.060847 0.187498 -0.003444" quat="0.707107 0 0 0.707107">
+        <inertial pos="0 0 0" mass="0.005" diaginertia="2e-6 2e-6 2e-6"/>
+        <geom rgba="0.6 0.6 0.7 1" mesh="假电池 v1" contype="0" conaffinity="0" group="2"/>
+      </body>
+      <body name="chassis_假电路板 v1" pos="0.04608 -0.001083 0.009" quat="-0 0 -0 1">
+        <inertial pos="0 0 0" mass="0.005" diaginertia="2e-6 2e-6 2e-6"/>
+        <geom rgba="0.6 0.6 0.7 1" mesh="假电路板 v1" contype="0" conaffinity="0" group="2"/>
+      </body>
+      <!-- 机身碰撞 box（合并 AABB，base 原点系）：[-25.6 -31.8  -8.6] ~ [129.8  31.8  20.6] mm -->
+      <geom name="chassis_collider" type="box" pos="0.05205 0 0.006" size="0.0777 0.0318 0.0146" rgba="0.3 0.6 0.3 0.3" contype="1" conaffinity="1" group="3"/>
+      <!-- ===== FR 腿（原版）===== -->
+      <body name="FR_hip" pos="0 -0.047 0">
+        <inertial pos="0 0 0" mass="0.0005" diaginertia="1e-8 1e-8 1e-8"/>
+        <body name="FR_knee_driver" pos="-0.0109 0 0.0144">
+          <inertial pos="0 0 0" mass="0.002" diaginertia="2.00e-07 2.00e-07 2.00e-07"/>
+          <joint name="FR_j_旋转1" pos="0 0 0" axis="0 1 0" range="-1.5708 1.5708"/>
+          <geom rgba="0.9 0.5 0.2 1" mesh="knee_driver" pos="0.0109 0 -0.0144" contype="0" conaffinity="0" group="2"/>
+          <body name="FR_knee_link1" pos="-0.01039 0 -0.006">
+            <inertial pos="0 0 0" mass="0.001" diaginertia="1.00e-07 1.00e-07 1.00e-07"/>
+            <joint name="FR_j_旋转6" pos="0 0 0" axis="0 1 0"/>
+            <geom rgba="0.2 0.9 0.4 1" mesh="knee_link1" pos="0.02129 0 -0.0084" contype="0" conaffinity="0" group="2"/>
+            <body name="FR_knee_rotor" pos="0.00917 0 -0.0154">
+              <inertial pos="0 0 0" mass="0.001" diaginertia="1.00e-07 1.00e-07 1.00e-07"/>
+              <joint name="FR_j_旋转7" pos="0 0 0" axis="0 1 0"/>
+              <geom rgba="0.2 0.4 0.9 1" mesh="knee_rotor" pos="0.01212 0 0.007" contype="0" conaffinity="0" group="2"/>
+              <body name="FR_knee_link2" pos="0.02424 0 0.014">
+                <inertial pos="0 0 0" mass="0.001" diaginertia="1.00e-07 1.00e-07 1.00e-07"/>
+                <joint name="FR_j_旋转4" pos="0 0 0" axis="0 1 0"/>
+                <geom rgba="0.9 0.9 0.2 1" mesh="knee_link2" pos="-0.01212 0 -0.007" contype="0" conaffinity="0" group="2"/>
+                <site name="FR_s_J5_link2" pos="0.025 0 -0.0433" size="0.0015" rgba="1 0 0 1"/>
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="FR_thigh_rigid" pos="0 0 0">
+          <inertial pos="0 0 0" mass="0.007" diaginertia="7.00e-07 7.00e-07 7.00e-07"/>
+          <joint name="FR_j_旋转2" pos="0 0 0" axis="0 1 0" range="-1.5708 1.5708"/>
+          <geom rgba="0.9 0.2 0.6 1" mesh="thigh_大腿主动力发生器" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom rgba="0.6 0.6 0.6 1" mesh="thigh_小腿保持架" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom rgba="0.6 0.6 0.6 1" mesh="thigh_髋关节保持架" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom rgba="0.6 0.6 0.6 1" mesh="thigh_大腿盖板" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom name="FR_thigh_ground" type="capsule" fromto="0 0 0 0.025 0 -0.0433" size="0.006" rgba="0.9 0.2 0.6 0.3" contype="1" conaffinity="1" group="3" friction="0.8 0.02 0.01"/>
+          <site name="FR_s_J2_thigh" pos="0 0 0" size="0.0015" rgba="0 1 0 1"/>
+          <body name="FR_shin" pos="0.025 0 -0.0433">
+            <inertial pos="0 0 0" mass="0.003" diaginertia="3.00e-07 3.00e-07 3.00e-07"/>
+            <joint name="FR_j_旋转3" pos="0 0 0" axis="0 1 0"/>
+            <geom rgba="0.2 0.7 0.9 1" mesh="shin" pos="-0.025 0 0.0433" contype="0" conaffinity="0" group="2"/>
+            <site name="FR_s_J5_shin" pos="0.01212 0 0.0070" size="0.0015" rgba="1 0 0 1"/>
+            <geom name="FR_foot" type="sphere" pos="-0.0322 0 -0.0358" size="0.004" rgba="0 1 0 1" contype="1" conaffinity="1" group="3" friction="0.8 0.02 0.01"/>
+            <site name="FR_foot_site" pos="-0.0322 0 -0.0358" size="0.003" rgba="0 1 0 1"/>
+            <geom name="FR_shin_ground" type="capsule" fromto="0 0 0 -0.0322 0 -0.0358" size="0.003" rgba="0.2 0.7 0.9 0.3" contype="1" conaffinity="1" group="3" friction="0.8 0.02 0.01"/>
+          </body>
+        </body>
+      </body>
+      <!-- ===== RR 腿（原版）===== -->
+      <body name="RR_hip" pos="0.115 -0.047 0">
+        <inertial pos="0 0 0" mass="0.0005" diaginertia="1e-8 1e-8 1e-8"/>
+        <body name="RR_knee_driver" pos="-0.0109 0 0.0144">
+          <inertial pos="0 0 0" mass="0.002" diaginertia="2.00e-07 2.00e-07 2.00e-07"/>
+          <joint name="RR_j_旋转1" pos="0 0 0" axis="0 1 0" range="-1.5708 1.5708"/>
+          <geom rgba="0.9 0.5 0.2 1" mesh="knee_driver" pos="0.0109 0 -0.0144" contype="0" conaffinity="0" group="2"/>
+          <body name="RR_knee_link1" pos="-0.01039 0 -0.006">
+            <inertial pos="0 0 0" mass="0.001" diaginertia="1.00e-07 1.00e-07 1.00e-07"/>
+            <joint name="RR_j_旋转6" pos="0 0 0" axis="0 1 0"/>
+            <geom rgba="0.2 0.9 0.4 1" mesh="knee_link1" pos="0.02129 0 -0.0084" contype="0" conaffinity="0" group="2"/>
+            <body name="RR_knee_rotor" pos="0.00917 0 -0.0154">
+              <inertial pos="0 0 0" mass="0.001" diaginertia="1.00e-07 1.00e-07 1.00e-07"/>
+              <joint name="RR_j_旋转7" pos="0 0 0" axis="0 1 0"/>
+              <geom rgba="0.2 0.4 0.9 1" mesh="knee_rotor" pos="0.01212 0 0.007" contype="0" conaffinity="0" group="2"/>
+              <body name="RR_knee_link2" pos="0.02424 0 0.014">
+                <inertial pos="0 0 0" mass="0.001" diaginertia="1.00e-07 1.00e-07 1.00e-07"/>
+                <joint name="RR_j_旋转4" pos="0 0 0" axis="0 1 0"/>
+                <geom rgba="0.9 0.9 0.2 1" mesh="knee_link2" pos="-0.01212 0 -0.007" contype="0" conaffinity="0" group="2"/>
+                <site name="RR_s_J5_link2" pos="0.025 0 -0.0433" size="0.0015" rgba="1 0 0 1"/>
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="RR_thigh_rigid" pos="0 0 0">
+          <inertial pos="0 0 0" mass="0.007" diaginertia="7.00e-07 7.00e-07 7.00e-07"/>
+          <joint name="RR_j_旋转2" pos="0 0 0" axis="0 1 0" range="-1.5708 1.5708"/>
+          <geom rgba="0.9 0.2 0.6 1" mesh="thigh_大腿主动力发生器" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom rgba="0.6 0.6 0.6 1" mesh="thigh_小腿保持架" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom rgba="0.6 0.6 0.6 1" mesh="thigh_髋关节保持架" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom rgba="0.6 0.6 0.6 1" mesh="thigh_大腿盖板" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom name="RR_thigh_ground" type="capsule" fromto="0 0 0 0.025 0 -0.0433" size="0.006" rgba="0.9 0.2 0.6 0.3" contype="1" conaffinity="1" group="3" friction="0.8 0.02 0.01"/>
+          <site name="RR_s_J2_thigh" pos="0 0 0" size="0.0015" rgba="0 1 0 1"/>
+          <body name="RR_shin" pos="0.025 0 -0.0433">
+            <inertial pos="0 0 0" mass="0.003" diaginertia="3.00e-07 3.00e-07 3.00e-07"/>
+            <joint name="RR_j_旋转3" pos="0 0 0" axis="0 1 0"/>
+            <geom rgba="0.2 0.7 0.9 1" mesh="shin" pos="-0.025 0 0.0433" contype="0" conaffinity="0" group="2"/>
+            <site name="RR_s_J5_shin" pos="0.01212 0 0.0070" size="0.0015" rgba="1 0 0 1"/>
+            <geom name="RR_foot" type="sphere" pos="-0.0322 0 -0.0358" size="0.004" rgba="0 1 0 1" contype="1" conaffinity="1" group="3" friction="0.8 0.02 0.01"/>
+            <site name="RR_foot_site" pos="-0.0322 0 -0.0358" size="0.003" rgba="0 1 0 1"/>
+            <geom name="RR_shin_ground" type="capsule" fromto="0 0 0 -0.0322 0 -0.0358" size="0.003" rgba="0.2 0.7 0.9 0.3" contype="1" conaffinity="1" group="3" friction="0.8 0.02 0.01"/>
+          </body>
+        </body>
+      </body>
+      <!-- ===== FL 腿（镜像）===== -->
+      <body name="FL_hip" pos="0 0.047 0" quat="0 1 0 0">
+        <inertial pos="0 0 0" mass="0.0005" diaginertia="1e-8 1e-8 1e-8"/>
+        <body name="FL_knee_driver" pos="-0.0109 0 -0.0144">
+          <inertial pos="0 0 0" mass="0.002" diaginertia="2.00e-07 2.00e-07 2.00e-07"/>
+          <joint name="FL_j_旋转1" pos="0 0 0" axis="0 1 0" range="-1.5708 1.5708"/>
+          <geom rgba="0.9 0.5 0.2 1" mesh="knee_driver_mir" pos="0.0109 0 0.0144" contype="0" conaffinity="0" group="2"/>
+          <body name="FL_knee_link1" pos="-0.01039 0 0.006">
+            <inertial pos="0 0 0" mass="0.001" diaginertia="1.00e-07 1.00e-07 1.00e-07"/>
+            <joint name="FL_j_旋转6" pos="0 0 0" axis="0 1 0"/>
+            <geom rgba="0.2 0.9 0.4 1" mesh="knee_link1_mir" pos="0.02129 0 0.0084" contype="0" conaffinity="0" group="2"/>
+            <body name="FL_knee_rotor" pos="0.00917 0 0.0154">
+              <inertial pos="0 0 0" mass="0.001" diaginertia="1.00e-07 1.00e-07 1.00e-07"/>
+              <joint name="FL_j_旋转7" pos="0 0 0" axis="0 1 0"/>
+              <geom rgba="0.2 0.4 0.9 1" mesh="knee_rotor_mir" pos="0.01212 0 -0.007" contype="0" conaffinity="0" group="2"/>
+              <body name="FL_knee_link2" pos="0.02424 0 -0.014">
+                <inertial pos="0 0 0" mass="0.001" diaginertia="1.00e-07 1.00e-07 1.00e-07"/>
+                <joint name="FL_j_旋转4" pos="0 0 0" axis="0 1 0"/>
+                <geom rgba="0.9 0.9 0.2 1" mesh="knee_link2_mir" pos="-0.01212 0 0.007" contype="0" conaffinity="0" group="2"/>
+                <site name="FL_s_J5_link2" pos="0.025 0 0.0433" size="0.0015" rgba="1 0 0 1"/>
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="FL_thigh_rigid" pos="0 0 0">
+          <inertial pos="0 0 0" mass="0.007" diaginertia="7.00e-07 7.00e-07 7.00e-07"/>
+          <joint name="FL_j_旋转2" pos="0 0 0" axis="0 1 0" range="-1.5708 1.5708"/>
+          <geom rgba="0.9 0.2 0.6 1" mesh="thigh_大腿主动力发生器_mir" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom rgba="0.6 0.6 0.6 1" mesh="thigh_小腿保持架_mir" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom rgba="0.6 0.6 0.6 1" mesh="thigh_髋关节保持架_mir" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom rgba="0.6 0.6 0.6 1" mesh="thigh_大腿盖板_mir" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom name="FL_thigh_ground" type="capsule" fromto="0 0 0 0.025 0 0.0433" size="0.006" rgba="0.9 0.2 0.6 0.3" contype="1" conaffinity="1" group="3" friction="0.8 0.02 0.01"/>
+          <site name="FL_s_J2_thigh" pos="0 0 0" size="0.0015" rgba="0 1 0 1"/>
+          <body name="FL_shin" pos="0.025 0 0.0433">
+            <inertial pos="0 0 0" mass="0.003" diaginertia="3.00e-07 3.00e-07 3.00e-07"/>
+            <joint name="FL_j_旋转3" pos="0 0 0" axis="0 1 0"/>
+            <geom rgba="0.2 0.7 0.9 1" mesh="shin_mir" pos="-0.025 0 -0.0433" contype="0" conaffinity="0" group="2"/>
+            <site name="FL_s_J5_shin" pos="0.01212 0 -0.0070" size="0.0015" rgba="1 0 0 1"/>
+            <geom name="FL_foot" type="sphere" pos="-0.0322 0 0.0358" size="0.004" rgba="0 1 0 1" contype="1" conaffinity="1" group="3" friction="0.8 0.02 0.01"/>
+            <site name="FL_foot_site" pos="-0.0322 0 0.0358" size="0.003" rgba="0 1 0 1"/>
+            <geom name="FL_shin_ground" type="capsule" fromto="0 0 0 -0.0322 0 0.0358" size="0.003" rgba="0.2 0.7 0.9 0.3" contype="1" conaffinity="1" group="3" friction="0.8 0.02 0.01"/>
+          </body>
+        </body>
+      </body>
+      <!-- ===== RL 腿（镜像）===== -->
+      <body name="RL_hip" pos="0.115 0.047 0" quat="0 1 0 0">
+        <inertial pos="0 0 0" mass="0.0005" diaginertia="1e-8 1e-8 1e-8"/>
+        <body name="RL_knee_driver" pos="-0.0109 0 -0.0144">
+          <inertial pos="0 0 0" mass="0.002" diaginertia="2.00e-07 2.00e-07 2.00e-07"/>
+          <joint name="RL_j_旋转1" pos="0 0 0" axis="0 1 0" range="-1.5708 1.5708"/>
+          <geom rgba="0.9 0.5 0.2 1" mesh="knee_driver_mir" pos="0.0109 0 0.0144" contype="0" conaffinity="0" group="2"/>
+          <body name="RL_knee_link1" pos="-0.01039 0 0.006">
+            <inertial pos="0 0 0" mass="0.001" diaginertia="1.00e-07 1.00e-07 1.00e-07"/>
+            <joint name="RL_j_旋转6" pos="0 0 0" axis="0 1 0"/>
+            <geom rgba="0.2 0.9 0.4 1" mesh="knee_link1_mir" pos="0.02129 0 0.0084" contype="0" conaffinity="0" group="2"/>
+            <body name="RL_knee_rotor" pos="0.00917 0 0.0154">
+              <inertial pos="0 0 0" mass="0.001" diaginertia="1.00e-07 1.00e-07 1.00e-07"/>
+              <joint name="RL_j_旋转7" pos="0 0 0" axis="0 1 0"/>
+              <geom rgba="0.2 0.4 0.9 1" mesh="knee_rotor_mir" pos="0.01212 0 -0.007" contype="0" conaffinity="0" group="2"/>
+              <body name="RL_knee_link2" pos="0.02424 0 -0.014">
+                <inertial pos="0 0 0" mass="0.001" diaginertia="1.00e-07 1.00e-07 1.00e-07"/>
+                <joint name="RL_j_旋转4" pos="0 0 0" axis="0 1 0"/>
+                <geom rgba="0.9 0.9 0.2 1" mesh="knee_link2_mir" pos="-0.01212 0 0.007" contype="0" conaffinity="0" group="2"/>
+                <site name="RL_s_J5_link2" pos="0.025 0 0.0433" size="0.0015" rgba="1 0 0 1"/>
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="RL_thigh_rigid" pos="0 0 0">
+          <inertial pos="0 0 0" mass="0.007" diaginertia="7.00e-07 7.00e-07 7.00e-07"/>
+          <joint name="RL_j_旋转2" pos="0 0 0" axis="0 1 0" range="-1.5708 1.5708"/>
+          <geom rgba="0.9 0.2 0.6 1" mesh="thigh_大腿主动力发生器_mir" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom rgba="0.6 0.6 0.6 1" mesh="thigh_小腿保持架_mir" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom rgba="0.6 0.6 0.6 1" mesh="thigh_髋关节保持架_mir" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom rgba="0.6 0.6 0.6 1" mesh="thigh_大腿盖板_mir" pos="0 0 0" contype="0" conaffinity="0" group="2"/>
+          <geom name="RL_thigh_ground" type="capsule" fromto="0 0 0 0.025 0 0.0433" size="0.006" rgba="0.9 0.2 0.6 0.3" contype="1" conaffinity="1" group="3" friction="0.8 0.02 0.01"/>
+          <site name="RL_s_J2_thigh" pos="0 0 0" size="0.0015" rgba="0 1 0 1"/>
+          <body name="RL_shin" pos="0.025 0 0.0433">
+            <inertial pos="0 0 0" mass="0.003" diaginertia="3.00e-07 3.00e-07 3.00e-07"/>
+            <joint name="RL_j_旋转3" pos="0 0 0" axis="0 1 0"/>
+            <geom rgba="0.2 0.7 0.9 1" mesh="shin_mir" pos="-0.025 0 -0.0433" contype="0" conaffinity="0" group="2"/>
+            <site name="RL_s_J5_shin" pos="0.01212 0 -0.0070" size="0.0015" rgba="1 0 0 1"/>
+            <geom name="RL_foot" type="sphere" pos="-0.0322 0 0.0358" size="0.004" rgba="0 1 0 1" contype="1" conaffinity="1" group="3" friction="0.8 0.02 0.01"/>
+            <site name="RL_foot_site" pos="-0.0322 0 0.0358" size="0.003" rgba="0 1 0 1"/>
+            <geom name="RL_shin_ground" type="capsule" fromto="0 0 0 -0.0322 0 0.0358" size="0.003" rgba="0.2 0.7 0.9 0.3" contype="1" conaffinity="1" group="3" friction="0.8 0.02 0.01"/>
+          </body>
+        </body>
+      </body>
+      <!-- ===== 8 个舵机壳（固定件，世界坐标摆放，不随关节动）===== -->
+      <body name="FR_servo_2" pos="-0 -0.047 -0" quat="0.707107 -0 -0.707107 0">
+        <inertial pos="0 0 0" mass="0.014" diaginertia="4e-6 4e-6 4e-6"/>
+        <geom rgba="0.3 0.3 0.3 1" mesh="FR_servo_2" contype="0" conaffinity="0" group="2"/>
+      </body>
+      <body name="FR_servo_3" pos="-0.0109 -0.047 0.0144" quat="0.707107 -0 0.707107 0">
+        <inertial pos="0 0 0" mass="0.014" diaginertia="4e-6 4e-6 4e-6"/>
+        <geom rgba="0.3 0.3 0.3 1" mesh="FR_servo_3" contype="0" conaffinity="0" group="2"/>
+      </body>
+      <body name="RR_servo_2" pos="0.115 -0.047 0" quat="0.707107 0 -0.707107 0">
+        <inertial pos="0 0 0" mass="0.014" diaginertia="4e-6 4e-6 4e-6"/>
+        <geom rgba="0.3 0.3 0.3 1" mesh="RR_servo_2" contype="0" conaffinity="0" group="2"/>
+      </body>
+      <body name="RR_servo_3" pos="0.1041 -0.047 0.0144" quat="0.707107 0 0.707107 -0">
+        <inertial pos="0 0 0" mass="0.014" diaginertia="4e-6 4e-6 4e-6"/>
+        <geom rgba="0.3 0.3 0.3 1" mesh="RR_servo_3" contype="0" conaffinity="0" group="2"/>
+      </body>
+      <body name="FL_servo_1" pos="-0 0.047 -0" quat="-0 0.707107 0 0.707107">
+        <inertial pos="0 0 0" mass="0.014" diaginertia="4e-6 4e-6 4e-6"/>
+        <geom rgba="0.3 0.3 0.3 1" mesh="FL_servo_1" contype="0" conaffinity="0" group="2"/>
+      </body>
+      <body name="FL_servo_2" pos="-0.0109 0.047 0.0144" quat="0 -0.707107 0 0.707107">
+        <inertial pos="0 0 0" mass="0.014" diaginertia="4e-6 4e-6 4e-6"/>
+        <geom rgba="0.3 0.3 0.3 1" mesh="FL_servo_2" contype="0" conaffinity="0" group="2"/>
+      </body>
+      <body name="RL_servo_1" pos="0.115 0.047 -0" quat="-0 0.707107 0 0.707107">
+        <inertial pos="0 0 0" mass="0.014" diaginertia="4e-6 4e-6 4e-6"/>
+        <geom rgba="0.3 0.3 0.3 1" mesh="RL_servo_1" contype="0" conaffinity="0" group="2"/>
+      </body>
+      <body name="RL_servo_2" pos="0.1041 0.047 0.0144" quat="0 -0.707107 0 0.707107">
+        <inertial pos="0 0 0" mass="0.014" diaginertia="4e-6 4e-6 4e-6"/>
+        <geom rgba="0.3 0.3 0.3 1" mesh="RL_servo_2" contype="0" conaffinity="0" group="2"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <!-- 闭环约束：4 腿 × 2 条 = 8 条 connect（solref=0.01 1 dyn模式） -->
+  <equality>
+    <connect name="FR_loop_J2" body1="FR_knee_rotor" body2="FR_thigh_rigid" anchor="0.01212 0 0.007" solref="0.01 1" solimp="0.99 0.999 0.001"/>
+    <connect name="FR_loop_J5" body1="FR_knee_link2" body2="FR_shin" anchor="0.025 0 -0.0433" solref="0.01 1" solimp="0.99 0.999 0.001"/>
+    <connect name="RR_loop_J2" body1="RR_knee_rotor" body2="RR_thigh_rigid" anchor="0.01212 0 0.007" solref="0.01 1" solimp="0.99 0.999 0.001"/>
+    <connect name="RR_loop_J5" body1="RR_knee_link2" body2="RR_shin" anchor="0.025 0 -0.0433" solref="0.01 1" solimp="0.99 0.999 0.001"/>
+    <connect name="FL_loop_J2" body1="FL_knee_rotor" body2="FL_thigh_rigid" anchor="0.01212 0 -0.007" solref="0.01 1" solimp="0.99 0.999 0.001"/>
+    <connect name="FL_loop_J5" body1="FL_knee_link2" body2="FL_shin" anchor="0.025 0 0.0433" solref="0.01 1" solimp="0.99 0.999 0.001"/>
+    <connect name="RL_loop_J2" body1="RL_knee_rotor" body2="RL_thigh_rigid" anchor="0.01212 0 -0.007" solref="0.01 1" solimp="0.99 0.999 0.001"/>
+    <connect name="RL_loop_J5" body1="RL_knee_link2" body2="RL_shin" anchor="0.025 0 0.0433" solref="0.01 1" solimp="0.99 0.999 0.001"/>
+  </equality>
+
+
+  <!-- 8 舵机 position actuator（dyn: kp=80 kv=5 forcerange±5，适配轻机器人避免弹飞） -->
+  <default>
+    <position kp="80" kv="5"/>
+  </default>
+  <actuator>
+    <position name="FR_servo_knee" joint="FR_j_旋转1" kp="80" kv="5" forcerange="-5 5"/>
+    <position name="FR_servo_thigh" joint="FR_j_旋转2" kp="80" kv="5" forcerange="-5 5"/>
+    <position name="RR_servo_knee" joint="RR_j_旋转1" kp="80" kv="5" forcerange="-5 5"/>
+    <position name="RR_servo_thigh" joint="RR_j_旋转2" kp="80" kv="5" forcerange="-5 5"/>
+    <position name="FL_servo_knee" joint="FL_j_旋转1" kp="80" kv="5" forcerange="-5 5"/>
+    <position name="FL_servo_thigh" joint="FL_j_旋转2" kp="80" kv="5" forcerange="-5 5"/>
+    <position name="RL_servo_knee" joint="RL_j_旋转1" kp="80" kv="5" forcerange="-5 5"/>
+    <position name="RL_servo_thigh" joint="RL_j_旋转2" kp="80" kv="5" forcerange="-5 5"/>
+  </actuator>
+
+  <!-- 传感器：IMU + 8 关节位置 + 4 足端接触力 -->
+  <sensor>
+    <framepos name="base_pos" objtype="body" objname="base"/>
+    <framequat name="base_quat" objtype="body" objname="base"/>
+    <framelinvel name="base_linvel" objtype="body" objname="base"/>
+    <frameangvel name="base_angvel" objtype="body" objname="base"/>
+    <framelinacc name="base_linacc" objtype="body" objname="base"/>
+    <frameangacc name="base_angacc" objtype="body" objname="base"/>
+    <jointpos name="FR_j_旋转1_pos" joint="FR_j_旋转1"/>
+    <jointvel name="FR_j_旋转1_vel" joint="FR_j_旋转1"/>
+    <jointpos name="FR_j_旋转2_pos" joint="FR_j_旋转2"/>
+    <jointvel name="FR_j_旋转2_vel" joint="FR_j_旋转2"/>
+    <jointpos name="RR_j_旋转1_pos" joint="RR_j_旋转1"/>
+    <jointvel name="RR_j_旋转1_vel" joint="RR_j_旋转1"/>
+    <jointpos name="RR_j_旋转2_pos" joint="RR_j_旋转2"/>
+    <jointvel name="RR_j_旋转2_vel" joint="RR_j_旋转2"/>
+    <jointpos name="FL_j_旋转1_pos" joint="FL_j_旋转1"/>
+    <jointvel name="FL_j_旋转1_vel" joint="FL_j_旋转1"/>
+    <jointpos name="FL_j_旋转2_pos" joint="FL_j_旋转2"/>
+    <jointvel name="FL_j_旋转2_vel" joint="FL_j_旋转2"/>
+    <jointpos name="RL_j_旋转1_pos" joint="RL_j_旋转1"/>
+    <jointvel name="RL_j_旋转1_vel" joint="RL_j_旋转1"/>
+    <jointpos name="RL_j_旋转2_pos" joint="RL_j_旋转2"/>
+    <jointvel name="RL_j_旋转2_vel" joint="RL_j_旋转2"/>
+    <touch name="FR_foot_touch" site="FR_foot_site"/>
+    <touch name="RR_foot_touch" site="RR_foot_site"/>
+    <touch name="FL_foot_touch" site="FL_foot_site"/>
+    <touch name="RL_foot_touch" site="RL_foot_site"/>
+  </sensor>
+
+</mujoco>

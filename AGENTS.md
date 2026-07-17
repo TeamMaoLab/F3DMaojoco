@@ -1,9 +1,20 @@
 # F3DMaojoco 项目状态（2026-07-17）
 
-让舵机四足机器人从 Fusion 360 设计 → 浏览器 3D 复原。
-当前进度：**四足 LUT 分控驱动已完成**，4 条腿可在网页独立运动（含预设步态）。
+让舵机四足机器人从 Fusion 360 设计 → 浏览器 3D 复原 → MuJoCo RL 模型。
+当前进度：**四足 MuJoCo 模型已生成并验证**，可直接用于 RL 训练。
 
 ## 当前进展
+
+### ✅ 已完成：四足 MuJoCo 模型生成（2026-07-17）
+从单腿 leg.xml + 四足装配数据，参数化生成完整 MuJoCo 四足模型（RL 可用）：
+- **两个版本**：`quad_kin.xml`（固定 base 零重力，几何验证用）+ `quad_dyn.xml`（浮动 base 重力地面，RL 训练用）
+- **几何完全正确**：8 条 equality 闭环残差 0.000mm，4 腿足端对称性 0.000mm，镜像腿被动关节取负关系 FR+FL=0.000
+- **dyn 版站立稳定**：base z 恒定 82.6mm，qvel→0，4 足端接触，20s 不塌
+- **真实质量分配**：实测数据（打印件90g+舵机14g×8+电路电池40g=242g），总重 254g
+- **机身+腿碰撞体**：机身box + 大腿/小腿capsule + 足端sphere，倒地防穿地
+- **关键技术**：implicitfast 积分器 + 软 equality solref(0.01) + 关节阻尼 2.0 + PD kp=80 解决闭环动力学震荡
+- **镜像腿处理**：hip body 加 `quat=0 1 0 0`（绕 X 翻 180°）+ anchor Z 取负；RL 控制时镜像腿舵机指令需取负
+- 生成器：`scripts/gen_quad_mujoco.py`，验证：`scripts/verify_quad_mujoco.py`，文档：`mujoco_quad/README.md`
 
 ### ✅ 已完成：4 腿分控 LUT 驱动 + 镜像运动学（2026-07-17）
 在静态装配基础上加关节运动，4 条腿独立控制：
@@ -37,9 +48,10 @@
 - **单腿 FK 求解器**（scripts/fk_newton.py）：纯运动学牛顿迭代解 4 被动角 + 闭环约束，第一阶段成果，四足可复用
 
 ### ⏳ 待做
-- MuJoCo 四足模型（运动学树 + 闭环约束 + 驱动）
+- RL 训练环境封装（Gym/IsaacGym 接入，reward 设计，镜像腿 action 取负处理）
 - 更多步态预设（walk/bound/原地踏步等）
 - 关节轴/足端轨迹可视化
+- 真实惯量补导出（当前 mass/diaginertia 是估算值）
 
 ## 架构全景
 ```
@@ -102,6 +114,8 @@ scripts/
 ├── fk_newton.py             # 单腿 FK 牛顿迭代求解器（第一阶段）
 ├── fk_solve.py              # 单腿 FK（伺服角输入）
 ├── gen_workspace_lut.py     # 单腿解空间 LUT 生成
+├── gen_quad_mujoco.py       # ★ 四足 MuJoCo 模型生成器（kin + dyn 双版本）
+├── verify_quad_mujoco.py    # ★ 四足 MuJoCo 几何验证（闭环残差 + 对称性）
 ├── gen_geometry_json.py     # STL→geometry.json 序列化（依赖已删的 export1）
 ├── leg_viewer.py            # 单腿 MuJoCo 交互查看器
 ├── plot_workspace.py        # 解空间地图 PNG
@@ -125,6 +139,10 @@ WebPreviewer/
 └── vendor/                  # three.min.js + STLLoader + OrbitControls
 
 mujoco_leg/leg.xml           # 单腿 MuJoCo 模型（基准，依赖已删的 export1）
+mujoco_quad/                 # ★ 四足 MuJoCo 模型（自动生成）
+├── quad_kin.xml             # 运动学调试版（固定 base + 零重力，几何验证用）
+├── quad_dyn.xml             # RL 训练版（浮动 base + 重力 + 地面 + 传感器）
+└── README.md                # RL 接入说明（动作/观测空间 + 镜像腿控制 + 初始化）
 F3DRemoteControl/            # HTTP 远程控制 add-in
 F3DMaojocoWin/               # Win 版导出插件（STL + BRep）
 F3DMaojocoScripts/           # Mac 版导出插件（相对导入）
