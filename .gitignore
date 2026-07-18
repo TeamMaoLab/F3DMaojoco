@@ -221,3 +221,13 @@ exports/quad_v4/**
 !exports/quad_v4/nodes_world.json
 !exports/quad_v4/leg_kinematic.json
 !exports/quad_v4/foot_lut.json
+
+# RL 训练产物（模型 checkpoint，体积大，不入 git）
+saved/
+saved_jax/
+*.pkl
+*.zip
+
+# 临时文件
+/tmp/
+*.log
