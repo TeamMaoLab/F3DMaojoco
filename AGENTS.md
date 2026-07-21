@@ -1,9 +1,36 @@
-# F3DMaojoco 项目状态（2026-07-17）
+# F3DMaojoco 项目状态（2026-07-18）
 
 让舵机四足机器人从 Fusion 360 设计 → 浏览器 3D 复原 → MuJoCo RL 模型。
-当前进度：**四足 MuJoCo 模型已生成并验证**，可直接用于 RL 训练。
+当前进度：**MuJoCo Playground + Brax PPO 管线搭好，卡在 PPO 编译阶段**。
 
-## 当前进展
+## 当前进展（最新在前）
+
+### ⚠️ 进行中：Playground + Brax PPO 训练（2026-07-18）
+照搬 Go1JoystickFlatTerrain 的全套设计，用 MuJoCo Playground + Brax PPO 训练我们的四足。**核心方案落地，但 PPO 训练编译未完成**。
+
+**已突破的核心技术：「4 连杆求解前置到模型外」**
+- 问题：完整 quad_playground.xml（40 body + 8 equality）在 MJX 上编译爆炸（20+ 分钟，XLA 展不开 equality 雅可比）
+- 方案：删 equality，给 16 个被动关节加 position actuator（kp=2000 锁定），env.step 里用 jax 查 workspace_lut 算被动关节目标
+- 产物：`mujoco_quad/quad_lite.xml`（完整 40 body + 0 equality + 24 actuator）+ `scripts/passive_lut.py`（jax 双线性插值，0.17s/vmap 256）
+- 效果：**mjx.step 编译 17 秒**（vs 完整模型 20+ 分钟，70× 快），env.step 编译 19 秒，站立稳定（base_z=82.9mm）
+
+**已就位但未跑通的训练管线**：
+- env 类 `scripts/quad_pg_env.py`（照搬 Go1 joystick.py，含 15 个 reward 项）
+- 训练脚本 `scripts/train_quad_pg.py`（Brax PPO + Go1 超参）
+- env reset/step/vmap 全部验证通过
+
+**⚠️ 卡住的问题：PPO 训练 100+ 秒没出 step 0**
+- 实测数据：jax LUT 查表 0.17s，env.step（含查表+reward）19s，**这些都不慢**
+- PPO 内部（loss + Adam 反向传播图）编译 100+ 秒未完成
+- Go1 同款代码能跑通，说明我们的 env 触发了什么特殊情况（待定位）
+- 嫌疑点：sensor 读取、reward 里某个 jax 操作、或 unroll+vmap+grad 组合
+- 下次接续：在 brax.training.agents.ppo.train 里加 timing，定位是哪个阶段卡住
+
+### ✅ 已完成：MuJoCo Playground 环境安装（2026-07-18）
+- jax 0.6.0 + cuda12 + brax 0.14.2 + mujoco-mjx 3.10.0 + playground 0.2.0
+- Cartpole 50K 步训练验证管线通（reward 309→999，60 秒）
+- 参考实现：Go1JoystickFlatTerrain（全套 reward/obs/config，照搬）
+- Brax PPO 超参（Go1）：num_envs=8192, unroll=20, lr=3e-4, network=(512,256,128)
 
 ### ✅ 已完成：四足 MuJoCo 模型生成（2026-07-17）
 从单腿 leg.xml + 四足装配数据，参数化生成完整 MuJoCo 四足模型（RL 可用）：
@@ -120,7 +147,14 @@ scripts/
 ├── leg_viewer.py            # 单腿 MuJoCo 交互查看器
 ├── plot_workspace.py        # 解空间地图 PNG
 ├── verify_fk_solver.py      # FK 求解器验证（依赖已删的 export1）
-└── verify_mujoco_leg.py     # 单腿 MuJoCo 模型验证
+├── verify_mujoco_leg.py     # 单腿 MuJoCo 模型验证
+├── quad_pg_env.py           # ★ Playground env（照搬 Go1 joystick，含 jax LUT 查表）
+├── passive_lut.py           # ★ jax 双线性插值查 workspace_lut（8 舵机→16 被动关节）
+├── train_quad_pg.py         # ★ Brax PPO 训练（照搬 Go1 超参，--unroll_length 可调）
+├── render_quad_view.py      # 渲染机器人多角度 mp4（已出 quad_preview.mp4）
+├── viewer_interactive.py    # MuJoCo 交互 viewer（WSL GUI 限制未跑通）
+├── _verify_lite.py          # quad_lite 综合验证（几何+站立+编译速度）
+└── _verify_quad_pg.py       # env reset/step 验证
 
 exports/quad_v4/             # ★ 四足当前数据
 ├── parts_world.json         # 零件 STL + 世界变换（49 叶子，网页摆放用）
@@ -141,7 +175,9 @@ WebPreviewer/
 mujoco_leg/leg.xml           # 单腿 MuJoCo 模型（基准，依赖已删的 export1）
 mujoco_quad/                 # ★ 四足 MuJoCo 模型（自动生成）
 ├── quad_kin.xml             # 运动学调试版（固定 base + 零重力，几何验证用）
-├── quad_dyn.xml             # RL 训练版（浮动 base + 重力 + 地面 + 传感器）
+├── quad_dyn.xml             # RL 训练版（浮动 base + 重力 + 地面 + 传感器，含 8 equality）
+├── quad_playground.xml      # 完整版 + Go1 同款 18 sensor（Playground env 用，仍含 equality）
+├── quad_lite.xml            # ★ RL 训练版（无 equality + 16 被动 actuator 锁定，编译 17s）
 └── README.md                # RL 接入说明（动作/观测空间 + 镜像腿控制 + 初始化）
 F3DRemoteControl/            # HTTP 远程控制 add-in
 F3DMaojocoWin/               # Win 版导出插件（STL + BRep）

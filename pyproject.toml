@@ -12,6 +12,7 @@ dependencies = [
     "mujoco>=3.3.5",
     "mujoco-mjx>=3.10.0",
     "networkx>=3.5",
+    "playground",
     "pypinyin>=0.55.0",
     "pyside6>=6.9.2",
     "pyvista>=0.46.3",
@@ -23,3 +24,6 @@ dependencies = [
 dev = [
     "scipy>=1.18.0",
 ]
+
+[tool.uv.sources]
+playground = { git = "https://github.com/google-deepmind/mujoco_playground.git" }

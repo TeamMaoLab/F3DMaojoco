@@ -35,7 +35,7 @@ def train(args):
     print(f'总步数: {args.timesteps:,}, 并行环境: {args.num_envs}')
     print()
 
-    # 网络工厂：照搬 SB3 的 [256,256] + init_noise_std=0.2
+    # 网络工厂：照搬 SB3 的 [256,256] + init_noise_std=0.1（更小，防乱动）
     def network_factory(obs_size, action_size, preprocess_observations_fn):
         return ppo_networks.make_ppo_networks(
             observation_size=obs_size,
@@ -43,10 +43,10 @@ def train(args):
             preprocess_observations_fn=preprocess_observations_fn,
             policy_hidden_layer_sizes=(256, 256),
             value_hidden_layer_sizes=(256, 256),
-            init_noise_std=0.2,  # 照搬 SB3 log_std_init=log(0.2)
+            init_noise_std=0.1,  # 小 std，防初始乱动把机器人弹飞
         )
 
-    # PPO 超参（照搬 SB3 验证过的配置）
+    # PPO 超参
     inference_fn, params, metrics = ppo_train(
         environment=QuadEnvJax(task=args.task),
         num_timesteps=args.timesteps,
@@ -54,7 +54,7 @@ def train(args):
         episode_length=1000,
         action_repeat=1,
         learning_rate=3e-4,
-        entropy_cost=0.0,         # 照搬 SB3 ent_coef=0
+        entropy_cost=0.01,       # 加 entropy（让 std 不爆炸，SB3 默认也有）
         discounting=0.99,
         gae_lambda=0.95,
         clipping_epsilon=0.2,
